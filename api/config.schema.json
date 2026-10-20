@@ -42,6 +42,10 @@
         "max_models_per_backend": {
           "description": "Most models tracked per backend; the energy of the others is reported together as 'other'.",
           "type": "integer"
+        },
+        "regression_min_r2": {
+          "description": "Lowest R2 at which the energy per prompt token and per generated token, fitted over the last 24 hours, is reported.",
+          "type": "number"
         }
       },
       "type": "object"

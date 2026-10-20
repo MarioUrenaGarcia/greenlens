@@ -47,6 +47,9 @@ attribution:
   # Most models tracked per backend; the energy of the others is reported
   # together as "other".
   max_models_per_backend: 50
+  # Lowest R2 at which the energy of a prompt token and of a generated
+  # token, fitted over the last 24 hours, is reported.
+  regression_min_r2: 0.7
 
 # Inference servers declared here keep their name across restarts and take
 # precedence over the ones found by discovery. kind is one of ollama,

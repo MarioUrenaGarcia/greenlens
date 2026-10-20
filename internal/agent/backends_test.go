@@ -126,7 +126,7 @@ func TestBackendEnergyAndTokens(t *testing.T) {
 			Config: cfg, Getenv: func(string) string { return "" },
 			Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 			Sources: []source.Source{&fake{}}, HostFS: host,
-			NoSandbox: true, Ready: ready, UsageInterval: 300 * time.Millisecond,
+			NoSandbox: true, Ready: ready, UsageInterval: 300 * time.Millisecond, RegressionEvery: 200 * time.Millisecond,
 		})
 	}()
 	t.Cleanup(func() {

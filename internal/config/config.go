@@ -105,8 +105,9 @@ type Estimate struct {
 
 // Attribution configures how energy is split between processes.
 type Attribution struct {
-	IdlePolicy          string `yaml:"idle_policy"`
-	MaxModelsPerBackend int    `yaml:"max_models_per_backend"`
+	IdlePolicy          string  `yaml:"idle_policy"`
+	MaxModelsPerBackend int     `yaml:"max_models_per_backend"`
+	RegressionMinR2     float64 `yaml:"regression_min_r2"`
 }
 
 // Backend is an inference server declared in the configuration. Its name
@@ -160,7 +161,7 @@ func Defaults() Config {
 	return Config{
 		Agent:       Agent{SampleInterval: Duration(time.Second), HostRoot: "/"},
 		Sources:     Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1}},
-		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50},
+		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50, RegressionMinR2: 0.7},
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}},
 		Retention: Retention{
@@ -370,6 +371,9 @@ func (c Config) Validate() error {
 	}
 	if m := c.Attribution.MaxModelsPerBackend; m < 1 || m > MaxModels {
 		bad("attribution.max_models_per_backend", fmt.Sprintf("must be between 1 and %d", MaxModels))
+	}
+	if r := c.Attribution.RegressionMinR2; r < 0 || r > 1 {
+		bad("attribution.regression_min_r2", "must be between 0 and 1")
 	}
 	if d := c.Discovery.Interval.D(); d < MinDiscoveryInterval || d > MaxDiscoveryInterval {
 		bad("discovery.interval", fmt.Sprintf("%s is outside %s to %s", d, MinDiscoveryInterval, MaxDiscoveryInterval))

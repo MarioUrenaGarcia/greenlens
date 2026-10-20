@@ -35,6 +35,7 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 |---|---|---|---|---|
 | `attribution.idle_policy` | `GREENLENS_ATTRIBUTION_IDLE_POLICY` | string | `dynamic` | Cómo se atribuye la energía de reposo: dynamic, proportional, full o wall. |
 | `attribution.max_models_per_backend` | `GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND` | integer | `50` | Máximo de modelos por backend; la energía de los demás se reporta junta como 'other'. |
+| `attribution.regression_min_r2` | `GREENLENS_ATTRIBUTION_REGRESSION_MIN_R2` | number | `0.7` | R2 mínimo con el que se reporta la energía por token de prompt y por token generado, ajustada sobre las últimas 24 horas. |
 
 ## backends
 

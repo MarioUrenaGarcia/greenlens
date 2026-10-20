@@ -14,6 +14,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
+	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 )
 
 // SchemaVersion of every document.
@@ -162,6 +163,9 @@ type Model struct {
 	JoulesPerToken float64 `json:"joules_per_generated_token"`
 	Method         string  `json:"method"`
 	Quality        string  `json:"quality"`
+	// Regression is the energy per prompt and per generated token, when
+	// the fit over the last day is good enough.
+	Regression *usage.Regression `json:"regression,omitempty"`
 }
 
 // Backend is an inference server with its use since the agent started.

@@ -44,6 +44,24 @@ según los tokens que procesó cada uno, de prompt y generados
 allá de `attribution.max_models_per_backend` se reportan juntos como
 `other`.
 
+## Tokens de prompt y generados
+
+Procesar un prompt y generar tokens no cuestan lo mismo. Cada diez minutos
+el agente ajusta, para cada modelo, sobre los intervalos de las últimas 24
+horas en que corrió solo:
+
+```text
+energía = a x tokens de prompt + b x tokens generados + c
+```
+
+por mínimos cuadrados, con intervalos de confianza al 95% de la t de
+Student. `a` y `b` son la energía de un token de prompt y de un token
+generado; `c` es la energía del modelo que los tokens no explican. Se
+reportan, con método `regression`, solo a partir de 30 intervalos y cuando
+R2 alcanza `attribution.regression_min_r2` (0.7 por defecto), y nunca cuando
+un token costaría energía negativa. Se excluyen los intervalos cuya energía
+ya se repartió por tokens, porque solo devolverían ese reparto.
+
 ## Políticas de reposo
 
 `attribution.idle_policy` decide qué pasa con la energía de reposo:

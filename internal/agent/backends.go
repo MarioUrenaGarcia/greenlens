@@ -171,6 +171,64 @@ func (a *Agent) usageWorker(ctx context.Context) {
 			a.limited("usage-insert", "storing usage failed", "error", err)
 		}
 		a.recordUsage(c, readings, rows)
+		every := regressionEvery
+		if a.o.RegressionEvery > 0 {
+			every = a.o.RegressionEvery
+		}
+		if time.Since(a.lastRegress) >= every {
+			a.lastRegress = time.Now()
+			a.regress(ctx)
+		}
+	}
+}
+
+// regressionEvery is how often the cost of prompt and generated tokens is
+// fitted again; regressionWindow is the period each fit covers.
+const (
+	regressionEvery  = 10 * time.Minute
+	regressionWindow = 24 * time.Hour
+)
+
+// regress fits the energy of each model on its tokens.
+func (a *Agent) regress(ctx context.Context) {
+	a.mu.RLock()
+	minR2 := a.cfg.Attribution.RegressionMinR2
+	a.mu.RUnlock()
+	type key struct{ backend, model string }
+	var todo []key
+	a.bmu.Lock()
+	for name, st := range a.bstate {
+		for m, mm := range st.models {
+			if mm.GeneratedTokens > 0 {
+				todo = append(todo, key{name, m})
+			}
+		}
+	}
+	a.bmu.Unlock()
+	now := time.Now()
+	fits := map[key]*usage.Regression{}
+	for _, k := range todo {
+		its, err := a.st.ModelIntervals(ctx, k.backend, k.model, now.Add(-regressionWindow), now)
+		if err != nil {
+			a.limited("regression", "reading usage for the regression failed", "error", err)
+			return
+		}
+		obs := make([]usage.Observation, len(its))
+		for i, it := range its {
+			obs[i] = usage.Observation{EnergyJ: it.EnergyJ, PromptTokens: it.PromptTokens, GeneratedTokens: it.GeneratedTokens}
+		}
+		if r, err := usage.Regress(obs, minR2); err == nil {
+			fits[k] = &r
+		}
+	}
+	a.bmu.Lock()
+	defer a.bmu.Unlock()
+	for _, k := range todo {
+		if st, ok := a.bstate[k.backend]; ok {
+			if m, ok := st.models[k.model]; ok {
+				m.Regression = fits[k]
+			}
+		}
 	}
 }
 

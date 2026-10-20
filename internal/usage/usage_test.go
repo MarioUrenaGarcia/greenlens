@@ -170,3 +170,30 @@ func TestRowsNeverExceedEnergy(t *testing.T) {
 		}
 	}
 }
+
+func TestRegress(t *testing.T) {
+	rng := rand.New(rand.NewPCG(9, 9))
+	var obs []Observation
+	for range 120 {
+		p, g := float64(rng.IntN(3000)), float64(rng.IntN(400))
+		obs = append(obs, Observation{PromptTokens: p, GeneratedTokens: g, EnergyJ: 0.01*p + 0.4*g + 50 + rng.NormFloat64()*3})
+	}
+	r, err := Regress(obs, 0.7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(r.PromptJ-0.01) > 2*r.PromptCI95 || math.Abs(r.GeneratedJ-0.4) > 2*r.GeneratedCI95 || math.Abs(r.BaseW-5) > 1 || r.R2 < 0.9 || r.Intervals != 120 || r.Method != MethodRegression {
+		t.Fatalf("%+v", r)
+	}
+	if _, err := Regress(obs[:10], 0.7); !errors.Is(err, ErrFewIntervals) {
+		t.Fatalf("few: %v", err)
+	}
+	// Energy unrelated to tokens is not reported.
+	noise := make([]Observation, len(obs))
+	for i, o := range obs {
+		noise[i] = Observation{PromptTokens: o.PromptTokens, GeneratedTokens: o.GeneratedTokens, EnergyJ: 100 + rng.NormFloat64()*30}
+	}
+	if _, err := Regress(noise, 0.7); !errors.Is(err, ErrPoorFit) {
+		t.Fatalf("noise: %v", err)
+	}
+}

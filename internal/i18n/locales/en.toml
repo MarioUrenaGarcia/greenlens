@@ -116,6 +116,7 @@ self = "Energy of the agent itself:"
 memory = "memory"
 no_backends = "No inference backend found. Declare yours under backends in the configuration if discovery cannot see it."
 not_counted = "not counted"
+regression = "{backend} {model}: {prompt} per prompt token and {generated} per generated token, fitted on {n} intervals (R2 {r2})."
 
 [cli.brief]
 no_agent = "The GreenLens agent is not running."
@@ -267,6 +268,7 @@ sources_estimate_full_watts = "Power of the whole CPU at 100% utilization for th
 sources_estimate_exponent = "Exponent of the utilization in the estimate model; 1 is linear."
 attribution_idle_policy = "How idle energy is attributed: dynamic, proportional, full or wall."
 attribution_max_models_per_backend = "Most models tracked per backend; the energy of the others is reported together as 'other'."
+attribution_regression_min_r2 = "Lowest R2 at which the energy per prompt token and per generated token, fitted over the last 24 hours, is reported."
 backends = "Inference servers declared in the configuration. They keep their name across restarts and take precedence over discovered ones."
 backends_name = "Name of the backend in reports and metrics: lowercase letters, digits, '.', '_' or '-'."
 backends_kind = "Engine of the backend, which selects how its tokens are read."

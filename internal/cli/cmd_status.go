@@ -6,6 +6,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -67,6 +68,15 @@ func (a *app) writeStatus(cmd *cobra.Command, st api.Status) error {
 		_, _ = fmt.Fprintln(w, l.T("cli.status.no_backends"))
 	} else if err := output.WriteGrid(w, a.backendsGrid(st.Backends)); err != nil {
 		return err
+	}
+	for _, b := range st.Backends {
+		for _, m := range b.Models {
+			if r := m.Regression; r != nil {
+				_, _ = fmt.Fprintln(w, l.T("cli.status.regression", "backend", b.Name, "model", m.Name,
+					"prompt", units.Energy(r.PromptJ, a.raw), "generated", units.Energy(r.GeneratedJ, a.raw),
+					"n", strconv.Itoa(r.Intervals), "r2", strconv.FormatFloat(r.R2, 'f', 2, 64)))
+			}
+		}
 	}
 	if st.Calibration != nil {
 		c := st.Calibration

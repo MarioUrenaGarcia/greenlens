@@ -72,6 +72,8 @@ type Options struct {
 	Reload <-chan struct{}
 	// UsageInterval replaces usage.Interval, for tests.
 	UsageInterval time.Duration
+	// RegressionEvery replaces regressionEvery, for tests.
+	RegressionEvery time.Duration
 }
 
 // Agent is a running agent.
@@ -97,9 +99,10 @@ type Agent struct {
 	cuts       chan usage.Cut
 	workerDone chan struct{}
 
-	bmu    sync.Mutex
-	bs     []backends.Backend
-	bstate map[string]*backendState
+	bmu         sync.Mutex
+	bs          []backends.Backend
+	bstate      map[string]*backendState
+	lastRegress time.Time
 
 	mu         sync.RWMutex
 	pkgQuality source.Quality

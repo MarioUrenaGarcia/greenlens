@@ -43,6 +43,24 @@ the tokens each one processed, prompt and generated (`token_weighted`).
 A single active model takes all of it. Models beyond
 `attribution.max_models_per_backend` are reported together as `other`.
 
+## Prompt and generated tokens
+
+Processing a prompt and generating tokens do not cost the same. Every ten
+minutes the agent fits, for each model, over the intervals of the last 24
+hours in which it ran alone:
+
+```text
+energy = a x prompt tokens + b x generated tokens + c
+```
+
+by least squares, with 95% confidence intervals from Student's t. `a` and
+`b` are the energy of a prompt token and of a generated token; `c` is the
+energy of the model that tokens do not explain. They are reported, with
+method `regression`, only from 30 intervals and when R2 reaches
+`attribution.regression_min_r2` (0.7 by default), and never when a token
+would cost negative energy. Intervals whose energy was itself split by
+tokens are left out, since they would only return the split.
+
 ## Idle policies
 
 `attribution.idle_policy` decides what happens to the idle energy:

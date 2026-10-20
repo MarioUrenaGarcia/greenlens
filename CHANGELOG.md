@@ -22,6 +22,9 @@ All notable changes to GreenLens are recorded in this file. The format follows
   ones, attributes processor, memory and GPU energy to each, splits it
   between models by tokens, and stores it for `status`, `report --group`
   and the API.
+- The energy of a prompt token and of a generated token of each model,
+  fitted by least squares over the last day with 95% confidence intervals
+  and reported when R2 reaches `attribution.regression_min_r2`.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.
