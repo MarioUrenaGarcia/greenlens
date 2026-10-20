@@ -26,6 +26,10 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL1008](#gl1008) | an energy counter can wrap more than once between samples | 1 |
 | [GL1009](#gl1009) | power sensor of an unknown hwmon driver is not used | 3 |
 | [GL1010](#gl1010) | the processor is not in the estimation table | 3 |
+| [GL3001](#gl3001) | configuration file not found | 6 |
+| [GL3002](#gl3002) | cannot read the configuration file | 6 |
+| [GL3003](#gl3003) | invalid configuration value for `{key}` | 6 |
+| [GL3004](#gl3004) | invalid value in the environment variable `{name}` | 6 |
 
 ## GL0001
 
@@ -152,3 +156,31 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** '`{model}`' has no published power coefficients, so a generic average per thread is used
 - **Fix:** set sources.estimate.idle_watts and sources.estimate.full_watts in the configuration with values for this processor
 - **Exit code:** 3
+
+## GL3001
+
+- **Message:** configuration file not found
+- **Cause:** `{path}` does not exist
+- **Fix:** check the path given with --config
+- **Exit code:** 6
+
+## GL3002
+
+- **Message:** cannot read the configuration file
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** correct the file; 'greenlens config validate' lists every problem
+- **Exit code:** 6
+
+## GL3003
+
+- **Message:** invalid configuration value for `{key}`
+- **Cause:** `{detail}`
+- **Fix:** see the configuration reference, or run 'greenlens config show' for the values in effect
+- **Exit code:** 6
+
+## GL3004
+
+- **Message:** invalid value in the environment variable `{name}`
+- **Cause:** `{detail}`
+- **Fix:** correct or unset the variable
+- **Exit code:** 6

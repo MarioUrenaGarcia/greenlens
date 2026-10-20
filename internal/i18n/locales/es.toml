@@ -136,3 +136,23 @@ fix = "reporta el nombre del driver en https://github.com/MarioUrenaGarcia/green
 message = "el procesador no está en la tabla de estimación"
 cause = "'{model}' no tiene coeficientes de potencia publicados, así que se usa un promedio genérico por hilo"
 fix = "define sources.estimate.idle_watts y sources.estimate.full_watts en la configuración con valores para este procesador"
+
+[errors.GL3001]
+message = "no se encontró el archivo de configuración"
+cause = "{path} no existe"
+fix = "revisa la ruta indicada con --config"
+
+[errors.GL3002]
+message = "no se puede leer el archivo de configuración"
+cause = "{path}: {detail}"
+fix = "corrige el archivo; 'greenlens config validate' lista todos los problemas"
+
+[errors.GL3003]
+message = "valor de configuración no válido para {key}"
+cause = "{detail}"
+fix = "consulta la referencia de configuración, o ejecuta 'greenlens config show' para ver los valores en uso"
+
+[errors.GL3004]
+message = "valor no válido en la variable de entorno {name}"
+cause = "{detail}"
+fix = "corrige la variable o elimínala"

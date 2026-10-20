@@ -26,6 +26,10 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1008](#gl1008) | un contador de energía puede desbordarse más de una vez entre muestras | 1 |
 | [GL1009](#gl1009) | no se usa el sensor de potencia de un driver de hwmon desconocido | 3 |
 | [GL1010](#gl1010) | el procesador no está en la tabla de estimación | 3 |
+| [GL3001](#gl3001) | no se encontró el archivo de configuración | 6 |
+| [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
+| [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
+| [GL3004](#gl3004) | valor no válido en la variable de entorno `{name}` | 6 |
 
 ## GL0001
 
@@ -152,3 +156,31 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** '`{model}`' no tiene coeficientes de potencia publicados, así que se usa un promedio genérico por hilo
 - **Solución:** define sources.estimate.idle_watts y sources.estimate.full_watts en la configuración con valores para este procesador
 - **Código de salida:** 3
+
+## GL3001
+
+- **Mensaje:** no se encontró el archivo de configuración
+- **Causa:** `{path}` no existe
+- **Solución:** revisa la ruta indicada con --config
+- **Código de salida:** 6
+
+## GL3002
+
+- **Mensaje:** no se puede leer el archivo de configuración
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** corrige el archivo; 'greenlens config validate' lista todos los problemas
+- **Código de salida:** 6
+
+## GL3003
+
+- **Mensaje:** valor de configuración no válido para `{key}`
+- **Causa:** `{detail}`
+- **Solución:** consulta la referencia de configuración, o ejecuta 'greenlens config show' para ver los valores en uso
+- **Código de salida:** 6
+
+## GL3004
+
+- **Mensaje:** valor no válido en la variable de entorno `{name}`
+- **Causa:** `{detail}`
+- **Solución:** corrige la variable o elimínala
+- **Código de salida:** 6

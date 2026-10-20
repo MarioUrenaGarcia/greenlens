@@ -136,3 +136,23 @@ fix = "report the driver name at https://github.com/MarioUrenaGarcia/greenlens/i
 message = "the processor is not in the estimation table"
 cause = "'{model}' has no published power coefficients, so a generic average per thread is used"
 fix = "set sources.estimate.idle_watts and sources.estimate.full_watts in the configuration with values for this processor"
+
+[errors.GL3001]
+message = "configuration file not found"
+cause = "{path} does not exist"
+fix = "check the path given with --config"
+
+[errors.GL3002]
+message = "cannot read the configuration file"
+cause = "{path}: {detail}"
+fix = "correct the file; 'greenlens config validate' lists every problem"
+
+[errors.GL3003]
+message = "invalid configuration value for {key}"
+cause = "{detail}"
+fix = "see the configuration reference, or run 'greenlens config show' for the values in effect"
+
+[errors.GL3004]
+message = "invalid value in the environment variable {name}"
+cause = "{detail}"
+fix = "correct or unset the variable"
