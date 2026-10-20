@@ -1,0 +1,18 @@
+{
+  "packages": [
+    {
+      "name": "preact",
+      "version": "10.29.8",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "source": "https://registry.npmjs.org/preact/-/preact-10.29.8.tgz",
+      "integrity": "sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==",
+      "files": {
+        "LICENSE": "1fe6958409c8c257a70c587a18b6f7f412b179b456630790d30b2ec9a8e4b7d4",
+        "dist/preact.module.js": "c30e721ebfdc6e2ad4c18c14d2dfb82667829c8aec27de1207774e3fc16858a8",
+        "jsx-runtime/dist/jsxRuntime.module.js": "43af8eff4027c4d275700d867a65943353e8003dae2681c1632c4a12012db3f3",
+        "package.json": "a2cf0cce367ab3b028889b567dc1ac2fd629fbcac991c4049bb763e305b0634b"
+      }
+    }
+  ]
+}
