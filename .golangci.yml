@@ -44,11 +44,12 @@ linters:
 
   exclusions:
     rules:
-      # Tests read and write files under t.TempDir() through variables.
+      # Tests read and write files under t.TempDir() through variables, and
+      # property tests use a seeded generator so failures are reproducible.
       - path: _test\.go
         linters:
           - gosec
-        text: "G301|G304|G703"
+        text: "G301|G304|G404|G703"
 
 formatters:
   enable:
