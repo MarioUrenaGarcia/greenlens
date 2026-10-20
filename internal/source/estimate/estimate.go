@@ -51,7 +51,27 @@ type Source struct {
 	last     procfs.CPUTimes
 	haveLast bool
 	// Model describes the coefficients in use, for diagnostics.
-	Model string
+	Model Model
+}
+
+// Model describes the coefficients chosen by Probe.
+type Model struct {
+	// Configured is true when the configuration sets the power directly.
+	Configured bool    `json:"configured"`
+	Name       string  `json:"name,omitempty"`
+	Threads    int     `json:"threads"`
+	MinW       float64 `json:"min_w_per_thread,omitempty"`
+	MaxW       float64 `json:"max_w_per_thread,omitempty"`
+	IdleW      float64 `json:"idle_w"`
+	FullW      float64 `json:"full_w"`
+}
+
+// String describes the model in English, for logs.
+func (m Model) String() string {
+	if m.Configured {
+		return fmt.Sprintf("configured, %.1f to %.1f W", m.IdleW, m.FullW)
+	}
+	return fmt.Sprintf("%s, %d threads, %.2f to %.2f W per thread", m.Name, m.Threads, m.MinW, m.MaxW)
 }
 
 // New returns a model that reads the host file system fsys.
@@ -83,12 +103,12 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 	}
 	if s.override.IdleW > 0 && s.override.FullW > 0 {
 		s.idleW, s.fullW = s.override.IdleW, s.override.FullW
-		s.Model = "configuration"
+		s.Model = Model{Configured: true, Threads: threads, IdleW: s.idleW, FullW: s.fullW}
 	} else {
 		c, known := Lookup(cpu)
 		s.idleW = float64(threads) * c.MinW
 		s.fullW = float64(threads) * c.MaxW
-		s.Model = fmt.Sprintf("%s, %d threads, %.2f to %.2f W per thread", c.Name, threads, c.MinW, c.MaxW)
+		s.Model = Model{Name: c.Name, Threads: threads, MinW: c.MinW, MaxW: c.MaxW, IdleW: s.idleW, FullW: s.fullW}
 		if !known {
 			res.Problems = append(res.Problems, source.Problem{Code: help.GL1010, Args: []any{"model", cpu.ModelName}})
 		}
@@ -105,7 +125,7 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 		Quality:  source.QualityEstimated,
 		Method:   source.MethodEstimated,
 		Kind:     source.KindPower,
-		Label:    s.Model,
+		Label:    s.Model.String(),
 	})
 	return res, nil
 }

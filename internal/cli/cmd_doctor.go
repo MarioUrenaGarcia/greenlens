@@ -24,6 +24,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/estimate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/registry"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
+	"github.com/MarioUrenaGarcia/greenlens/internal/units"
 )
 
 // PowerGroup is the group that may read the energy counters.
@@ -44,15 +45,15 @@ type Environment struct {
 
 // DoctorReport is the document of greenlens doctor.
 type DoctorReport struct {
-	SchemaVersion int           `json:"schema_version"`
-	Environment   Environment   `json:"environment"`
-	Estimated     bool          `json:"estimated"`
-	EstimateModel string        `json:"estimate_model,omitempty"`
-	Channels      []api.Channel `json:"channels"`
-	Problems      []api.Problem `json:"problems,omitempty"`
-	Config        string        `json:"config"`
-	ConfigError   string        `json:"config_error,omitempty"`
-	Agent         string        `json:"agent,omitempty"`
+	SchemaVersion int             `json:"schema_version"`
+	Environment   Environment     `json:"environment"`
+	Estimated     bool            `json:"estimated"`
+	EstimateModel *estimate.Model `json:"estimate_model,omitempty"`
+	Channels      []api.Channel   `json:"channels"`
+	Problems      []api.Problem   `json:"problems,omitempty"`
+	Config        string          `json:"config"`
+	ConfigError   string          `json:"config_error,omitempty"`
+	Agent         string          `json:"agent,omitempty"`
 }
 
 func newDoctorCmd(a *app) *cobra.Command {
@@ -91,8 +92,9 @@ func (a *app) diagnose(ctx context.Context) DoctorReport {
 	sel := selector.Select(cands, cfg.SelectorOptions())
 	rep.Estimated = sel.Estimated
 	for _, s := range srcs {
-		if e, ok := s.(*estimate.Source); ok {
-			rep.EstimateModel = e.Model
+		if e, ok := s.(*estimate.Source); ok && rep.Estimated {
+			m := e.Model
+			rep.EstimateModel = &m
 		}
 	}
 	for _, d := range sel.Decisions {
@@ -214,8 +216,8 @@ func (a *app) writeDoctor(cmd *cobra.Command, rep DoctorReport) error {
 	if err := output.WriteGrid(w, g); err != nil {
 		return err
 	}
-	if rep.Estimated {
-		_, _ = fmt.Fprintln(w, "\n"+a.paint(l.T("cli.doctor.estimated", "model", rep.EstimateModel), true))
+	if rep.Estimated && rep.EstimateModel != nil {
+		_, _ = fmt.Fprintln(w, "\n"+a.paint(l.T("cli.doctor.estimated", "model", a.modelText(*rep.EstimateModel)), true))
 	} else {
 		_, _ = fmt.Fprintln(w, "\n"+a.paint(l.T("cli.doctor.measured"), false))
 	}
@@ -241,4 +243,16 @@ func landlockState(t func(string, ...any) string, abi int) string {
 		return t("cli.doctor.landlock_off")
 	}
 	return t("cli.doctor.landlock_on", "abi", abi)
+}
+
+func (a *app) modelText(m estimate.Model) string {
+	if m.Configured {
+		return a.l.T("cli.doctor.model_configured", "idle", units.Power(m.IdleW, a.raw), "full", units.Power(m.FullW, a.raw))
+	}
+	name := m.Name
+	if name == estimate.Generic.Name {
+		name = a.l.T("cli.doctor.model_generic")
+	}
+	return a.l.T("cli.doctor.model", "name", name, "threads", m.Threads,
+		"min", fmt.Sprintf("%.2f", m.MinW), "max", fmt.Sprintf("%.2f", m.MaxW), "idle", units.Power(m.IdleW, a.raw), "full", units.Power(m.FullW, a.raw))
 }

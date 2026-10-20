@@ -154,6 +154,9 @@ selected = "used"
 discarded = "not used"
 measured = "CPU energy is measured by hardware counters."
 estimated = "CPU energy is estimated with the model: {model}."
+model = "{name}, {threads} threads at {min} to {max} W each, {idle} idle to {full} at full load"
+model_generic = "generic average"
+model_configured = "configured, {idle} idle to {full} at full load"
 
 [cli.perm]
 short = "Let the agent read the energy sensors without root"
