@@ -55,13 +55,21 @@ emisiones, costo y la Software Carbon Intensity (ISO/IEC 21031:2024).
 
 ## Estado
 
-GreenLens está en una etapa temprana de desarrollo. La versión actual
-contiene la base de la línea de comandos:
+GreenLens mide la energía del nodo y la atribuye a los comandos, procesos y
+unidades de systemd que elijas:
 
-- `greenlens version`, que muestra la información de compilación del binario;
-- ayuda para cada comando, en inglés y en español, que cabe en una terminal de
-  80 columnas;
-- mensajes de error con un código estable, la causa y cómo corregirlo.
+- `greenlens doctor` encuentra cada fuente de energía, muestra cuáles se usan
+  y explica cómo corregir cada problema;
+- `greenlens setup-permissions` permite al agente leer los sensores sin root;
+- `greenlens agent` muestrea cada segundo, guarda los datos en SQLite y atiende
+  a los demás comandos;
+- `greenlens calibrate`, `measure`, `status` y `report` miden la potencia en
+  reposo, atribuyen energía y reportan kWh, gCO2e y costo;
+- cada mensaje está en inglés y en español, y cada error tiene un código, una
+  causa y una solución.
+
+La atribución a backends de inferencia y modelos, las GPU y la interfaz
+gráfica forman parte del diseño que se muestra abajo.
 
 <p align="center">
   <img src="site/static/images/terminal-es.svg" alt="Sesión de terminal con greenlens: ayuda, sugerencia de comando y error con causa y solución" width="820">
@@ -101,31 +109,40 @@ cualquier equipo Linux de la misma arquitectura.
 
 ## Configuración
 
-El único ajuste de la versión actual es el idioma de los mensajes. GreenLens
-usa el primero de estos que esté definido:
+GreenLens funciona sin archivo de configuración. Para cambiar un valor por
+defecto, copia
+[`deploy/config/greenlens.example.yaml`](deploy/config/greenlens.example.yaml)
+a `/etc/greenlens/greenlens.yaml` o a `~/.config/greenlens/greenlens.yaml`.
+Cada clave también se puede definir con una variable de entorno, como
+`GREENLENS_AGENT_SAMPLE_INTERVAL=2s`. Los ajustes más comunes:
 
-| Ajuste | Ejemplo |
-|---|---|
-| Opción `--lang` | `greenlens --lang es version` |
-| Variable de entorno `GREENLENS_LANG` | `GREENLENS_LANG=es greenlens version` |
-| Idioma del sistema: `LC_ALL`, `LC_MESSAGES` o `LANG` | `LANG=es_MX.UTF-8` |
+| Clave | Por defecto | Significado |
+|---|---|---|
+| `agent.sample_interval` | `1s` | Cada cuánto se muestrea la energía |
+| `attribution.idle_policy` | `dynamic` | Cómo se atribuye la energía de reposo |
+| `indicators.emission_factor_g_per_kwh` | FESEN 2024, 444 | Factor de emisión de la red |
+| `indicators.tariff.price_per_kwh` | ninguno | Precio de la electricidad, para reportar el costo |
 
-Los valores aceptados son `en`, `es` y `auto`. Si el idioma del sistema no
-está disponible se usa inglés; un valor no disponible en `--lang` o en
-`GREENLENS_LANG` es un error.
+El idioma de los mensajes sigue `--lang`, `GREENLENS_LANG` o el idioma del
+sistema. La [referencia de configuración](https://mariourenagarcia.github.io/greenlens/es/docs/reference/configuration/)
+lista todas las claves.
 
 ## Uso
 
 ```bash
-bin/greenlens --help
-bin/greenlens version
-bin/greenlens help version
+bin/greenlens doctor
+sudo bin/greenlens setup-permissions --apply --user $USER
+bin/greenlens agent
+bin/greenlens calibrate
+bin/greenlens measure -- ollama run llama3.2 "¿Por qué el cielo es azul?"
+bin/greenlens report --from 7d --by day
 ```
 
-Cada error muestra un código, la causa y una solución. El código de salida es
-0 si todo sale bien, 1 ante un error interno y 2 ante un uso incorrecto. La
-[referencia de códigos de error](https://mariourenagarcia.github.io/greenlens/es/docs/reference/errors/)
-lista todos los códigos.
+Cada comando acepta `--output json`, `csv` o `yaml` para scripts. Códigos de
+salida: 0 éxito, 1 error, 2 uso incorrecto, 3 sin fuente de medición,
+5 permisos insuficientes, 6 configuración no válida. El tutorial
+[primeros diez minutos](https://mariourenagarcia.github.io/greenlens/es/docs/tutorials/first-steps/)
+recorre toda la instalación.
 
 ## Documentación
 

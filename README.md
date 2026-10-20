@@ -55,13 +55,21 @@ Intensity (ISO/IEC 21031:2024).
 
 ## Status
 
-GreenLens is in early development. The current version contains the command
-line foundation:
+GreenLens measures the energy of the node and attributes it to the commands,
+processes and systemd units you choose:
 
-- `greenlens version`, which shows the build information of the binary;
-- help for every command, in English and Spanish, that fits an 80-column
-  terminal;
-- error messages with a stable code, the cause and how to fix it.
+- `greenlens doctor` finds every energy source, shows which ones are used and
+  explains how to fix each problem;
+- `greenlens setup-permissions` lets the agent read the sensors without root;
+- `greenlens agent` samples every second, stores the data in SQLite and serves
+  the other commands;
+- `greenlens calibrate`, `measure`, `status` and `report` measure idle power,
+  attribute energy and report kWh, gCO2e and cost;
+- every message is available in English and Spanish, and every error has a
+  code, a cause and a fix.
+
+Attribution to inference backends and models, GPUs and the graphical
+interface belong to the design shown below.
 
 <p align="center">
   <img src="site/static/images/terminal-en.svg" alt="Terminal session with greenlens: help, a command suggestion and an error with its cause and fix" width="820">
@@ -100,31 +108,39 @@ architecture.
 
 ## Configuration
 
-The only setting in the current version is the language of the messages.
-GreenLens uses the first of these that is set:
+GreenLens works without a configuration file. To change a default, copy
+[`deploy/config/greenlens.example.yaml`](deploy/config/greenlens.example.yaml)
+to `/etc/greenlens/greenlens.yaml` or `~/.config/greenlens/greenlens.yaml`.
+Every key can also be set with an environment variable, such as
+`GREENLENS_AGENT_SAMPLE_INTERVAL=2s`. The most common settings:
 
-| Setting | Example |
-|---|---|
-| `--lang` flag | `greenlens --lang es version` |
-| `GREENLENS_LANG` environment variable | `GREENLENS_LANG=es greenlens version` |
-| System locale: `LC_ALL`, `LC_MESSAGES` or `LANG` | `LANG=es_MX.UTF-8` |
+| Key | Default | Meaning |
+|---|---|---|
+| `agent.sample_interval` | `1s` | How often energy is sampled |
+| `attribution.idle_policy` | `dynamic` | How idle energy is attributed |
+| `indicators.emission_factor_g_per_kwh` | FESEN 2024, 444 | Grid emission factor |
+| `indicators.tariff.price_per_kwh` | none | Price of electricity, to report cost |
 
-Supported values are `en`, `es` and `auto`. An unsupported system locale falls
-back to English; an unsupported value in `--lang` or `GREENLENS_LANG` is an
-error.
+The language of the messages follows `--lang`, `GREENLENS_LANG` or the system
+locale. The [configuration reference](https://mariourenagarcia.github.io/greenlens/docs/reference/configuration/)
+lists every key.
 
 ## Usage
 
 ```bash
-bin/greenlens --help
-bin/greenlens version
-bin/greenlens help version
+bin/greenlens doctor
+sudo bin/greenlens setup-permissions --apply --user $USER
+bin/greenlens agent
+bin/greenlens calibrate
+bin/greenlens measure -- ollama run llama3.2 "Why is the sky blue?"
+bin/greenlens report --from 7d --by day
 ```
 
-Every error shows a code, the cause and a fix. The exit code is 0 on success,
-1 on an internal error and 2 on incorrect usage. The
-[error code reference](https://mariourenagarcia.github.io/greenlens/docs/reference/errors/)
-lists every code.
+Every command accepts `--output json`, `csv` or `yaml` for scripts. Exit
+codes: 0 success, 1 error, 2 incorrect usage, 3 no measurement source,
+5 insufficient permissions, 6 invalid configuration. The
+[first ten minutes](https://mariourenagarcia.github.io/greenlens/docs/tutorials/first-steps/)
+tutorial walks through the whole setup.
 
 ## Documentation
 
