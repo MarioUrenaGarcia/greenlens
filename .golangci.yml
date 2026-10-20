@@ -1,0 +1,60 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - contextcheck
+    - errcheck
+    - errorlint
+    - exhaustive
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - noctx
+    - revive
+    - staticcheck
+    - unused
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    misspell:
+      locale: US
+      # Spanish words in the tests of the Spanish catalog.
+      ignore-rules:
+        - comando
+        - comandos
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: blank-imports
+        - name: context-as-argument
+        - name: receiver-naming
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: indent-error-flow
+        - name: superfluous-else
+
+  exclusions:
+    rules:
+      # Tests read and write files under t.TempDir() through variables.
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G301|G304|G703"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/MarioUrenaGarcia/greenlens

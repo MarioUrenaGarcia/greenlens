@@ -1,0 +1,24 @@
+# Secrets and local environment
+.env
+.env.*
+*.pem
+*.key
+
+# Local data
+*.db
+*.db-shm
+*.db-wal
+
+# Build output
+/bin/
+/dist/
+
+# Coverage and profiles
+*.out
+*.coverprofile
+coverage.*
+*.prof
+
+# Local configuration
+greenlens.local.yaml
+lefthook-local.yml

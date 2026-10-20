@@ -1,0 +1,24 @@
+# Git hooks. Install them with "make hooks".
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.go"
+      run: test -z "$(gofmt -l {staged_files})"
+    lint:
+      glob: "*.go"
+      run: golangci-lint run --fast-only ./...
+    typography:
+      run: scripts/check-typography.sh {staged_files}
+    headers:
+      run: scripts/check-headers.sh {staged_files}
+    i18n:
+      glob: "internal/i18n/locales/*.toml"
+      run: scripts/check-i18n.sh
+    secrets:
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+
+commit-msg:
+  commands:
+    conventional:
+      run: scripts/check-commit-msg.sh {1}

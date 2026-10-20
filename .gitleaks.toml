@@ -1,0 +1,4 @@
+title = "GreenLens secret scanning"
+
+[extend]
+useDefault = true
