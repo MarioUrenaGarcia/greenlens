@@ -34,6 +34,24 @@ Every key of the configuration file, the environment variable that overrides it 
 | Key | Environment variable | Type | Default | Description |
 |---|---|---|---|---|
 | `attribution.idle_policy` | `GREENLENS_ATTRIBUTION_IDLE_POLICY` | string | `dynamic` | How idle energy is attributed: dynamic, proportional, full or wall. |
+| `attribution.max_models_per_backend` | `GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND` | integer | `50` | Most models tracked per backend; the energy of the others is reported together as 'other'. |
+
+## backends
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `backends` | - | list of objects | empty | Inference servers declared in the configuration. They keep their name across restarts and take precedence over discovered ones. |
+| `backends[].name` | - | string | empty | Name of the backend in reports and metrics: lowercase letters, digits, '.', '_' or '-'. |
+| `backends[].kind` | - | string | empty | Engine of the backend, which selects how its tokens are read. |
+| `backends[].endpoint` | - | string | empty | Base URL of the server, such as http://127.0.0.1:8000. |
+| `backends[].process` | - | string | empty | File name of the executable, to find the processes of a process backend or of a server whose port is not visible. |
+
+## discovery
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `discovery.enabled` | `GREENLENS_DISCOVERY_ENABLED` | bool | `true` | Look for known inference servers among the running processes. |
+| `discovery.interval` | `GREENLENS_DISCOVERY_INTERVAL` | duration | `10s` | How often processes and listening ports are scanned, from 1s to 10m. |
 
 ## indicators
 

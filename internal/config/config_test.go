@@ -182,3 +182,71 @@ func TestFactors(t *testing.T) {
 		t.Fatalf("configured %+v", f)
 	}
 }
+
+func TestBackends(t *testing.T) {
+	good := "backends:\n" +
+		"  - name: vllm-main\n    kind: vllm\n    endpoint: http://127.0.0.1:8000\n" +
+		"  - name: ollama.dev\n    kind: ollama\n    endpoint: https://[::1]:11434/\n" +
+		"  - name: tgi-container\n    kind: tgi\n    process: text-generation-launcher\n" +
+		"  - name: batch_job\n    kind: process\n    process: python3\n" +
+		"discovery:\n  enabled: false\n  interval: 30s\n" +
+		"attribution:\n  max_models_per_backend: 5\n"
+	cfg := Defaults()
+	if err := Parse([]byte(good), &cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Backends) != 4 || cfg.Backends[2].Process != "text-generation-launcher" || cfg.Discovery.Enabled || cfg.Discovery.Interval.D() != 30*time.Second || cfg.Attribution.MaxModelsPerBackend != 5 {
+		t.Fatalf("%+v", cfg)
+	}
+	for _, tt := range []struct{ yaml, key string }{
+		{"backends:\n  - name: Main\n    kind: vllm\n    endpoint: http://127.0.0.1:8000\n", "backends[0].name"},
+		{"backends:\n  - name: a\n    kind: vllm\n    endpoint: http://127.0.0.1:1\n  - name: a\n    kind: vllm\n    endpoint: http://127.0.0.1:2\n", "backends[1].name"},
+		{"backends:\n  - name: a\n    kind: triton\n    endpoint: http://127.0.0.1:1\n", "backends[0].kind"},
+		{"backends:\n  - name: a\n    kind: vllm\n", "backends[0].endpoint"},
+		{"backends:\n  - name: a\n    kind: vllm\n    endpoint: ftp://127.0.0.1:1\n", "backends[0].endpoint"},
+		{"backends:\n  - name: a\n    kind: vllm\n    endpoint: http://user:secret@127.0.0.1:1\n", "backends[0].endpoint"},
+		{"backends:\n  - name: a\n    kind: vllm\n    endpoint: http://127.0.0.1:1/v1\n", "backends[0].endpoint"},
+		{"backends:\n  - name: a\n    kind: vllm\n    endpoint: http://127.0.0.1:1/?token=x\n", "backends[0].endpoint"},
+		{"backends:\n  - name: a\n    kind: process\n", "backends[0].process"},
+		{"backends:\n  - name: a\n    kind: process\n    process: /usr/bin/python3\n", "backends[0].process"},
+		{"discovery:\n  interval: 100ms\n", "discovery.interval"},
+		{"attribution:\n  max_models_per_backend: 0\n", "attribution.max_models_per_backend"},
+	} {
+		cfg := Defaults()
+		if err := Parse([]byte(tt.yaml), &cfg); err != nil {
+			t.Fatalf("%s: %v", tt.yaml, err)
+		}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), tt.key) {
+			t.Errorf("%q: error %v, want one about %s", tt.yaml, err, tt.key)
+		}
+	}
+}
+
+func TestObjectListsHaveNoVariable(t *testing.T) {
+	for _, v := range EnvVars() {
+		if strings.HasPrefix(v.Key, "backends") {
+			t.Errorf("%s has a variable", v.Key)
+		}
+	}
+	cfg := Defaults()
+	if err := ApplyEnv(&cfg, func(string) string { return "x" }); err == nil {
+		t.Fatal("garbage in every variable must fail")
+	}
+	if err := ApplyEnv(&cfg, env(map[string]string{"GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND": "7", "GREENLENS_DISCOVERY_ENABLED": "false"})); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Attribution.MaxModelsPerBackend != 7 || cfg.Discovery.Enabled {
+		t.Fatalf("%+v", cfg)
+	}
+	var keys []string
+	for _, f := range Fields() {
+		keys = append(keys, f.Key)
+	}
+	if !slices.Contains(keys, "backends[].endpoint") || !slices.Contains(keys, "backends") {
+		t.Fatalf("fields %v", keys)
+	}
+}

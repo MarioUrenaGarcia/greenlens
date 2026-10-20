@@ -34,6 +34,24 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 | Clave | Variable de entorno | Tipo | Por defecto | Descripción |
 |---|---|---|---|---|
 | `attribution.idle_policy` | `GREENLENS_ATTRIBUTION_IDLE_POLICY` | string | `dynamic` | Cómo se atribuye la energía de reposo: dynamic, proportional, full o wall. |
+| `attribution.max_models_per_backend` | `GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND` | integer | `50` | Máximo de modelos por backend; la energía de los demás se reporta junta como 'other'. |
+
+## backends
+
+| Clave | Variable de entorno | Tipo | Por defecto | Descripción |
+|---|---|---|---|---|
+| `backends` | - | list of objects | empty | Servidores de inferencia declarados en la configuración. Conservan su nombre entre reinicios y tienen prioridad sobre los descubiertos. |
+| `backends[].name` | - | string | empty | Nombre del backend en reportes y métricas: minúsculas, dígitos, '.', '_' o '-'. |
+| `backends[].kind` | - | string | empty | Motor del backend, que decide cómo se leen sus tokens. |
+| `backends[].endpoint` | - | string | empty | URL base del servidor, como http://127.0.0.1:8000. |
+| `backends[].process` | - | string | empty | Nombre del archivo ejecutable, para encontrar los procesos de un backend de tipo process o de un servidor cuyo puerto no es visible. |
+
+## discovery
+
+| Clave | Variable de entorno | Tipo | Por defecto | Descripción |
+|---|---|---|---|---|
+| `discovery.enabled` | `GREENLENS_DISCOVERY_ENABLED` | bool | `true` | Busca servidores de inferencia conocidos entre los procesos en ejecución. |
+| `discovery.interval` | `GREENLENS_DISCOVERY_INTERVAL` | duration | `10s` | Cada cuánto se revisan los procesos y los puertos en escucha, de 1s a 10m. |
 
 ## indicators
 

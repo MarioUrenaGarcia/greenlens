@@ -25,13 +25,20 @@ type EnvVar struct {
 	Key  string
 }
 
-// EnvVars lists every variable that can override the configuration.
+// EnvVars lists every variable that can override the configuration. Lists
+// of objects, such as backends, are set only in the file.
 func EnvVars() []EnvVar {
 	var out []EnvVar
-	walk(reflect.ValueOf(&Config{}).Elem(), "", func(key string, _ reflect.Value) {
-		out = append(out, EnvVar{Name: envName(key), Key: key})
+	walk(reflect.ValueOf(&Config{}).Elem(), "", func(key string, v reflect.Value) {
+		if !isObjectList(v.Type()) {
+			out = append(out, EnvVar{Name: envName(key), Key: key})
+		}
 	})
 	return out
+}
+
+func isObjectList(t reflect.Type) bool {
+	return t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Struct
 }
 
 func envName(key string) string {
@@ -44,6 +51,9 @@ func envName(key string) string {
 func ApplyEnv(cfg *Config, getenv func(string) string) error {
 	var errs []error
 	walk(reflect.ValueOf(cfg).Elem(), "", func(key string, v reflect.Value) {
+		if isObjectList(v.Type()) {
+			return
+		}
 		name := envName(key)
 		s := strings.TrimSpace(getenv(name))
 		if s == "" {
@@ -104,6 +114,12 @@ func set(v reflect.Value, s string) error {
 			return err
 		}
 		v.SetFloat(f)
+	case reflect.Int:
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return err
+		}
+		v.SetInt(int64(n))
 	case reflect.Pointer:
 		if v.Type().Elem().Kind() != reflect.Float64 {
 			return fmt.Errorf("unsupported type %s", v.Type())

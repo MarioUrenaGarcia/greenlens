@@ -18,9 +18,13 @@ import (
 	"strings"
 	"time"
 
+	"net/url"
+	"regexp"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
+	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -55,6 +59,8 @@ type Config struct {
 	Agent       Agent       `yaml:"agent"`
 	Sources     Sources     `yaml:"sources"`
 	Attribution Attribution `yaml:"attribution"`
+	Backends    []Backend   `yaml:"backends"`
+	Discovery   Discovery   `yaml:"discovery"`
 	Indicators  Indicators  `yaml:"indicators"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
@@ -99,7 +105,26 @@ type Estimate struct {
 
 // Attribution configures how energy is split between processes.
 type Attribution struct {
-	IdlePolicy string `yaml:"idle_policy"`
+	IdlePolicy          string `yaml:"idle_policy"`
+	MaxModelsPerBackend int    `yaml:"max_models_per_backend"`
+}
+
+// Backend is an inference server declared in the configuration. Its name
+// identifies it across restarts.
+type Backend struct {
+	Name     string `yaml:"name"`
+	Kind     string `yaml:"kind"`
+	Endpoint string `yaml:"endpoint"`
+	// Process is the executable of a generic process backend, or of an
+	// engine whose port is not visible from the agent, as in a container
+	// with its own network.
+	Process string `yaml:"process"`
+}
+
+// Discovery configures the search for backends.
+type Discovery struct {
+	Enabled  bool     `yaml:"enabled"`
+	Interval Duration `yaml:"interval"`
 }
 
 // Indicators configures the conversion of energy into indicators.
@@ -135,7 +160,8 @@ func Defaults() Config {
 	return Config{
 		Agent:       Agent{SampleInterval: Duration(time.Second), HostRoot: "/"},
 		Sources:     Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1}},
-		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic)},
+		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50},
+		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
@@ -144,6 +170,45 @@ func Defaults() Config {
 		},
 		Logging: Logging{Level: "info", Format: "json"},
 	}
+}
+
+// Limits of the backend settings.
+const (
+	MaxModels            = 10000
+	MinDiscoveryInterval = time.Second
+	MaxDiscoveryInterval = 10 * time.Minute
+)
+
+var backendName = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,62}$`)
+
+func kindList() string {
+	var out []string
+	for _, k := range discovery.Kinds {
+		out = append(out, string(k))
+	}
+	return strings.Join(out, ", ")
+}
+
+// checkEndpoint accepts the base URL of a backend: http or https, a host,
+// and nothing that could carry a secret or change the paths GreenLens asks
+// for.
+func checkEndpoint(s string) error {
+	u, err := url.Parse(s)
+	switch {
+	case err != nil:
+		return fmt.Errorf("not a URL: %w", err)
+	case u.Scheme != "http" && u.Scheme != "https":
+		return errors.New("must start with http:// or https://")
+	case u.Host == "" || u.Hostname() == "":
+		return errors.New("has no host")
+	case u.User != nil:
+		return errors.New("must not contain credentials; backends are read without authentication")
+	case u.RawQuery != "" || u.Fragment != "":
+		return errors.New("must not have a query or a fragment")
+	case u.Path != "" && u.Path != "/":
+		return errors.New("must be the base URL of the server, without a path")
+	}
+	return nil
 }
 
 // Sampling limits of the agent.
@@ -302,6 +367,39 @@ func (c Config) Validate() error {
 	}
 	if _, err := attribution.ParsePolicy(c.Attribution.IdlePolicy); err != nil {
 		bad("attribution.idle_policy", "must be one of dynamic, proportional, full or wall")
+	}
+	if m := c.Attribution.MaxModelsPerBackend; m < 1 || m > MaxModels {
+		bad("attribution.max_models_per_backend", fmt.Sprintf("must be between 1 and %d", MaxModels))
+	}
+	if d := c.Discovery.Interval.D(); d < MinDiscoveryInterval || d > MaxDiscoveryInterval {
+		bad("discovery.interval", fmt.Sprintf("%s is outside %s to %s", d, MinDiscoveryInterval, MaxDiscoveryInterval))
+	}
+	names := map[string]bool{}
+	for i, b := range c.Backends {
+		key := fmt.Sprintf("backends[%d]", i)
+		if !backendName.MatchString(b.Name) {
+			bad(key+".name", "must be 1 to 63 lowercase letters, digits, '.', '_' or '-', starting with a letter or digit")
+		} else if names[b.Name] {
+			bad(key+".name", fmt.Sprintf("%q is declared twice", b.Name))
+		}
+		names[b.Name] = true
+		if !slices.Contains(discovery.Kinds, discovery.Kind(b.Kind)) {
+			bad(key+".kind", fmt.Sprintf("unknown kind %q; valid: %s", b.Kind, kindList()))
+		}
+		if b.Endpoint != "" {
+			if err := checkEndpoint(b.Endpoint); err != nil {
+				bad(key+".endpoint", err.Error())
+			}
+		}
+		switch {
+		case discovery.Kind(b.Kind) == discovery.Process && b.Process == "":
+			bad(key+".process", "a process backend needs the name of its executable")
+		case discovery.Kind(b.Kind) != discovery.Process && b.Endpoint == "" && b.Process == "":
+			bad(key+".endpoint", "set the endpoint of the backend, or the name of its executable in process")
+		}
+		if b.Process != "" && (strings.ContainsAny(b.Process, "/\x00") || len(b.Process) > 255) {
+			bad(key+".process", "must be the file name of the executable, without directories")
+		}
 	}
 	if c.Indicators.EmissionFactorGPerKWh != nil && c.Indicators.EmissionFactorSource == "" {
 		bad("indicators.emission_factor_source", "a configured emission factor needs its source, such as the publication and year")

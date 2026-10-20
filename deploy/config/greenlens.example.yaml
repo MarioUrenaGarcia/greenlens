@@ -44,6 +44,27 @@ sources:
 attribution:
   # How idle energy is attributed: dynamic, proportional, full or wall.
   idle_policy: dynamic
+  # Most models tracked per backend; the energy of the others is reported
+  # together as "other".
+  max_models_per_backend: 50
+
+# Inference servers declared here keep their name across restarts and take
+# precedence over the ones found by discovery. kind is one of ollama,
+# llamacpp, vllm, tgi, sglang, localai, openai or process; a process backend
+# names its executable in process instead of an endpoint.
+backends: []
+#  - name: vllm-main
+#    kind: vllm
+#    endpoint: http://127.0.0.1:8000
+#  - name: ollama-dev
+#    kind: ollama
+#    endpoint: http://127.0.0.1:11434
+
+discovery:
+  # Look for known inference servers among the running processes.
+  enabled: true
+  # How often processes and listening ports are scanned, from 1s to 10m.
+  interval: 10s
 
 indicators:
   # Grid emission factor in gCO2e/kWh. Empty: FESEN 2024, 444 gCO2e/kWh.

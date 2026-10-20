@@ -38,6 +38,65 @@
             "wall"
           ],
           "type": "string"
+        },
+        "max_models_per_backend": {
+          "description": "Most models tracked per backend; the energy of the others is reported together as 'other'.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "backends": {
+      "description": "Inference servers declared in the configuration. They keep their name across restarts and take precedence over discovered ones.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "description": "Base URL of the server, such as http://127.0.0.1:8000.",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Engine of the backend, which selects how its tokens are read.",
+            "enum": [
+              "ollama",
+              "llamacpp",
+              "vllm",
+              "tgi",
+              "sglang",
+              "localai",
+              "openai",
+              "process"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the backend in reports and metrics: lowercase letters, digits, '.', '_' or '-'.",
+            "type": "string"
+          },
+          "process": {
+            "description": "File name of the executable, to find the processes of a process backend or of a server whose port is not visible.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "discovery": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Look for known inference servers among the running processes.",
+          "type": "boolean"
+        },
+        "interval": {
+          "description": "How often processes and listening ports are scanned, from 1s to 10m.",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+          "type": "string"
         }
       },
       "type": "object"

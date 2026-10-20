@@ -212,7 +212,7 @@ func configPage(l *i18n.Localizer, p texts) string {
 	b.WriteString(p.configIntro + "\n\n")
 	section := ""
 	for _, f := range config.Fields() {
-		top := strings.SplitN(f.Key, ".", 2)[0]
+		top := strings.TrimSuffix(strings.SplitN(f.Key, ".", 2)[0], "[]")
 		if top != section {
 			section = top
 			fmt.Fprintf(&b, "\n## %s\n\n| %s | %s | %s | %s | %s |\n|---|---|---|---|---|\n", section, p.key, p.env, p.typ, p.def, p.desc)
@@ -221,7 +221,11 @@ func configPage(l *i18n.Localizer, p texts) string {
 		if def != "empty" && def != "" {
 			def = "`" + def + "`"
 		}
-		fmt.Fprintf(&b, "| `%s` | `%s` | %s | %s | %s |\n", f.Key, f.Env, f.Type, def, escape(l.T(f.DocKey())))
+		env := "-"
+		if f.Env != "" {
+			env = "`" + f.Env + "`"
+		}
+		fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s |\n", f.Key, env, f.Type, def, escape(l.T(f.DocKey())))
 	}
 	return b.String()
 }
