@@ -41,6 +41,11 @@ const (
 	GL1008 Code = "GL1008" // counter can wrap more than once per sample
 	GL1009 Code = "GL1009" // hwmon power sensor of an unknown driver
 	GL1010 Code = "GL1010" // processor not in the estimation table
+
+	GL3001 Code = "GL3001" // configuration file not found
+	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
+	GL3003 Code = "GL3003" // invalid configuration value
+	GL3004 Code = "GL3004" // invalid configuration environment variable
 )
 
 // Process exit codes of the command line.
@@ -50,6 +55,7 @@ const (
 	ExitUsage      = 2
 	ExitNoSource   = 3
 	ExitPermission = 5
+	ExitConfig     = 6
 )
 
 var exitCodes = map[Code]int{
@@ -71,6 +77,10 @@ var exitCodes = map[Code]int{
 	GL1008: ExitError,
 	GL1009: ExitNoSource,
 	GL1010: ExitNoSource,
+	GL3001: ExitConfig,
+	GL3002: ExitConfig,
+	GL3003: ExitConfig,
+	GL3004: ExitConfig,
 }
 
 // Codes returns every registered error code.
@@ -112,13 +122,13 @@ func (e *Error) Wrap(err error) *Error {
 	return e
 }
 
-// Error returns the code and the English message, for logs.
+// Error returns the code, the English message and the cause, for logs.
 func (e *Error) Error() string {
 	l, err := i18n.New(i18n.Default)
 	if err != nil {
 		return string(e.Code)
 	}
-	return string(e.Code) + ": " + e.Message(l)
+	return string(e.Code) + ": " + e.Message(l) + ": " + e.Cause(l)
 }
 
 // Unwrap returns the underlying error.
@@ -188,6 +198,31 @@ func Render(l *i18n.Localizer, err error) string {
 	fmt.Fprintf(&b, "  %s %s\n", pad(causeLabel, width), e.Cause(l))
 	fmt.Fprintf(&b, "  %s %s", pad(fixLabel, width), e.Fix(l))
 	return b.String()
+}
+
+// RenderAll formats every coded error inside err, for errors that join
+// several problems such as an invalid configuration file.
+func RenderAll(l *i18n.Localizer, err error) string {
+	var parts []string
+	for _, e := range Flatten(err) {
+		parts = append(parts, Render(l, e))
+	}
+	return strings.Join(parts, "\n")
+}
+
+// Flatten returns the errors joined in err, or err itself.
+func Flatten(err error) []error {
+	if err == nil {
+		return nil
+	}
+	if j, ok := err.(interface{ Unwrap() []error }); ok {
+		var out []error
+		for _, e := range j.Unwrap() {
+			out = append(out, Flatten(e)...)
+		}
+		return out
+	}
+	return []error{err}
 }
 
 func pad(s string, width int) string {

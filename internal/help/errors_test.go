@@ -71,7 +71,7 @@ func TestUncodedErrorsBecomeInternal(t *testing.T) {
 	if ExitCode(nil) != ExitOK {
 		t.Errorf("ExitCode(nil) != 0")
 	}
-	if got := New(GL0002, "command", "a", "parent", "b").Error(); got != "GL0002: unknown command 'a'" {
+	if got := New(GL0002, "command", "a", "parent", "b").Error(); got != "GL0002: unknown command 'a': 'a' is not a command of 'b'" {
 		t.Errorf("Error() = %q", got)
 	}
 }
