@@ -1,0 +1,10 @@
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 106
+model name	: Intel(R) Xeon(R) Silver 4314 CPU @ 2.40GHz
+stepping	: 6
+flags		: fpu vme de pse tsc msr pae
+
+processor	: 1
+vendor_id	: GenuineIntel

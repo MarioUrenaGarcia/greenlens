@@ -1,0 +1,1 @@
+Intel client with one package, core and uncore subzones, psys, and the package zone duplicated by the MMIO interface. Built from the zone layout of the Linux powercap documentation and drivers/powercap; counter values are arbitrary.

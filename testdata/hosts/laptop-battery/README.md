@@ -1,0 +1,1 @@
+Laptop running on battery: Intel client with psys, a discharging BAT0 reporting power_now, and the AC adapter offline. Attributes follow Documentation/ABI/testing/sysfs-class-power; values are arbitrary.

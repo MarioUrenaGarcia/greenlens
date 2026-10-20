@@ -1,0 +1,10 @@
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 25
+model		: 97
+model name	: AMD Ryzen 9 7900X 12-Core Processor
+stepping	: 2
+flags		: fpu vme de pse tsc msr pae
+
+processor	: 1
+vendor_id	: AuthenticAMD

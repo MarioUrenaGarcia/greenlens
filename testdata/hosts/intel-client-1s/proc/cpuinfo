@@ -1,0 +1,10 @@
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 151
+model name	: 12th Gen Intel(R) Core(TM) i7-12700
+stepping	: 2
+flags		: fpu vme de pse tsc msr pae
+
+processor	: 1
+vendor_id	: GenuineIntel

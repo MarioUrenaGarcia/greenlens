@@ -1,0 +1,10 @@
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 85
+model name	: Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz
+stepping	: 7
+flags		: fpu vme de pse tsc msr pae
+
+processor	: 1
+vendor_id	: GenuineIntel
