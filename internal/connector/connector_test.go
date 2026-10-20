@@ -140,3 +140,38 @@ func TestOpenAIAndLimits(t *testing.T) {
 		t.Fatal("unknown kind accepted")
 	}
 }
+
+// Two builds of llama-server recorded serving qwen2.5-0.5b-instruct
+// after two chat requests.
+func TestLlamaCppRecorded(t *testing.T) {
+	for _, build := range []string{"b11669", "b10416"} {
+		url := serve(t, map[string][]byte{"/metrics": fixture(t, "llamacpp", build, "metrics.txt"), "/props": fixture(t, "llamacpp", build, "props.json")})
+		s, err := Scrape(context.Background(), Client(), discovery.LlamaCpp, url)
+		if err != nil {
+			t.Fatalf("%s: %v", build, err)
+		}
+		want := Counters{Model: "qwen2.5-0.5b-instruct-q4_k_m.gguf", PromptTokens: 42, GeneratedTokens: 19}
+		if len(s.Models) != 1 || s.Models[0] != want || s.Active != 0 || !s.TokenCounters || !slices.Equal(s.Loaded, []string{want.Model}) {
+			t.Fatalf("%s: snapshot %+v", build, s)
+		}
+		// Without --metrics both builds answer 501 with an explanation.
+		body := fixture(t, "llamacpp", build, "metrics_disabled.txt")
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotImplemented)
+			_, _ = w.Write(body)
+		}))
+		_, err = Scrape(context.Background(), Client(), discovery.LlamaCpp, srv.URL)
+		srv.Close()
+		if !errors.Is(err, ErrNoMetrics) {
+			t.Fatalf("%s: %v", build, err)
+		}
+	}
+}
+
+func TestOllamaRecordedWithAModel(t *testing.T) {
+	url := serve(t, map[string][]byte{"/api/version": fixture(t, "ollama", "0.40.6", "api_version.json"), "/api/ps": fixture(t, "ollama", "0.40.6", "api_ps_loaded.json")})
+	s, err := Scrape(context.Background(), Client(), discovery.Ollama, url)
+	if err != nil || s.Version != "0.40.6" || !slices.Equal(s.Loaded, []string{"qwen2.5:0.5b"}) || s.TokenCounters {
+		t.Fatalf("snapshot %+v err %v", s, err)
+	}
+}

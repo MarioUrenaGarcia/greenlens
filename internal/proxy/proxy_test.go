@@ -284,3 +284,47 @@ func TestSaltAndAliases(t *testing.T) {
 		}
 	}
 }
+
+// Responses recorded from Ollama 0.40.6 and two builds of llama-server
+// for the same prompt: 34 prompt tokens and 7 generated.
+func TestRecordedResponses(t *testing.T) {
+	read := func(path string) string {
+		b, err := os.ReadFile(filepath.Join("..", "..", "testdata", "connectors", path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	for _, c := range []struct {
+		path         string
+		whole        bool
+		prompt, gen  int64
+		exact        bool
+		model        string
+		streamPieces int64
+	}{
+		{"ollama/0.40.6/generate.json", true, 34, 7, true, "qwen2.5:0.5b", 0},
+		{"ollama/0.40.6/generate_stream.ndjson", false, 34, 7, true, "qwen2.5:0.5b", 6},
+		{"ollama/0.40.6/chat.json", true, 34, 7, true, "qwen2.5:0.5b", 0},
+		{"ollama/0.40.6/chat_stream.sse", false, 34, 7, true, "qwen2.5:0.5b", 7},
+		{"llamacpp/b11669/chat.json", true, 34, 7, true, "/models/qwen2.5-0.5b-instruct-q4_k_m.gguf", 0},
+		{"llamacpp/b10416/chat.json", true, 34, 7, true, "/models/qwen2.5-0.5b-instruct-q4_k_m.gguf", 0},
+	} {
+		var tl *tally
+		if c.whole {
+			tl = tallyOf(read(c.path))
+		} else {
+			tl = tallyOf(strings.Split(read(c.path), "\n")...)
+		}
+		p, g := tl.counts()
+		if p != c.prompt || g != c.gen || tl.exact != c.exact || tl.model != c.model || tl.pieces != c.streamPieces {
+			t.Errorf("%s: model %q, %d/%d, exact %v, %d pieces", c.path, tl.model, p, g, tl.exact, tl.pieces)
+		}
+	}
+	// A llama-server stream without usage is counted by its pieces, which
+	// include the opening chunk with the role and the closing one.
+	tl := tallyOf(strings.Split(read("llamacpp/b11669/chat_stream.sse"), "\n")...)
+	if _, g := tl.counts(); tl.exact || g != 13 {
+		t.Errorf("llama-server stream: %d pieces, exact %v", g, tl.exact)
+	}
+}

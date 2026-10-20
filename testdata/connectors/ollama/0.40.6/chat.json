@@ -1,0 +1,1 @@
+{"id":"chatcmpl-718","object":"chat.completion","created":1792540392,"model":"qwen2.5:0.5b","system_fingerprint":"fp_ollama","choices":[{"index":0,"message":{"role":"assistant","content":"One primary color is red."},"finish_reason":"stop"}],"usage":{"prompt_tokens":34,"prompt_tokens_details":{"cached_tokens":33},"completion_tokens":7,"total_tokens":41}}

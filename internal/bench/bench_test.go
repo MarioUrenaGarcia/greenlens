@@ -11,6 +11,8 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -164,3 +166,26 @@ func TestContext(t *testing.T) {
 }
 
 func statsCV(cv float64) stats.Summary { return stats.Summary{N: 5, Mean: 1, CV: cv} }
+
+// Generate reads the counts of real responses: Ollama 0.40.6 and
+// llama-server b11669 for the same prompt.
+func TestGenerateRecorded(t *testing.T) {
+	for _, c := range []struct {
+		kind discovery.Kind
+		path string
+	}{
+		{discovery.Ollama, "ollama/0.40.6/generate.json"},
+		{discovery.LlamaCpp, "llamacpp/b11669/chat.json"},
+	} {
+		body, err := os.ReadFile(filepath.Join("..", "..", "testdata", "connectors", c.path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
+		tok, err := Generate(context.Background(), srv.Client(), Target{Kind: c.kind, Endpoint: srv.URL, Model: "m"}, DefaultParams(), "p")
+		srv.Close()
+		if err != nil || tok.Prompt != 34 || tok.Generated != 7 {
+			t.Errorf("%s: %+v %v", c.path, tok, err)
+		}
+	}
+}
