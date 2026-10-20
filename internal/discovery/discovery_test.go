@@ -66,6 +66,10 @@ func TestScan(t *testing.T) {
 		"proc/100/cmdline": {Data: []byte("/usr/local/bin/ollama\x00serve\x00")},
 		"proc/101/stat":    {Data: stat(101, 100)},
 		"proc/101/cmdline": {Data: []byte("/usr/local/bin/ollama\x00runner\x00")},
+		// Ollama 0.40 runs the model in a llama-server of its own, recorded
+		// on Ollama 0.40.6.
+		"proc/102/stat":    {Data: stat(102, 100)},
+		"proc/102/cmdline": {Data: []byte("/usr/local/lib/ollama/llama-server\x00--model\x00/usr/share/ollama/.ollama/models/blobs/sha256-c5396e06\x00--port\x0040355\x00--host\x00127.0.0.1\x00--no-webui\x00")},
 		// vLLM in a container, with a worker that repeats the module name.
 		"proc/200/stat":    {Data: stat(200, 1)},
 		"proc/200/cmdline": {Data: []byte("python3\x00-m\x00vllm.entrypoints.openai.api_server\x00--port\x008001\x00")},

@@ -175,7 +175,9 @@ type Candidate struct {
 }
 
 // Scan finds the root processes of known engines. A process whose ancestor
-// is a backend of the same kind is part of that backend, not another one.
+// is a known engine is part of that backend, not another one: vLLM and
+// SGLang start workers with the same command line, and Ollama runs each
+// model in a llama-server of its own.
 func Scan(fsys fs.FS) ([]Candidate, error) {
 	snap, err := procfs.TakeSnapshot(fsys)
 	if err != nil {
@@ -200,7 +202,7 @@ func ScanSnapshot(fsys fs.FS, snap procfs.Snapshot) []Candidate {
 	for pid, k := range kinds {
 		nested := false
 		for p := snap[pid].PPID; p > 1; p = snap[p].PPID {
-			if kinds[p] == k {
+			if _, engine := kinds[p]; engine {
 				nested = true
 				break
 			}
