@@ -387,7 +387,7 @@ func (a *Agent) step(ctx context.Context) {
 	a.mu.RUnlock()
 	s, err := smp.Sample(ctx)
 	if err != nil {
-		a.limited("sample:"+err.Error(), "reading an energy source failed", "error", err)
+		a.limited("sample", "reading an energy source failed", "error", err)
 	}
 	if s.Interval <= 0 {
 		return
@@ -500,7 +500,8 @@ func sameSources(a, b config.Sources) bool {
 }
 
 // limited logs a warning at most every five minutes per key, so a sensor
-// that keeps failing does not flood the journal.
+// that keeps failing does not flood the journal. Keys are fixed strings or
+// channel IDs, never error texts, so the set of keys stays bounded.
 func (a *Agent) limited(key, msg string, args ...any) {
 	a.mu.Lock()
 	last, seen := a.lastLog[key]
