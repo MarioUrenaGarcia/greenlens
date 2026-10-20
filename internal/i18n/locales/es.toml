@@ -34,6 +34,13 @@ go = "Versión de Go:"
 platform = "Plataforma:"
 unknown = "desconocida"
 
+[selector.reason]
+selected = "seleccionado"
+disabled = "desactivado en la configuración"
+duplicate = "{source} ya mide este dominio"
+forced = "{source} está forzado para este dominio"
+contained = "solo se reporta con {source}, la fuente del paquete"
+
 [errors]
 label = "error"
 cause = "causa:"
