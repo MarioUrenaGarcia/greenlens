@@ -11,6 +11,9 @@ GOVULNCHECK_VERSION   := v1.9.0
 GITLEAKS_VERSION      := v8.30.1
 LEFTHOOK_VERSION      := v2.2.2
 GO_LICENSES_VERSION   := v2.0.1
+HUGO_VERSION          := v0.167.0
+
+SITE_BASE_URL ?= https://mariourenagarcia.github.io/greenlens/
 
 # Licenses accepted for dependencies. GreenLens itself is AGPL-3.0-only and is
 # ignored. psx (a dependency of go-landlock) is dual licensed
@@ -24,7 +27,8 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 .DEFAULT_GOAL := build
 
 .PHONY: build test vet lint vuln secrets typography headers i18n check-scripts \
-        licenses notices notices-check tidy-check web tools hooks check clean
+        licenses notices notices-check tidy-check web docs docs-check demo demo-check \
+        site hugo tools hooks check clean
 
 build:
 	CGO_ENABLED=0 $(GO) build -trimpath -o $(BIN) ./cmd/greenlens
@@ -76,6 +80,37 @@ tidy-check:
 web:
 	$(GO) run web/build.go
 
+# Reference pages generated from the code.
+docs:
+	$(GO) run ./scripts/gen-docs
+
+docs-check:
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && cp -r docs "$$tmp/docs" && \
+		$(GO) run ./scripts/gen-docs -root "$$tmp/docs" && diff -ru docs "$$tmp/docs" \
+		|| { echo "generated documentation is stale; run make docs"; exit 1; }
+
+# Animated terminal sessions shown in the README and on the site.
+DEMOS := site/static/images/terminal-en.svg site/static/images/terminal-es.svg
+
+demo:
+	$(GO) run ./scripts/gen-demo -lang en -o site/static/images/terminal-en.svg
+	$(GO) run ./scripts/gen-demo -lang es -o site/static/images/terminal-es.svg
+
+demo-check:
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
+		$(GO) run ./scripts/gen-demo -lang en -o "$$tmp/terminal-en.svg" && \
+		$(GO) run ./scripts/gen-demo -lang es -o "$$tmp/terminal-es.svg" && \
+		diff -q "$$tmp/terminal-en.svg" site/static/images/terminal-en.svg >/dev/null && \
+		diff -q "$$tmp/terminal-es.svg" site/static/images/terminal-es.svg >/dev/null \
+		|| { echo "terminal demos are stale; run make demo"; exit 1; }
+
+# Documentation site for GitHub Pages, written to site/public.
+site:
+	$(GOBIN)/hugo --source site --destination public --cleanDestinationDir --minify --baseURL "$(SITE_BASE_URL)"
+
+hugo:
+	CGO_ENABLED=0 $(GO) install github.com/gohugoio/hugo@$(HUGO_VERSION)
+
 tools:
 	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
@@ -86,7 +121,8 @@ tools:
 hooks:
 	$(GOBIN)/lefthook install
 
-check: tidy-check vet lint test vuln secrets typography headers i18n check-scripts licenses notices-check
+check: tidy-check vet lint test vuln secrets typography headers i18n check-scripts licenses notices-check \
+       docs-check demo-check
 
 clean:
-	rm -rf bin
+	rm -rf bin site/public site/resources

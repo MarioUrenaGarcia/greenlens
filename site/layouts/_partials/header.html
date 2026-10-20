@@ -1,0 +1,25 @@
+<header class="topbar glass">
+  <a class="brand" href="{{ site.Home.RelPermalink }}">
+    <img src="{{ "images/icons/measure.svg" | relURL }}" alt="" width="28" height="28">
+    <span>GreenLens</span>
+  </a>
+  <nav aria-label="{{ i18n "nav_docs" }}">
+    {{- with site.GetPage "/docs" }}
+    <a href="{{ .RelPermalink }}">{{ i18n "nav_docs" }}</a>
+    {{- end }}
+    <a href="{{ site.Params.repo }}">{{ i18n "nav_source" }}</a>
+    {{- $page := . }}
+    <span class="langs" aria-label="{{ i18n "language" }}">
+      {{- range hugo.Sites }}
+        {{- $site := . }}
+        {{- $target := .Home }}
+        {{- range $page.Rotate "language" }}{{ if eq .Site.Language.Lang $site.Language.Lang }}{{ $target = . }}{{ end }}{{ end }}
+        {{- if eq $site.Language.Lang site.Language.Lang }}
+        <span class="lang current" aria-current="true">{{ upper $site.Language.Lang }}</span>
+        {{- else }}
+        <a class="lang" href="{{ $target.RelPermalink }}" hreflang="{{ $site.Language.Lang }}" lang="{{ $site.Language.Lang }}">{{ upper $site.Language.Lang }}</a>
+        {{- end }}
+      {{- end }}
+    </span>
+  </nav>
+</header>

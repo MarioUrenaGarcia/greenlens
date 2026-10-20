@@ -1,0 +1,46 @@
+baseURL = "https://mariourenagarcia.github.io/greenlens/"
+title = "GreenLens"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+disableKinds = ["taxonomy", "term", "rss"]
+enableRobotsTXT = true
+
+[languages.en]
+  label = "English"
+  weight = 1
+[languages.es]
+  label = "Español"
+  weight = 2
+
+[params]
+  repo = "https://github.com/MarioUrenaGarcia/greenlens"
+
+[markup.highlight]
+  codeFences = false
+[markup.goldmark.renderer]
+  unsafe = false
+
+# The documentation lives at the repository root, in docs/ (English) and
+# docs/es/ (Spanish), so it can also be embedded in the binary.
+[module]
+  [[module.mounts]]
+    source = "content/en"
+    target = "content"
+    [module.mounts.sites.matrix]
+      languages = ["en"]
+  [[module.mounts]]
+    source = "content/es"
+    target = "content"
+    [module.mounts.sites.matrix]
+      languages = ["es"]
+  [[module.mounts]]
+    source = "../docs"
+    target = "content/docs"
+    files = ["! es/**"]
+    [module.mounts.sites.matrix]
+      languages = ["en"]
+  [[module.mounts]]
+    source = "../docs/es"
+    target = "content/docs"
+    [module.mounts.sites.matrix]
+      languages = ["es"]

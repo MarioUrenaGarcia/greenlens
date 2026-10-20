@@ -22,3 +22,8 @@ coverage.*
 # Local configuration
 greenlens.local.yaml
 lefthook-local.yml
+
+# Documentation site build output
+/site/public/
+/site/resources/
+.hugo_build.lock

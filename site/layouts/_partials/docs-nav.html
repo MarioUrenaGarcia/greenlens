@@ -1,0 +1,15 @@
+<nav class="docnav glass" aria-label="{{ i18n "docs_sections" }}">
+  {{- with site.GetPage "/docs" }}
+  <a class="docnav-home{{ if eq $.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}">{{ .Title }}</a>
+  {{- range .Sections.ByWeight }}
+  <div class="docnav-group">
+    <a class="docnav-section{{ if eq $.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}">{{ .Title }}</a>
+    <ul>
+      {{- range .Pages.ByWeight }}
+      <li><a{{ if eq $.RelPermalink .RelPermalink }} class="active" aria-current="page"{{ end }} href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+      {{- end }}
+    </ul>
+  </div>
+  {{- end }}
+  {{- end }}
+</nav>

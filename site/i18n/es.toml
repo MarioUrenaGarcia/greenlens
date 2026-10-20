@@ -1,0 +1,58 @@
+[nav_docs]
+other = "Documentación"
+[nav_source]
+other = "Código fuente"
+[skip]
+other = "Saltar al contenido"
+[language]
+other = "Idioma"
+[status]
+other = "Desarrollo temprano. La versión actual ofrece la base de la línea de comandos; la medición de energía está en construcción."
+[cta_start]
+other = "Empezar"
+[cta_repo]
+other = "Ver en GitHub"
+[features_title]
+other = "Qué hace GreenLens"
+[f_measure_title]
+other = "Mide"
+[f_measure_body]
+other = "Lee los contadores de energía de CPU, memoria y GPU desde el kernel de Linux y declara la calidad de cada valor: medido, atribuido o estimado."
+[f_attribute_title]
+other = "Atribuye"
+[f_attribute_body]
+other = "Reparte la energía del nodo entre backends de inferencia, modelos y equipos, con el tiempo de CPU de los procesos, el uso de GPU y el conteo de tokens."
+[f_report_title]
+other = "Reporta"
+[f_report_body]
+other = "Convierte la energía en kWh, gCO2e, costo y la Software Carbon Intensity (ISO/IEC 21031:2024) por cada mil tokens."
+[principles_title]
+other = "Principios de diseño"
+[p_local]
+other = "Local primero: cada valor se calcula y se guarda en tu equipo."
+[p_telemetry]
+other = "Sin telemetría ni conexiones salientes por defecto."
+[p_privacy]
+other = "El contenido de prompts y respuestas nunca se lee, registra ni guarda."
+[p_root]
+other = "El agente corre sin root y limita su propio acceso a archivos con Landlock."
+[p_honest]
+other = "Cada número viene con su unidad, método y calidad."
+[p_core]
+other = "Un núcleo, tres interfaces: línea de comandos, interfaz de terminal e interfaz gráfica."
+[arch_title]
+other = "Arquitectura"
+[demo_title]
+other = "Pruébalo"
+[quick_title]
+other = "Compilar desde el código fuente"
+[license_title]
+other = "Licencia"
+[license_body]
+other = "GreenLens es software libre bajo la GNU Affero General Public License v3.0 only. Las organizaciones que no puedan cumplir sus obligaciones pueden obtener una licencia comercial."
+[docs_sections]
+other = "Secciones"
+[on_this_page]
+other = "En esta sección"
+[edit]
+other = "Editar esta página"

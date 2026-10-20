@@ -1,0 +1,59 @@
+{{ define "main" }}
+{{- $lang := site.Language.Lang }}
+<section class="hero">
+  <img class="hero-art" src="{{ printf "images/banner-%s.svg" $lang | relURL }}" alt="{{ site.Title }}: {{ .Description }}" width="1200" height="420">
+  <p class="status glass">{{ i18n "status" }}</p>
+  <p class="cta">
+    {{- with site.GetPage "/docs/tutorials/first-steps" }}
+    <a class="button primary" href="{{ .RelPermalink }}">{{ i18n "cta_start" }}</a>
+    {{- end }}
+    <a class="button" href="{{ site.Params.repo }}">{{ i18n "cta_repo" }}</a>
+  </p>
+</section>
+
+<section class="block">
+  <h2>{{ i18n "features_title" }}</h2>
+  <div class="cards">
+    {{- range slice "measure" "attribute" "report" }}
+    <article class="card glass">
+      <img src="{{ printf "images/icons/%s.svg" . | relURL }}" alt="" width="48" height="48">
+      <h3>{{ i18n (printf "f_%s_title" .) }}</h3>
+      <p>{{ i18n (printf "f_%s_body" .) }}</p>
+    </article>
+    {{- end }}
+  </div>
+</section>
+
+<section class="block">
+  <h2>{{ i18n "arch_title" }}</h2>
+  <img class="wide" src="{{ printf "images/architecture-%s.svg" $lang | relURL }}" alt="{{ i18n "arch_title" }}" width="1200" height="600" loading="lazy">
+</section>
+
+<section class="block split">
+  <div>
+    <h2>{{ i18n "principles_title" }}</h2>
+    <ul class="principles">
+      {{- range slice "local" "telemetry" "privacy" "root" "honest" "core" }}
+      <li>{{ i18n (printf "p_%s" .) }}</li>
+      {{- end }}
+    </ul>
+  </div>
+  <div>
+    <h2>{{ i18n "quick_title" }}</h2>
+    <pre class="glass"><code>git clone {{ site.Params.repo }}.git
+cd greenlens
+make build
+bin/greenlens --help</code></pre>
+  </div>
+</section>
+
+<section class="block">
+  <h2>{{ i18n "demo_title" }}</h2>
+  <img class="wide terminal" src="{{ printf "images/terminal-%s.svg" $lang | relURL }}" alt="{{ i18n "demo_title" }}" loading="lazy">
+</section>
+
+<section class="block">
+  <h2>{{ i18n "license_title" }}</h2>
+  <p class="lead">{{ i18n "license_body" }}</p>
+</section>
+{{ end }}
