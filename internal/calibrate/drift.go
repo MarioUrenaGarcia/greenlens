@@ -5,13 +5,16 @@ package calibrate
 
 import (
 	"math"
+	"sync"
 	"time"
 )
 
 // IdleTracker estimates the current idle power as the 5th percentile of the
 // power seen over the last 24 hours. It keeps one histogram per hour with
 // bins of BinW watts, so memory stays bounded however long the agent runs.
+// It is safe for concurrent use.
 type IdleTracker struct {
+	mu    sync.Mutex
 	hours map[int64]map[int]uint32
 }
 
@@ -29,6 +32,8 @@ func (t *IdleTracker) Add(at time.Time, w float64) {
 	if w < 0 || math.IsNaN(w) {
 		return
 	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	h := at.Unix() / 3600
 	bins := t.hours[h]
 	if bins == nil {
@@ -46,6 +51,8 @@ func (t *IdleTracker) Add(at time.Time, w float64) {
 // P5 returns the 5th percentile over the window ending at now, and false
 // when nothing was recorded.
 func (t *IdleTracker) P5(now time.Time) (float64, bool) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	from := now.Unix()/3600 - int64(Window/time.Hour) + 1
 	merged := map[int]uint32{}
 	var total uint64

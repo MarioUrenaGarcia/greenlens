@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
@@ -75,8 +76,10 @@ type previous struct {
 	ok    bool
 }
 
-// Sampler reads the selected channels of a set of sources.
+// Sampler reads the selected channels of a set of sources. Sample and
+// WrapRisk may be called from different goroutines.
 type Sampler struct {
+	mu       sync.Mutex
 	sources  []source.Source
 	channels map[string]source.Channel
 	prev     map[string]previous
@@ -125,6 +128,8 @@ func (s *Sampler) Prime(ctx context.Context) error {
 // returned joined, together with the sample of the channels that could be
 // read.
 func (s *Sampler) Sample(ctx context.Context) (Sample, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	readings, readErr := s.readAll(ctx)
 	now := s.now()
 	first := s.last.IsZero()
@@ -209,6 +214,8 @@ func counterDelta(prev, cur, rangeJ float64) (float64, bool) {
 // at the highest power seen so far, which would make their deltas wrong.
 // Each problem carries the interval below which the channel is safe.
 func (s *Sampler) WrapRisk(interval time.Duration) []source.Problem {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var out []source.Problem
 	for id, ch := range s.channels {
 		w := s.maxPower[id]
