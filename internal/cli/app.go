@@ -102,9 +102,10 @@ func (a *app) sources(cfg config.Config) []source.Source {
 	}
 	e := cfg.Sources.Estimate
 	return registry.Sources(registry.Options{
-		FS:       a.hostFS(cfg),
-		HostRoot: cfg.Agent.HostRoot,
-		Estimate: estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
+		FS:         a.hostFS(cfg),
+		HostRoot:   cfg.Agent.HostRoot,
+		Estimate:   estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
+		NVMLHelper: cfg.Sources.NVML.Helper,
 	})
 }
 

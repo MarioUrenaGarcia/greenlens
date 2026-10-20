@@ -15,6 +15,8 @@ All notable changes to GreenLens are recorded in this file. The format follows
 - GPU energy from the hwmon sensors of amdgpu, xe and i915, chosen per card
   by PCI address. The sensor of an AMD APU measures the package when RAPL
   cannot be read.
+- NVIDIA GPU energy through NVML, loaded by the greenlens-nvml helper so the
+  main binary stays static, with nvidia-smi as a fallback.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

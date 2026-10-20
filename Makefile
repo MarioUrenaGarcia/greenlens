@@ -4,6 +4,7 @@
 GO    ?= go
 GOBIN := $(shell $(GO) env GOPATH)/bin
 BIN   := bin/greenlens
+NVML  := bin/greenlens-nvml
 
 # Development tools, pinned so every machine and CI run the same versions.
 GOLANGCI_LINT_VERSION := v2.15.0
@@ -26,12 +27,20 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 
 .DEFAULT_GOAL := build
 
-.PHONY: build test vet lint vuln secrets typography headers i18n check-scripts \
+.PHONY: build static-check test vet lint vuln secrets typography headers i18n check-scripts \
         licenses notices notices-check tidy-check web docs docs-check demo demo-check \
         site hugo tools hooks check clean
 
-build:
+# greenlens is static. greenlens-nvml loads the NVIDIA library through the
+# dynamic loader, which makes it a dynamic executable, so only it may import
+# purego.
+build: static-check
 	CGO_ENABLED=0 $(GO) build -trimpath -o $(BIN) ./cmd/greenlens
+	CGO_ENABLED=0 $(GO) build -trimpath -o $(NVML) ./cmd/greenlens-nvml
+
+static-check:
+	@! $(GO) list -deps ./cmd/greenlens | grep -qx 'github.com/ebitengine/purego' \
+		|| { echo "cmd/greenlens imports purego and would not be static"; exit 1; }
 
 # The race detector needs cgo; release binaries are built without it.
 test:
@@ -122,7 +131,7 @@ tools:
 hooks:
 	$(GOBIN)/lefthook install
 
-check: tidy-check vet lint test vuln secrets typography headers i18n check-scripts licenses notices-check \
+check: tidy-check static-check vet lint test vuln secrets typography headers i18n check-scripts licenses notices-check \
        docs-check demo-check
 
 clean:

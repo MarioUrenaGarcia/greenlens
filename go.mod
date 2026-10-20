@@ -3,6 +3,7 @@ module github.com/MarioUrenaGarcia/greenlens
 go 1.27.2
 
 require (
+	github.com/ebitengine/purego v0.11.1
 	github.com/evanw/esbuild v0.28.2
 	github.com/landlock-lsm/go-landlock v0.10.1
 	github.com/spf13/cobra v1.10.2

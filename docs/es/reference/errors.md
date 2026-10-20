@@ -34,6 +34,9 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1010](#gl1010) | el procesador no está en la tabla de estimación | 3 |
 | [GL1011](#gl1011) | cambiar permisos requiere root | 5 |
 | [GL1012](#gl1012) | falló el paso `{step}` del plan | 5 |
+| [GL1013](#gl1013) | hay una GPU NVIDIA pero greenlens-nvml no está instalado | 3 |
+| [GL1014](#gl1014) | no se puede usar la biblioteca de gestión de NVIDIA (NVML) | 3 |
+| [GL1015](#gl1015) | nvidia-smi no puede leer las GPU NVIDIA | 3 |
 | [GL3001](#gl3001) | no se encontró el archivo de configuración | 6 |
 | [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
 | [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
@@ -226,6 +229,27 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** `{detail}`
 - **Solución:** corrige el problema y ejecuta el comando de nuevo; los pasos ya completados se pueden repetir sin riesgo
 - **Código de salida:** 5
+
+## GL1013
+
+- **Mensaje:** hay una GPU NVIDIA pero greenlens-nvml no está instalado
+- **Causa:** el auxiliar que lee NVML no se encontró en `{dirs}`
+- **Solución:** instala greenlens-nvml de la misma versión junto a greenlens, o define sources.nvml.helper; mientras tanto se usa nvidia-smi si está presente
+- **Código de salida:** 3
+
+## GL1014
+
+- **Mensaje:** no se puede usar la biblioteca de gestión de NVIDIA (NVML)
+- **Causa:** `{detail}`
+- **Solución:** verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente
+- **Código de salida:** 3
+
+## GL1015
+
+- **Mensaje:** nvidia-smi no puede leer las GPU NVIDIA
+- **Causa:** `{detail}`
+- **Solución:** verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente
+- **Código de salida:** 3
 
 ## GL3001
 

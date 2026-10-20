@@ -22,8 +22,9 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 |---|---|---|---|---|
 | `sources.auto` | `GREENLENS_SOURCES_AUTO` | bool | `true` | Elige las fuentes automáticamente. Si es false, solo se usan las fuentes indicadas en sources.force. |
 | `sources.disable` | `GREENLENS_SOURCES_DISABLE` | list of strings | empty | Fuentes que nunca se usan. |
-| `sources.force` | `GREENLENS_SOURCES_FORCE` | map of strings | empty | Fuente preferida para un dominio (package, dram, psys, platform), como `{package: perf_event}`. |
+| `sources.force` | `GREENLENS_SOURCES_FORCE` | map of strings | empty | Fuente preferida para un dominio (package, dram, gpu, psys, platform), como `{package: perf_event}`. |
 | `sources.rapl.min_interval` | `GREENLENS_SOURCES_RAPL_MIN_INTERVAL` | duration | `50ms` | Intervalo de muestreo más corto aceptado; subirlo reduce la resolución temporal de los contadores RAPL. |
+| `sources.nvml.helper` | `GREENLENS_SOURCES_NVML_HELPER` | string | empty | Ruta de greenlens-nvml, el auxiliar que lee las GPU NVIDIA. Vacío: junto a greenlens, luego /usr/libexec/greenlens y /usr/lib/greenlens. |
 | `sources.estimate.idle_watts` | `GREENLENS_SOURCES_ESTIMATE_IDLE_WATTS` | number | `0` | Potencia de toda la CPU al 0% de uso para el modelo estimado; 0 usa la tabla incluida. |
 | `sources.estimate.full_watts` | `GREENLENS_SOURCES_ESTIMATE_FULL_WATTS` | number | `0` | Potencia de toda la CPU al 100% de uso para el modelo estimado; 0 usa la tabla incluida. |
 | `sources.estimate.exponent` | `GREENLENS_SOURCES_ESTIMATE_EXPONENT` | number | `1` | Exponente del uso en el modelo estimado; 1 es lineal. |

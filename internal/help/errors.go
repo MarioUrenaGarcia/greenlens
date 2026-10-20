@@ -49,6 +49,9 @@ const (
 	GL1010 Code = "GL1010" // processor not in the estimation table
 	GL1011 Code = "GL1011" // permission changes need root
 	GL1012 Code = "GL1012" // a permission change failed
+	GL1013 Code = "GL1013" // NVIDIA GPU without the NVML helper
+	GL1014 Code = "GL1014" // NVML cannot be used
+	GL1015 Code = "GL1015" // nvidia-smi cannot be used
 
 	GL3001 Code = "GL3001" // configuration file not found
 	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
@@ -100,6 +103,9 @@ var exitCodes = map[Code]int{
 	GL1010: ExitNoSource,
 	GL1011: ExitPermission,
 	GL1012: ExitPermission,
+	GL1013: ExitNoSource,
+	GL1014: ExitNoSource,
+	GL1015: ExitNoSource,
 	GL3001: ExitConfig,
 	GL3002: ExitConfig,
 	GL3003: ExitConfig,

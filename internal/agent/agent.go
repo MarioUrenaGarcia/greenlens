@@ -161,9 +161,10 @@ func (a *Agent) setupSources(ctx context.Context) error {
 	if a.srcs == nil {
 		e := a.cfg.Sources.Estimate
 		a.srcs = registry.Sources(registry.Options{
-			FS:       a.hostFS,
-			HostRoot: a.cfg.Agent.HostRoot,
-			Estimate: estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
+			FS:         a.hostFS,
+			HostRoot:   a.cfg.Agent.HostRoot,
+			Estimate:   estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
+			NVMLHelper: a.cfg.Sources.NVML.Helper,
 		})
 	}
 	cands, err := registry.Probe(ctx, a.srcs)
@@ -234,7 +235,10 @@ func (a *Agent) confine() {
 		return
 	}
 	root := a.cfg.Agent.HostRoot
-	ro := []string{filepath.Join(root, "sys"), filepath.Join(root, "proc"), "/proc"}
+	ro := []string{filepath.Join(root, "sys"), filepath.Join(root, "proc")}
+	if root != "/" {
+		ro = append(ro, "/proc")
+	}
 	if a.o.ConfigPath != "" {
 		ro = append(ro, filepath.Dir(a.o.ConfigPath))
 	}

@@ -29,6 +29,8 @@ sistema.
 | 1 | powercap RAPL | paquete, núcleos, uncore, memoria, psys | medido |
 | 2 | perf_event `power` | paquete, memoria, psys | medido |
 | 3 | drivers de procesador de hwmon | paquete, memoria | medido |
+| 1 | NVML, mediante `greenlens-nvml` | GPU NVIDIA | medido |
+| 2 | `nvidia-smi` | GPU NVIDIA | medido |
 | 3 | drivers de GPU de hwmon: amdgpu, xe, i915 | GPU, o el paquete de una APU de AMD | medido |
 | 4 | medidor ACPI, IPMI DCMI, batería | plataforma | plataforma |
 | 6 | Modelo estimado | paquete | estimado |
@@ -50,6 +52,12 @@ una máquina con tarjetas de distintos fabricantes las mide todas.
 - **xe** reporta la energía de la tarjeta, o del paquete de la GPU donde falta
   el contador de la tarjeta.
 - **i915** reporta la energía de la tarjeta.
+- Las tarjetas **NVIDIA** reportan la energía de la tarjeta mediante NVML desde
+  Volta, y su potencia en generaciones anteriores. NVML lo carga
+  `greenlens-nvml`, un auxiliar aparte, porque cargar una biblioteca
+  compartida necesita el cargador dinámico y `greenlens` es un binario
+  estático. Sin el auxiliar, `nvidia-smi` reporta la potencia de la tarjeta,
+  con un margen de 5 W según NVIDIA.
 
 Los drivers de Intel registran estos sensores solo para tarjetas dedicadas,
 cuya energía no forma parte del paquete del procesador. Una tarjeta en

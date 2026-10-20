@@ -249,8 +249,9 @@ agent_socket = "Socket Unix del agente. Vacío: /run/greenlens/greenlens.sock pa
 agent_host_root = "Raíz del sistema de archivos del host, como /host en un contenedor con la raíz del host montada ahí."
 sources_auto = "Elige las fuentes automáticamente. Si es false, solo se usan las fuentes indicadas en sources.force."
 sources_disable = "Fuentes que nunca se usan."
-sources_force = "Fuente preferida para un dominio (package, dram, psys, platform), como {package: perf_event}."
+sources_force = "Fuente preferida para un dominio (package, dram, gpu, psys, platform), como {package: perf_event}."
 sources_rapl_min_interval = "Intervalo de muestreo más corto aceptado; subirlo reduce la resolución temporal de los contadores RAPL."
+sources_nvml_helper = "Ruta de greenlens-nvml, el auxiliar que lee las GPU NVIDIA. Vacío: junto a greenlens, luego /usr/libexec/greenlens y /usr/lib/greenlens."
 sources_estimate_idle_watts = "Potencia de toda la CPU al 0% de uso para el modelo estimado; 0 usa la tabla incluida."
 sources_estimate_full_watts = "Potencia de toda la CPU al 100% de uso para el modelo estimado; 0 usa la tabla incluida."
 sources_estimate_exponent = "Exponente del uso en el modelo estimado; 1 es lineal."
@@ -452,3 +453,18 @@ fix = "ejecuta 'sudo greenlens setup-permissions --apply'"
 message = "falló el paso {step} del plan"
 cause = "{detail}"
 fix = "corrige el problema y ejecuta el comando de nuevo; los pasos ya completados se pueden repetir sin riesgo"
+
+[errors.GL1013]
+message = "hay una GPU NVIDIA pero greenlens-nvml no está instalado"
+cause = "el auxiliar que lee NVML no se encontró en {dirs}"
+fix = "instala greenlens-nvml de la misma versión junto a greenlens, o define sources.nvml.helper; mientras tanto se usa nvidia-smi si está presente"
+
+[errors.GL1014]
+message = "no se puede usar la biblioteca de gestión de NVIDIA (NVML)"
+cause = "{detail}"
+fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente"
+
+[errors.GL1015]
+message = "nvidia-smi no puede leer las GPU NVIDIA"
+cause = "{detail}"
+fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente"

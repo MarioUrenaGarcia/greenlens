@@ -249,8 +249,9 @@ agent_socket = "Unix socket of the agent. Empty: /run/greenlens/greenlens.sock f
 agent_host_root = "Root of the host file system, such as /host in a container with the host root mounted there."
 sources_auto = "Choose sources automatically. When false, only the sources named in sources.force are used."
 sources_disable = "Sources that are never used."
-sources_force = "Source preferred for a domain (package, dram, psys, platform), such as {package: perf_event}."
+sources_force = "Source preferred for a domain (package, dram, gpu, psys, platform), such as {package: perf_event}."
 sources_rapl_min_interval = "Shortest sampling interval accepted; raising it lowers the time resolution of the RAPL counters."
+sources_nvml_helper = "Path of greenlens-nvml, the helper that reads NVIDIA GPUs. Empty: next to greenlens, then /usr/libexec/greenlens and /usr/lib/greenlens."
 sources_estimate_idle_watts = "Power of the whole CPU at 0% utilization for the estimate model; 0 uses the embedded table."
 sources_estimate_full_watts = "Power of the whole CPU at 100% utilization for the estimate model; 0 uses the embedded table."
 sources_estimate_exponent = "Exponent of the utilization in the estimate model; 1 is linear."
@@ -452,3 +453,18 @@ fix = "run 'sudo greenlens setup-permissions --apply'"
 message = "step {step} of the plan failed"
 cause = "{detail}"
 fix = "fix the problem and run the command again; completed steps can be repeated safely"
+
+[errors.GL1013]
+message = "an NVIDIA GPU is present but greenlens-nvml is not installed"
+cause = "the helper that reads NVML was not found in {dirs}"
+fix = "install greenlens-nvml from the same release next to greenlens, or set sources.nvml.helper; until then nvidia-smi is used if present"
+
+[errors.GL1014]
+message = "the NVIDIA Management Library cannot be used"
+cause = "{detail}"
+fix = "check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent"
+
+[errors.GL1015]
+message = "nvidia-smi cannot read the NVIDIA GPUs"
+cause = "{detail}"
+fix = "check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent"

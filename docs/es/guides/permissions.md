@@ -1,6 +1,6 @@
 ---
 title: "Leer los sensores sin root"
-description: "Da al agente acceso a RAPL, perf_event e IPMI sin ejecutarlo como root."
+description: "Da al agente acceso a RAPL, perf_event, IPMI y las GPU sin ejecutarlo como root."
 weight: 20
 ---
 
@@ -44,6 +44,18 @@ sudo greenlens setup-permissions --apply --ipmi
 
 El servicio también necesita el drop-in `deploy/systemd/greenlens-ipmi.conf`
 para abrir el dispositivo.
+
+## GPU
+
+Los sensores hwmon de las GPU AMD e Intel son legibles por cualquier usuario.
+
+Las GPU NVIDIA se leen con la biblioteca de gestión de NVIDIA (NVML) a través
+de `greenlens-nvml`, un auxiliar que se distribuye con GreenLens. Debe
+instalarse junto a `greenlens` o en `/usr/libexec/greenlens`, o definirse su
+ruta en `sources.nvml.helper`. Sin él, GreenLens lee la potencia de la tarjeta
+con `nvidia-smi`, que es menos preciso. El servicio también necesita el
+drop-in `deploy/systemd/greenlens-nvidia.conf` para abrir los dispositivos de
+NVIDIA.
 
 ## El riesgo y cómo limitarlo
 

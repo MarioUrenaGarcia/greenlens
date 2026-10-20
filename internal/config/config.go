@@ -74,12 +74,20 @@ type Sources struct {
 	Disable  []string          `yaml:"disable"`
 	Force    map[string]string `yaml:"force"`
 	RAPL     RAPL              `yaml:"rapl"`
+	NVML     NVML              `yaml:"nvml"`
 	Estimate Estimate          `yaml:"estimate"`
 }
 
 // RAPL configures the RAPL counters.
 type RAPL struct {
 	MinInterval Duration `yaml:"min_interval"`
+}
+
+// NVML configures the reading of NVIDIA GPUs.
+type NVML struct {
+	// Helper is the path of greenlens-nvml; empty looks next to the
+	// greenlens binary and in the system directories.
+	Helper string `yaml:"helper"`
 }
 
 // Estimate configures the CPU power model.
@@ -238,10 +246,10 @@ func (c Config) SelectorOptions() selector.Options {
 
 // SourceIDs lists the source names accepted in sources.disable and
 // sources.force.
-var SourceIDs = []string{"rapl", "perf_event", "hwmon", "hwmon_gpu", "acpi_power_meter", "ipmi", "battery", "estimate"}
+var SourceIDs = []string{"rapl", "perf_event", "hwmon", "hwmon_gpu", "nvml", "nvidia_smi", "acpi_power_meter", "ipmi", "battery", "estimate"}
 
 // ForcibleDomains lists the domains accepted as keys of sources.force.
-var ForcibleDomains = []source.Domain{source.DomainPackage, source.DomainDRAM, source.DomainPSys, source.DomainPlatform}
+var ForcibleDomains = []source.Domain{source.DomainPackage, source.DomainDRAM, source.DomainGPU, source.DomainPSys, source.DomainPlatform}
 
 // Validate checks every value and reports all problems at once.
 func (c Config) Validate() error {
@@ -278,6 +286,9 @@ func (c Config) Validate() error {
 		if !slices.Contains(SourceIDs, id) {
 			bad("sources.force", fmt.Sprintf("unknown source %q", id))
 		}
+	}
+	if h := c.Sources.NVML.Helper; h != "" && !filepath.IsAbs(h) {
+		bad("sources.nvml.helper", "must be an absolute path")
 	}
 	e := c.Sources.Estimate
 	if e.IdleWatts < 0 || e.FullWatts < 0 || (e.FullWatts > 0 && e.FullWatts < e.IdleWatts) {

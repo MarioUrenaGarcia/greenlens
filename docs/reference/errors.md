@@ -34,6 +34,9 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL1010](#gl1010) | the processor is not in the estimation table | 3 |
 | [GL1011](#gl1011) | changing permissions needs root | 5 |
 | [GL1012](#gl1012) | step `{step}` of the plan failed | 5 |
+| [GL1013](#gl1013) | an NVIDIA GPU is present but greenlens-nvml is not installed | 3 |
+| [GL1014](#gl1014) | the NVIDIA Management Library cannot be used | 3 |
+| [GL1015](#gl1015) | nvidia-smi cannot read the NVIDIA GPUs | 3 |
 | [GL3001](#gl3001) | configuration file not found | 6 |
 | [GL3002](#gl3002) | cannot read the configuration file | 6 |
 | [GL3003](#gl3003) | invalid configuration value for `{key}` | 6 |
@@ -226,6 +229,27 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** `{detail}`
 - **Fix:** fix the problem and run the command again; completed steps can be repeated safely
 - **Exit code:** 5
+
+## GL1013
+
+- **Message:** an NVIDIA GPU is present but greenlens-nvml is not installed
+- **Cause:** the helper that reads NVML was not found in `{dirs}`
+- **Fix:** install greenlens-nvml from the same release next to greenlens, or set sources.nvml.helper; until then nvidia-smi is used if present
+- **Exit code:** 3
+
+## GL1014
+
+- **Message:** the NVIDIA Management Library cannot be used
+- **Cause:** `{detail}`
+- **Fix:** check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent
+- **Exit code:** 3
+
+## GL1015
+
+- **Message:** nvidia-smi cannot read the NVIDIA GPUs
+- **Cause:** `{detail}`
+- **Fix:** check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent
+- **Exit code:** 3
 
 ## GL3001
 

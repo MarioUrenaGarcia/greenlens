@@ -1,0 +1,3 @@
+{"version":1,"driver":"595.99.02","devices":[{"index":0,"name":"NVIDIA GeForce RTX 3050","pci":"0000:01:00.0","energy":true,"power":true}]}
+{"samples":[{"index":0,"energy_mj":135417960,"util":24,"pids":[1001,1002,1003],"processes":[{"pid":1002,"sm":31}]}]}
+{"samples":[{"index":0,"energy_mj":135438030,"util":30,"pids":[1001,1002,1003],"processes":[{"pid":1002,"sm":33}]}]}

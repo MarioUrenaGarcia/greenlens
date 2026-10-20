@@ -19,16 +19,20 @@ sources:
   # Choose sources automatically. When false, only the sources named in
   # force are used.
   auto: true
-  # Sources never used: rapl, perf_event, hwmon, acpi_power_meter, ipmi,
-  # battery, estimate.
+  # Sources never used: rapl, perf_event, hwmon, hwmon_gpu, nvml,
+  # nvidia_smi, acpi_power_meter, ipmi, battery, estimate.
   disable: []
-  # Source preferred for a domain (package, dram, psys, platform), for
+  # Source preferred for a domain (package, dram, gpu, psys, platform), for
   # example {package: perf_event}.
   force: {}
   rapl:
     # Shortest sampling interval accepted. Raise it to lower the time
     # resolution of the RAPL counters if the security policy requires it.
     min_interval: 50ms
+  nvml:
+    # Path of greenlens-nvml, the helper that reads NVIDIA GPUs. Empty looks
+    # next to greenlens, then in /usr/libexec/greenlens and /usr/lib/greenlens.
+    helper: ""
   estimate:
     # Power of the whole CPU at 0% and 100% utilization, used when no
     # energy counter is readable. 0 uses the embedded table.

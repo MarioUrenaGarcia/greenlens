@@ -16,6 +16,8 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/estimate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/hwmon"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/ipmi"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/nvidiasmi"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/nvml"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/perfevent"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/rapl"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
@@ -33,6 +35,9 @@ type Options struct {
 	IPMI ipmi.Opener
 	// Estimate overrides the coefficients of the CPU model.
 	Estimate estimate.Override
+	// NVMLHelper is the path of greenlens-nvml; empty searches the default
+	// places.
+	NVMLHelper string
 }
 
 // Sources returns every source, in the order of the source table: platform
@@ -52,6 +57,8 @@ func Sources(o Options) []source.Source {
 		perfevent.New(o.FS, o.Perf),
 		hwmon.NewCPU(o.FS),
 		hwmon.NewGPU(o.FS),
+		nvml.New(o.FS, o.NVMLHelper),
+		nvidiasmi.New(o.FS, ""),
 		hwmon.NewACPI(o.FS),
 		ipmi.New(o.HostRoot, o.IPMI),
 		battery.New(o.FS),

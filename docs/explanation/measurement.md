@@ -28,6 +28,8 @@ Platform and wall measurements serve to see what the rest of the system uses.
 | 1 | powercap RAPL | package, cores, uncore, memory, psys | measured |
 | 2 | perf_event `power` | package, memory, psys | measured |
 | 3 | hwmon processor drivers | package, memory | measured |
+| 1 | NVML, through `greenlens-nvml` | NVIDIA GPU | measured |
+| 2 | `nvidia-smi` | NVIDIA GPU | measured |
 | 3 | hwmon GPU drivers: amdgpu, xe, i915 | GPU, or the package of an AMD APU | measured |
 | 4 | ACPI power meter, IPMI DCMI, battery | platform | platform |
 | 6 | Estimate model | package | estimated |
@@ -48,6 +50,11 @@ machine with cards of different vendors measures all of them.
 - **xe** reports the energy of the card, or of the GPU package where the
   card counter is missing.
 - **i915** reports the energy of the card.
+- **NVIDIA** cards report the energy of the board through NVML from Volta
+  on, and its power before. NVML is loaded by `greenlens-nvml`, a separate
+  helper, because loading a shared library needs the dynamic loader and
+  `greenlens` is a static binary. Without the helper, `nvidia-smi` reports
+  the board power, to within 5 W according to NVIDIA.
 
 Intel drivers register these sensors only for discrete cards, whose energy is
 not part of the processor package. A card in runtime suspend is not read,
