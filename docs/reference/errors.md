@@ -30,6 +30,12 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL3002](#gl3002) | cannot read the configuration file | 6 |
 | [GL3003](#gl3003) | invalid configuration value for `{key}` | 6 |
 | [GL3004](#gl3004) | invalid value in the environment variable `{name}` | 6 |
+| [GL4001](#gl4001) | the agent is not running | 1 |
+| [GL4002](#gl4002) | cannot open the database | 1 |
+| [GL4003](#gl4003) | cannot create the agent socket | 1 |
+| [GL4004](#gl4004) | there is no directory for the agent socket | 6 |
+| [GL4005](#gl4005) | another agent is already running | 1 |
+| [GL4006](#gl4006) | the agent rejected the request | 1 |
 
 ## GL0001
 
@@ -184,3 +190,45 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** `{detail}`
 - **Fix:** correct or unset the variable
 - **Exit code:** 6
+
+## GL4001
+
+- **Message:** the agent is not running
+- **Cause:** cannot connect to `{socket}`: `{detail}`
+- **Fix:** start it with 'sudo systemctl start greenlens' or run 'greenlens agent' in another terminal
+- **Exit code:** 1
+
+## GL4002
+
+- **Message:** cannot open the database
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** check that agent.data_dir exists and is writable by the user of the agent
+- **Exit code:** 1
+
+## GL4003
+
+- **Message:** cannot create the agent socket
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** check agent.socket and the permissions of its directory
+- **Exit code:** 1
+
+## GL4004
+
+- **Message:** there is no directory for the agent socket
+- **Cause:** XDG_RUNTIME_DIR is not set and agent.socket is empty
+- **Fix:** set agent.socket in the configuration
+- **Exit code:** 6
+
+## GL4005
+
+- **Message:** another agent is already running
+- **Cause:** `{path}` accepts connections
+- **Fix:** stop the other agent, or give this one a different agent.socket and agent.data_dir
+- **Exit code:** 1
+
+## GL4006
+
+- **Message:** the agent rejected the request
+- **Cause:** `{status}`: `{detail}`
+- **Fix:** check the agent logs, for example with 'journalctl -u greenlens'
+- **Exit code:** 1

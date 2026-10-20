@@ -46,6 +46,13 @@ const (
 	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
 	GL3003 Code = "GL3003" // invalid configuration value
 	GL3004 Code = "GL3004" // invalid configuration environment variable
+
+	GL4001 Code = "GL4001" // agent not reachable
+	GL4002 Code = "GL4002" // database cannot be opened
+	GL4003 Code = "GL4003" // agent socket cannot be created
+	GL4004 Code = "GL4004" // no runtime directory for the socket
+	GL4005 Code = "GL4005" // another agent already listens
+	GL4006 Code = "GL4006" // the agent rejected a request
 )
 
 // Process exit codes of the command line.
@@ -81,6 +88,12 @@ var exitCodes = map[Code]int{
 	GL3002: ExitConfig,
 	GL3003: ExitConfig,
 	GL3004: ExitConfig,
+	GL4001: ExitError,
+	GL4002: ExitError,
+	GL4003: ExitError,
+	GL4004: ExitConfig,
+	GL4005: ExitError,
+	GL4006: ExitError,
 }
 
 // Codes returns every registered error code.

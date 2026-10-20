@@ -30,6 +30,12 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
 | [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
 | [GL3004](#gl3004) | valor no válido en la variable de entorno `{name}` | 6 |
+| [GL4001](#gl4001) | el agente no está en ejecución | 1 |
+| [GL4002](#gl4002) | no se puede abrir la base de datos | 1 |
+| [GL4003](#gl4003) | no se puede crear el socket del agente | 1 |
+| [GL4004](#gl4004) | no hay directorio para el socket del agente | 6 |
+| [GL4005](#gl4005) | ya hay otro agente en ejecución | 1 |
+| [GL4006](#gl4006) | el agente rechazó la solicitud | 1 |
 
 ## GL0001
 
@@ -184,3 +190,45 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** `{detail}`
 - **Solución:** corrige la variable o elimínala
 - **Código de salida:** 6
+
+## GL4001
+
+- **Mensaje:** el agente no está en ejecución
+- **Causa:** no se puede conectar a `{socket}`: `{detail}`
+- **Solución:** inícialo con 'sudo systemctl start greenlens' o ejecuta 'greenlens agent' en otra terminal
+- **Código de salida:** 1
+
+## GL4002
+
+- **Mensaje:** no se puede abrir la base de datos
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** revisa que agent.data_dir exista y que el usuario del agente pueda escribir en él
+- **Código de salida:** 1
+
+## GL4003
+
+- **Mensaje:** no se puede crear el socket del agente
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** revisa agent.socket y los permisos de su directorio
+- **Código de salida:** 1
+
+## GL4004
+
+- **Mensaje:** no hay directorio para el socket del agente
+- **Causa:** XDG_RUNTIME_DIR no está definido y agent.socket está vacío
+- **Solución:** define agent.socket en la configuración
+- **Código de salida:** 6
+
+## GL4005
+
+- **Mensaje:** ya hay otro agente en ejecución
+- **Causa:** `{path}` acepta conexiones
+- **Solución:** detén el otro agente, o asigna a este otro agent.socket y otro agent.data_dir
+- **Código de salida:** 1
+
+## GL4006
+
+- **Mensaje:** el agente rechazó la solicitud
+- **Causa:** `{status}`: `{detail}`
+- **Solución:** revisa los registros del agente, por ejemplo con 'journalctl -u greenlens'
+- **Código de salida:** 1

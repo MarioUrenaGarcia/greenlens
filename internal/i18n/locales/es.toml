@@ -156,3 +156,33 @@ fix = "consulta la referencia de configuración, o ejecuta 'greenlens config sho
 message = "valor no válido en la variable de entorno {name}"
 cause = "{detail}"
 fix = "corrige la variable o elimínala"
+
+[errors.GL4001]
+message = "el agente no está en ejecución"
+cause = "no se puede conectar a {socket}: {detail}"
+fix = "inícialo con 'sudo systemctl start greenlens' o ejecuta 'greenlens agent' en otra terminal"
+
+[errors.GL4002]
+message = "no se puede abrir la base de datos"
+cause = "{path}: {detail}"
+fix = "revisa que agent.data_dir exista y que el usuario del agente pueda escribir en él"
+
+[errors.GL4003]
+message = "no se puede crear el socket del agente"
+cause = "{path}: {detail}"
+fix = "revisa agent.socket y los permisos de su directorio"
+
+[errors.GL4004]
+message = "no hay directorio para el socket del agente"
+cause = "XDG_RUNTIME_DIR no está definido y agent.socket está vacío"
+fix = "define agent.socket en la configuración"
+
+[errors.GL4005]
+message = "ya hay otro agente en ejecución"
+cause = "{path} acepta conexiones"
+fix = "detén el otro agente, o asigna a este otro agent.socket y otro agent.data_dir"
+
+[errors.GL4006]
+message = "el agente rechazó la solicitud"
+cause = "{status}: {detail}"
+fix = "revisa los registros del agente, por ejemplo con 'journalctl -u greenlens'"
