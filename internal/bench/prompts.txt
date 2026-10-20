@@ -1,0 +1,8 @@
+Explain in three sentences how a heat pump moves heat from a cold place to a warm one.
+Write a short paragraph describing the water cycle for a ten-year-old reader.
+List five practical ways a small office can reduce its electricity use, one line each.
+Summarize the difference between a list and a dictionary in Python in four sentences.
+Describe how a bicycle gear system changes the effort needed to climb a hill.
+Write a polite two-sentence email asking a colleague to review a document by Friday.
+Explain what a prime number is and give three examples with a short justification.
+Describe the main steps of making bread at home in a numbered list of six items.

@@ -132,8 +132,8 @@ func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval
 	if len(res.Domains) == 0 {
 		return res, errors.Join(append([]error{ErrNoSamples}, errs...)...)
 	}
-	res.FrequencyMHz, res.Governor = cpuFrequency(fsys)
-	res.TemperatureC = temperature(fsys)
+	res.FrequencyMHz, res.Governor = CPUFrequency(fsys)
+	res.TemperatureC = Temperature(fsys)
 	return res, nil
 }
 
@@ -154,9 +154,9 @@ func Percentile(values []float64, p float64) float64 {
 	return v[lo] + (v[hi]-v[lo])*(rank-float64(lo))
 }
 
-// cpuFrequency averages scaling_cur_freq (kHz) over the online CPUs and
+// CPUFrequency averages scaling_cur_freq (kHz) over the online CPUs and
 // returns the governor of the first one.
-func cpuFrequency(fsys fs.FS) (float64, string) {
+func CPUFrequency(fsys fs.FS) (float64, string) {
 	online, err := hostfs.String(fsys, "sys/devices/system/cpu/online")
 	if err != nil {
 		return 0, ""
@@ -187,9 +187,9 @@ func cpuFrequency(fsys fs.FS) (float64, string) {
 // processor.
 var cpuThermal = []string{"k10temp", "coretemp", "zenpower", "cpu_thermal", "smpro_hwmon"}
 
-// temperature returns the highest processor temperature in degrees
+// Temperature returns the highest processor temperature in degrees
 // Celsius, or 0 when none is readable.
-func temperature(fsys fs.FS) float64 {
+func Temperature(fsys fs.FS) float64 {
 	devices, err := hostfs.Dirs(fsys, "sys/class/hwmon")
 	if err != nil {
 		return 0

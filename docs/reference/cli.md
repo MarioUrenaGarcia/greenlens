@@ -40,6 +40,37 @@ greenlens agent
 greenlens agent --config /etc/greenlens/greenlens.yaml
 ```
 
+## greenlens bench
+
+Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. With a calibration, the energy per token is on the energy above idle.
+
+**Usage**
+
+```text
+greenlens bench [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--endpoint` | Base URL of the backend; empty uses the default port of its kind |  |
+| `--interval` | Sampling interval of the energy, from 50ms to 10s | `100ms` |
+| `--kind` | Kind of backend: ollama, llamacpp, vllm, tgi, sglang, localai or openai | `ollama` |
+| `--max-tokens` | Most tokens generated per prompt | `128` |
+| `--model` | Model to benchmark, as the backend names it |  |
+| `--no-save` | Do not store the result in the agent |  |
+| `--prompts` | File with one prompt per line instead of the built-in set |  |
+| `--runs` | Measured runs, from 2 to 100 | `5` |
+| `--warmup` | Runs before measuring, which load the model | `1` |
+
+**Examples**
+
+```bash
+greenlens bench --model qwen2.5:0.5b
+greenlens bench --kind llamacpp --endpoint http://127.0.0.1:8080 --model q.gguf --runs 10
+```
+
 ## greenlens calibrate
 
 Measure the power of every domain while the machine is idle and store the median as the idle baseline. The dynamic idle policy subtracts this baseline before attributing energy to processes. Stop other workloads first.
@@ -62,6 +93,30 @@ greenlens calibrate [flags]
 ```bash
 greenlens calibrate
 greenlens calibrate --duration 5m
+```
+
+## greenlens compare
+
+Compare two benchmarks, by their ids, or two models, as backend/model or as a model name, by the energy per generated token measured in a period. It projects the energy, emissions and cost saved if the work of the first were done by the second: 1,000 generated tokens for benchmarks, the tokens the first model generated in the period for models.
+
+**Usage**
+
+```text
+greenlens compare <a> <b> [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--from` | Start of the period | `7d` |
+| `--to` | End of the period | `now` |
+
+**Examples**
+
+```bash
+greenlens compare 3 7
+greenlens compare ollama-11434/llama3.2 ollama-11434/qwen2.5:0.5b --from 7d
 ```
 
 ## greenlens config

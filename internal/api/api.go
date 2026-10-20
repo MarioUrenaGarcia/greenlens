@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
+	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
@@ -28,6 +29,7 @@ const (
 	PathCalibrations = "/api/v1/calibrations"
 	PathLive         = "/api/v1/live"
 	PathBackends     = "/api/v1/backends"
+	PathBenchmarks   = "/api/v1/benchmarks"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -215,4 +217,10 @@ type BackendUsage struct {
 	GroupBy       string              `json:"group_by"`
 	Resolution    string              `json:"resolution"`
 	Rows          []store.UsageEnergy `json:"rows"`
+}
+
+// Benchmarks lists stored benchmarks, newest first.
+type Benchmarks struct {
+	SchemaVersion int            `json:"schema_version"`
+	Benchmarks    []bench.Result `json:"benchmarks"`
 }

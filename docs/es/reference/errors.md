@@ -22,6 +22,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL0012](#gl0012) | measure necesita exactamente un objetivo | 2 |
 | [GL0013](#gl0013) | el proceso `{pid}` no existe | 1 |
 | [GL0014](#gl0014) | no se encuentra el cgroup de `{unit}` | 1 |
+| [GL0015](#gl0015) | '`{command}`' recibe `{want}` argumentos | 2 |
 | [GL1001](#gl1001) | no hay ninguna fuente de energía medida disponible | 3 |
 | [GL1002](#gl1002) | no se pueden leer los contadores de energía RAPL | 5 |
 | [GL1003](#gl1003) | no se pueden abrir los contadores de energía de perf_event | 5 |
@@ -39,6 +40,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1015](#gl1015) | nvidia-smi no puede leer las GPU NVIDIA | 3 |
 | [GL2001](#gl2001) | no se puede leer el backend `{name}` | 4 |
 | [GL2002](#gl2002) | el backend `{name}` no expone métricas | 4 |
+| [GL2003](#gl2003) | el backend rechazó el benchmark | 4 |
 | [GL3001](#gl3001) | no se encontró el archivo de configuración | 6 |
 | [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
 | [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
@@ -147,6 +149,13 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** no existe un directorio de cgroup v2 llamado `{unit}` bajo /sys/fs/cgroup
 - **Solución:** revisa el nombre con 'systemctl status' y que la unidad esté en ejecución
 - **Código de salida:** 1
+
+## GL0015
+
+- **Mensaje:** '`{command}`' recibe `{want}` argumentos
+- **Causa:** se recibieron `{got}`
+- **Solución:** ejecuta '`{command}` --help' para ver cómo usarlo
+- **Código de salida:** 2
 
 ## GL1001
 
@@ -265,6 +274,13 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Mensaje:** el backend `{name}` no expone métricas
 - **Causa:** `{kind}` solo ofrece contadores de tokens cuando se inicia con `{flag}`
 - **Solución:** reinícialo con `{flag}`; mientras tanto su energía se mide pero no se reparte por modelo ni por token
+- **Código de salida:** 4
+
+## GL2003
+
+- **Mensaje:** el backend rechazó el benchmark
+- **Causa:** `{endpoint}` respondió `{detail}`
+- **Solución:** verifica que el modelo `{model}` esté disponible en el backend, en Ollama con 'ollama list', y que --kind corresponda al servidor
 - **Código de salida:** 4
 
 ## GL3001

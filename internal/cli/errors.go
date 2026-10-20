@@ -67,6 +67,16 @@ func unknownCommand(parent *cobra.Command, name string) error {
 	return e
 }
 
+// exactArgs accepts exactly n positional arguments.
+func exactArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) == n {
+			return nil
+		}
+		return help.New(help.GL0015, "command", cmd.CommandPath(), "want", n, "got", len(args))
+	}
+}
+
 // noArgs rejects positional arguments for commands that take none.
 func noArgs(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {

@@ -49,6 +49,15 @@ var defaultPorts = map[Kind][]int{
 	LocalAI:  {8080},
 }
 
+// DefaultEndpoint returns the address an engine listens on by default on
+// this machine, or "" for kinds without one.
+func DefaultEndpoint(kind Kind) string {
+	if p := defaultPorts[kind]; len(p) > 0 {
+		return fmt.Sprintf("http://127.0.0.1:%d", p[0])
+	}
+	return ""
+}
+
 // Backend is one inference server.
 type Backend struct {
 	Name        string `json:"name"`

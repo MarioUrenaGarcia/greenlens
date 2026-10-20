@@ -14,9 +14,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
+	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 )
@@ -124,6 +126,37 @@ func (c *Client) BackendUsage(ctx context.Context, from, to time.Time, groupBy s
 	var u api.BackendUsage
 	err := c.get(ctx, api.PathUsage, q, &u)
 	return u, err
+}
+
+// SaveBenchmark stores a benchmark in the agent and returns it with its id.
+func (c *Client) SaveBenchmark(ctx context.Context, b bench.Result) (bench.Result, error) {
+	body, err := json.Marshal(b)
+	if err != nil {
+		return b, err
+	}
+	u := url.URL{Scheme: "http", Host: "agent", Path: api.PathBenchmarks}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
+	if err != nil {
+		return b, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	var out bench.Result
+	err = c.do(req, &out)
+	return out, err
+}
+
+// Benchmark returns one stored benchmark.
+func (c *Client) Benchmark(ctx context.Context, id int64) (bench.Result, error) {
+	var b bench.Result
+	err := c.get(ctx, api.PathBenchmarks+"/"+strconv.FormatInt(id, 10), nil, &b)
+	return b, err
+}
+
+// Benchmarks lists the latest stored benchmarks.
+func (c *Client) Benchmarks(ctx context.Context, limit int) (api.Benchmarks, error) {
+	var b api.Benchmarks
+	err := c.get(ctx, api.PathBenchmarks, url.Values{"limit": {strconv.Itoa(limit)}}, &b)
+	return b, err
 }
 
 // Backends returns the backends of the node.

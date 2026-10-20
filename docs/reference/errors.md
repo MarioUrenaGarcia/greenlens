@@ -22,6 +22,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL0012](#gl0012) | measure needs exactly one target | 2 |
 | [GL0013](#gl0013) | process `{pid}` does not exist | 1 |
 | [GL0014](#gl0014) | cannot find the cgroup of `{unit}` | 1 |
+| [GL0015](#gl0015) | '`{command}`' takes `{want}` arguments | 2 |
 | [GL1001](#gl1001) | no measured energy source is available | 3 |
 | [GL1002](#gl1002) | cannot read RAPL energy counters | 5 |
 | [GL1003](#gl1003) | cannot open the perf_event energy counters | 5 |
@@ -39,6 +40,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL1015](#gl1015) | nvidia-smi cannot read the NVIDIA GPUs | 3 |
 | [GL2001](#gl2001) | cannot read the backend `{name}` | 4 |
 | [GL2002](#gl2002) | the backend `{name}` does not expose metrics | 4 |
+| [GL2003](#gl2003) | the backend refused the benchmark | 4 |
 | [GL3001](#gl3001) | configuration file not found | 6 |
 | [GL3002](#gl3002) | cannot read the configuration file | 6 |
 | [GL3003](#gl3003) | invalid configuration value for `{key}` | 6 |
@@ -147,6 +149,13 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** no cgroup v2 directory named `{unit}` exists under /sys/fs/cgroup
 - **Fix:** check the name with 'systemctl status', and that the unit is running
 - **Exit code:** 1
+
+## GL0015
+
+- **Message:** '`{command}`' takes `{want}` arguments
+- **Cause:** received `{got}`
+- **Fix:** run '`{command}` --help' to see how to use it
+- **Exit code:** 2
 
 ## GL1001
 
@@ -265,6 +274,13 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Message:** the backend `{name}` does not expose metrics
 - **Cause:** `{kind}` serves token counters only when started with `{flag}`
 - **Fix:** restart it with `{flag}`; until then its energy is measured but not split by model or token
+- **Exit code:** 4
+
+## GL2003
+
+- **Message:** the backend refused the benchmark
+- **Cause:** `{endpoint}` answered `{detail}`
+- **Fix:** check that the model `{model}` is available in the backend, for Ollama with 'ollama list', and that --kind matches the server
 - **Exit code:** 4
 
 ## GL3001

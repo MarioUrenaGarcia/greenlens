@@ -210,10 +210,10 @@ func kindList() string {
 	return strings.Join(out, ", ")
 }
 
-// checkEndpoint accepts the base URL of a backend: http or https, a host,
+// CheckEndpoint accepts the base URL of a backend: http or https, a host,
 // and nothing that could carry a secret or change the paths GreenLens asks
 // for.
-func checkEndpoint(s string) error {
+func CheckEndpoint(s string) error {
 	u, err := url.Parse(s)
 	switch {
 	case err != nil:
@@ -399,7 +399,7 @@ func (c Config) Validate() error {
 		if _, port, err := net.SplitHostPort(p.Listen); err != nil || port == "" || port == "0" {
 			bad("proxy.listen", "must be an address and port, such as 127.0.0.1:11435")
 		}
-		if err := checkEndpoint(p.Upstream); err != nil {
+		if err := CheckEndpoint(p.Upstream); err != nil {
 			bad("proxy.upstream", err.Error())
 		}
 	}
@@ -428,7 +428,7 @@ func (c Config) Validate() error {
 			bad(key+".kind", fmt.Sprintf("unknown kind %q; valid: %s", b.Kind, kindList()))
 		}
 		if b.Endpoint != "" {
-			if err := checkEndpoint(b.Endpoint); err != nil {
+			if err := CheckEndpoint(b.Endpoint); err != nil {
 				bad(key+".endpoint", err.Error())
 			}
 		}

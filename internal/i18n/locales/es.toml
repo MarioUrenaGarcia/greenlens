@@ -238,6 +238,58 @@ agent = "del agente"
 database = "de la última calibración"
 none = "sin calibración"
 
+[cli.bench]
+short = "Mide la energía de un modelo con un benchmark"
+long = "Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. Con una calibración, la energía por token es la que está sobre el reposo."
+no_baseline = "No se encontró una calibración: la energía por token incluye la potencia en reposo. Ejecuta antes 'greenlens calibrate' para obtener resultados comparables entre equipos."
+start = "Benchmark de {model} en {endpoint}: {runs} corridas de {prompts} prompts tras el calentamiento."
+progress = "Corrida {run} de {runs} terminada."
+estimated = "La energía del procesador es estimada, no medida; estos resultados no son comparables con los medidos."
+basis_dynamic = "sobre el reposo"
+basis_total = "con el reposo incluido"
+summary = "Energía por token generado: {mean} +- {ci} (95% de confianza), coeficiente de variación {cv}%, {basis}."
+unstable = "Las corridas varían {cv}%, más de 10%: la medición no es estable. Causas probables:"
+saved = "Guardado como benchmark {id}; compáralo con 'greenlens compare {id} <otro id>'."
+not_saved = "No se guardó: el agente no está en ejecución."
+
+[cli.bench.col]
+run = "Corrida"
+dynamic = "Sobre el reposo"
+duration = "Duración"
+
+[cli.bench.cause]
+governor = "el governor de frecuencia de la CPU no es 'performance'"
+temperature = "el procesador se calentó más de 10 grados durante las corridas"
+throttling = "el procesador redujo su frecuencia por temperatura"
+other_processes = "otros procesos usaron más de 20% del tiempo de CPU"
+
+[cli.bench.flag]
+model = "Modelo a medir, con el nombre que le da el backend"
+kind = "Tipo de backend: ollama, llamacpp, vllm, tgi, sglang, localai u openai"
+endpoint = "URL base del backend; vacío usa el puerto por defecto de su tipo"
+prompts = "Archivo con un prompt por línea en lugar del conjunto incluido"
+runs = "Corridas medidas, de 2 a 100"
+warmup = "Corridas previas sin medir, que cargan el modelo"
+max_tokens = "Máximo de tokens generados por prompt"
+interval = "Intervalo de muestreo de la energía, de 50ms a 10s"
+no_save = "No guarda el resultado en el agente"
+
+[cli.compare]
+short = "Compara la energía por token de dos modelos o benchmarks"
+long = "Compara dos benchmarks, por sus ids, o dos modelos, como backend/modelo o por nombre de modelo, según la energía por token generado medida en un periodo. Proyecta la energía, las emisiones y el costo que se ahorrarían si el trabajo del primero lo hiciera el segundo: 1,000 tokens generados para benchmarks, los tokens que generó el primer modelo en el periodo para modelos."
+what = "Comparado"
+tokens = "Tokens generados"
+saves = "Servir {tokens} tokens generados con B en lugar de A usaría {b} en lugar de {a}: {saved} menos ({percent}%), {co2e} de CO2e."
+costs = "Servir {tokens} tokens generados con B en lugar de A usaría {b} en lugar de {a}: {saved} más ({percent}%), {co2e} de CO2e."
+noise = "Los intervalos de confianza al 95% se traslapan: la diferencia puede ser ruido."
+
+[cli.compare.note]
+prompts = "los benchmarks usaron conjuntos de prompts distintos"
+basis = "un benchmark cuenta la energía sobre el reposo y el otro incluye el reposo"
+hardware = "los benchmarks corrieron en hardware distinto"
+max_tokens = "los benchmarks generaron un número distinto de tokens por prompt"
+traffic = "la proyección supone que el segundo modelo respondería las mismas peticiones con los mismos tokens"
+
 [cli.proxy]
 short = "Muestra el estado del proxy que cuenta tokens"
 long = "Muestra la dirección, el destino y las peticiones del proxy inverso que el agente ejecuta para servidores que no cuentan tokens, como Ollama. El proxy reenvía las peticiones sin cambios y solo lee los conteos de tokens; actívalo en proxy de la configuración."
@@ -355,6 +407,11 @@ fix = "ejecuta '{command} --help' para ver cómo usarlo"
 message = "idioma no soportado '{lang}'"
 cause = "el idioma proviene de {source}"
 fix = "usa uno de: {supported}"
+
+[errors.GL0015]
+message = "'{command}' recibe {want} argumentos"
+cause = "se recibieron {got}"
+fix = "ejecuta '{command} --help' para ver cómo usarlo"
 
 [errors.GL1001]
 message = "no hay ninguna fuente de energía medida disponible"
@@ -520,3 +577,8 @@ fix = "verifica que el servidor esté en ejecución y escuche ahí; si es un bac
 message = "el backend {name} no expone métricas"
 cause = "{kind} solo ofrece contadores de tokens cuando se inicia con {flag}"
 fix = "reinícialo con {flag}; mientras tanto su energía se mide pero no se reparte por modelo ni por token"
+
+[errors.GL2003]
+message = "el backend rechazó el benchmark"
+cause = "{endpoint} respondió {detail}"
+fix = "verifica que el modelo {model} esté disponible en el backend, en Ollama con 'ollama list', y que --kind corresponda al servidor"

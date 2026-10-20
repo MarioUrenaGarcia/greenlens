@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"slices"
 	"strconv"
 	"time"
@@ -19,7 +21,9 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
+	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
+	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 )
@@ -83,6 +87,9 @@ func (a *Agent) handler() http.Handler {
 		writeJSON(w, http.StatusOK, a.Live())
 	})
 	mux.HandleFunc("POST "+api.PathCalibrations, a.handleCalibration)
+	mux.HandleFunc("GET "+api.PathBenchmarks, a.handleBenchmarks)
+	mux.HandleFunc("GET "+api.PathBenchmarks+"/{id}", a.handleBenchmark)
+	mux.HandleFunc("POST "+api.PathBenchmarks, a.handleSaveBenchmark)
 	return mux
 }
 
@@ -299,4 +306,92 @@ func rss() uint64 {
 		return 0
 	}
 	return resident * uint64(os.Getpagesize()) //nolint:gosec // the page size is positive
+}
+
+func (a *Agent) handleBenchmarks(w http.ResponseWriter, r *http.Request) {
+	limit := 50
+	if v := r.URL.Query().Get("limit"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 1000 {
+			writeError(w, http.StatusBadRequest, "limit must be between 1 and 1000")
+			return
+		}
+		limit = n
+	}
+	list, err := a.st.Benchmarks(r.Context(), limit)
+	if err != nil {
+		a.log.Error("benchmark query failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "benchmark query failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, api.Benchmarks{SchemaVersion: api.SchemaVersion, Benchmarks: list})
+}
+
+func (a *Agent) handleBenchmark(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		writeError(w, http.StatusBadRequest, "the id of a benchmark is a positive integer")
+		return
+	}
+	b, err := a.st.Benchmark(r.Context(), id)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		writeError(w, http.StatusNotFound, "no benchmark has this id")
+	case err != nil:
+		a.log.Error("benchmark query failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "benchmark query failed")
+	default:
+		writeJSON(w, http.StatusOK, b)
+	}
+}
+
+func (a *Agent) handleSaveBenchmark(w http.ResponseWriter, r *http.Request) {
+	var b bench.Result
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBody))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&b); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid benchmark: "+err.Error())
+		return
+	}
+	if err := validBenchmark(b); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	b.ID = 0
+	id, err := a.st.SaveBenchmark(r.Context(), b)
+	if err != nil {
+		a.log.Error("saving the benchmark failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "saving the benchmark failed")
+		return
+	}
+	b.ID = id
+	who := actor(r)
+	if err := a.st.Audit(r.Context(), who, "benchmark", fmt.Sprintf("%s %s, %d runs", b.Target.Kind, b.Target.Model, len(b.Runs))); err != nil {
+		a.log.Warn("audit log write failed", "error", err)
+	}
+	writeJSON(w, http.StatusCreated, b)
+}
+
+var hexDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+func validBenchmark(b bench.Result) error {
+	finite := func(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= 0 }
+	switch {
+	case len(b.Runs) < 2 || len(b.Runs) > 1000:
+		return errors.New("a benchmark has between 2 and 1000 runs")
+	case b.Target.Model == "" || len(b.Target.Model) > 512 || !slices.Contains(discovery.Kinds, b.Target.Kind):
+		return errors.New("a benchmark needs a model and a known backend kind")
+	case !hexDigest.MatchString(b.PromptSetSHA256):
+		return errors.New("prompt_set_sha256 must be 64 hexadecimal digits")
+	case !b.EndedAt.After(b.StartedAt):
+		return errors.New("a benchmark must end after it starts")
+	case b.Basis != bench.BasisDynamic && b.Basis != bench.BasisTotal:
+		return errors.New("basis must be dynamic or total")
+	}
+	for _, r := range b.Runs {
+		if !finite(r.EnergyJ) || !finite(r.DynamicJ) || !finite(r.DurationS) || !finite(r.JPerToken) || r.GeneratedTokens < 0 || r.PromptTokens < 0 {
+			return errors.New("run values must be finite and not negative")
+		}
+	}
+	return nil
 }

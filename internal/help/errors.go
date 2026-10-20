@@ -36,6 +36,7 @@ const (
 	GL0012 Code = "GL0012" // measure needs exactly one target
 	GL0013 Code = "GL0013" // process to measure not found
 	GL0014 Code = "GL0014" // cgroup of the unit not found
+	GL0015 Code = "GL0015" // wrong number of positional arguments
 
 	GL1001 Code = "GL1001" // no measured energy source
 	GL1002 Code = "GL1002" // RAPL counters readable only by root
@@ -55,6 +56,7 @@ const (
 
 	GL2001 Code = "GL2001" // backend not reachable
 	GL2002 Code = "GL2002" // backend without metrics
+	GL2003 Code = "GL2003" // backend refused a benchmark request
 
 	GL3001 Code = "GL3001" // configuration file not found
 	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
@@ -95,6 +97,7 @@ var exitCodes = map[Code]int{
 	GL0012: ExitUsage,
 	GL0013: ExitError,
 	GL0014: ExitError,
+	GL0015: ExitUsage,
 	GL1001: ExitNoSource,
 	GL1002: ExitPermission,
 	GL1003: ExitPermission,
@@ -112,6 +115,7 @@ var exitCodes = map[Code]int{
 	GL1015: ExitNoSource,
 	GL2001: ExitBackend,
 	GL2002: ExitBackend,
+	GL2003: ExitBackend,
 	GL3001: ExitConfig,
 	GL3002: ExitConfig,
 	GL3003: ExitConfig,

@@ -5,11 +5,15 @@ package store
 
 import (
 	"context"
+	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
+	"github.com/MarioUrenaGarcia/greenlens/internal/stats"
 	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 )
 
@@ -110,5 +114,43 @@ func TestModelIntervals(t *testing.T) {
 	got, err := s.ModelIntervals(ctx, "llama", "q", now, now.Add(time.Hour))
 	if err != nil || len(got) != 2 || got[1].EnergyJ != 12 || got[1].GeneratedTokens != 40 {
 		t.Fatalf("%+v %v", got, err)
+	}
+}
+
+func TestBenchmarks(t *testing.T) {
+	ctx := context.Background()
+	s := open(t)
+	now := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
+	r := bench.Result{StartedAt: now, EndedAt: now.Add(time.Minute), Target: bench.Target{Kind: "ollama", Endpoint: "http://127.0.0.1:11434", Model: "qwen2.5:0.5b"},
+		Params: bench.DefaultParams(), PromptSetSHA256: bench.Hash(bench.DefaultPrompts()), Runs: []bench.Run{{EnergyJ: 10}, {EnergyJ: 11}},
+		JPerToken: stats.Summary{N: 2, Mean: 0.5}, GeneratedTokens: 40}
+	id, err := s.SaveBenchmark(ctx, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Benchmark(ctx, id)
+	if err != nil || got.ID != id || got.Target.Model != "qwen2.5:0.5b" || len(got.Runs) != 2 || got.JPerToken.Mean != 0.5 {
+		t.Fatalf("%+v %v", got, err)
+	}
+	if _, err := s.Benchmark(ctx, id+1); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing: %v", err)
+	}
+	r.StartedAt = now.Add(time.Hour)
+	if _, err := s.SaveBenchmark(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	list, err := s.Benchmarks(ctx, 10)
+	if err != nil || len(list) != 2 || list[0].ID != id+1 {
+		t.Fatalf("%+v %v", list, err)
+	}
+	// The prompts themselves are never stored.
+	var stored string
+	if err := s.DB().QueryRowContext(ctx, `SELECT results FROM benchmarks WHERE id = ?`, id).Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range bench.DefaultPrompts() {
+		if strings.Contains(stored, p) {
+			t.Fatalf("a prompt was stored")
+		}
 	}
 }

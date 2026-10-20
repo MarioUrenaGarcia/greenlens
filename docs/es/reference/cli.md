@@ -40,6 +40,37 @@ greenlens agent
 greenlens agent --config /etc/greenlens/greenlens.yaml
 ```
 
+## greenlens bench
+
+Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. Con una calibración, la energía por token es la que está sobre el reposo.
+
+**Uso**
+
+```text
+greenlens bench [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--endpoint` | URL base del backend; vacío usa el puerto por defecto de su tipo |  |
+| `--interval` | Intervalo de muestreo de la energía, de 50ms a 10s | `100ms` |
+| `--kind` | Tipo de backend: ollama, llamacpp, vllm, tgi, sglang, localai u openai | `ollama` |
+| `--max-tokens` | Máximo de tokens generados por prompt | `128` |
+| `--model` | Modelo a medir, con el nombre que le da el backend |  |
+| `--no-save` | No guarda el resultado en el agente |  |
+| `--prompts` | Archivo con un prompt por línea en lugar del conjunto incluido |  |
+| `--runs` | Corridas medidas, de 2 a 100 | `5` |
+| `--warmup` | Corridas previas sin medir, que cargan el modelo | `1` |
+
+**Ejemplos**
+
+```bash
+greenlens bench --model qwen2.5:0.5b
+greenlens bench --kind llamacpp --endpoint http://127.0.0.1:8080 --model q.gguf --runs 10
+```
+
 ## greenlens calibrate
 
 Mide la potencia de cada dominio mientras el equipo está en reposo y guarda la mediana como línea base de reposo. La política de reposo dynamic resta esta línea base antes de atribuir energía a los procesos. Detén otras cargas antes.
@@ -62,6 +93,30 @@ greenlens calibrate [opciones]
 ```bash
 greenlens calibrate
 greenlens calibrate --duration 5m
+```
+
+## greenlens compare
+
+Compara dos benchmarks, por sus ids, o dos modelos, como backend/modelo o por nombre de modelo, según la energía por token generado medida en un periodo. Proyecta la energía, las emisiones y el costo que se ahorrarían si el trabajo del primero lo hiciera el segundo: 1,000 tokens generados para benchmarks, los tokens que generó el primer modelo en el periodo para modelos.
+
+**Uso**
+
+```text
+greenlens compare <a> <b> [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--from` | Inicio del periodo | `7d` |
+| `--to` | Fin del periodo | `now` |
+
+**Ejemplos**
+
+```bash
+greenlens compare 3 7
+greenlens compare ollama-11434/llama3.2 ollama-11434/qwen2.5:0.5b --from 7d
 ```
 
 ## greenlens config

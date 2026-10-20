@@ -10,9 +10,12 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -20,6 +23,7 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/agent"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
+	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/ipmi"
@@ -271,6 +275,58 @@ func TestMeasureTargets(t *testing.T) {
 	}
 }
 
+// fakeOllama generates 10 tokens for each prompt of a known model.
+func fakeOllama(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Model string `json:"model"`
+		}
+		if json.NewDecoder(r.Body).Decode(&req) != nil || req.Model != "qwen2.5:0.5b" || r.URL.Path != "/api/generate" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(w, `{"error":"model not found"}`)
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+		_, _ = io.WriteString(w, `{"model":"qwen2.5:0.5b","response":"x","done":true,"prompt_eval_count":20,"eval_count":10}`)
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+func TestBenchCommand(t *testing.T) {
+	url := fakeOllama(t)
+	env := map[string]string{"HOME": t.TempDir()}
+	code, out, errOut := runWith(t, risingHooks(), env, "bench", "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "3", "--warmup", "0", "--interval", "50ms", "--no-save", "-o", "json")
+	if code != 0 {
+		t.Fatalf("exit %d\n%s", code, errOut)
+	}
+	var r bench.Result
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Runs) != 3 || r.GeneratedTokens != 3*80 || r.Basis != bench.BasisTotal || r.Runs[0].EnergyJ <= 0 || r.JPerToken.Mean <= 0 || r.PromptSetSHA256 != bench.Hash(bench.DefaultPrompts()) {
+		t.Fatalf("result %+v", r)
+	}
+	for _, tt := range []struct {
+		args []string
+		code int
+		want string
+	}{
+		{[]string{"bench"}, 2, "GL0005"},
+		{[]string{"bench", "--model", "m", "--kind", "process"}, 2, "GL0005"},
+		{[]string{"bench", "--model", "m", "--runs", "1"}, 2, "GL0005"},
+		{[]string{"bench", "--model", "m", "--endpoint", "ftp://x"}, 2, "GL0005"},
+		{[]string{"bench", "--endpoint", url, "--model", "missing", "--warmup", "0", "--no-save"}, 4, "GL2003"},
+		{[]string{"compare", "1"}, 2, "GL0015"},
+	} {
+		code, _, errOut := runWith(t, risingHooks(), env, tt.args...)
+		if code != tt.code || !strings.Contains(errOut, tt.want) {
+			t.Errorf("%v: exit %d, stderr %s", tt.args, code, errOut)
+		}
+	}
+}
+
 func TestCalibrateRefusesAnEstimate(t *testing.T) {
 	code, _, errOut := runWith(t, fixtureHooks(t, "vm-no-sensors"), nil, "calibrate")
 	if code != 3 || !strings.Contains(errOut, "GL1001") {
@@ -349,6 +405,28 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	}
 	if code, out, _ := runWith(t, hooks{}, nil, "proxy", "--config", cfgPath); code != 0 || !strings.Contains(out, "proxy.enabled") {
 		t.Fatalf("proxy off: %d %s", code, out)
+	}
+	// Two benchmarks saved in the agent, then compared.
+	url := fakeOllama(t)
+	var ids []string
+	for range 2 {
+		code, out, errOut := runWith(t, risingHooks(), nil, "bench", "--config", cfgPath, "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "2", "--warmup", "0", "--interval", "50ms", "-o", "json")
+		var r bench.Result
+		if code != 0 || json.Unmarshal([]byte(out), &r) != nil || r.ID == 0 {
+			t.Fatalf("bench: %d %s %s", code, out, errOut)
+		}
+		ids = append(ids, strconv.FormatInt(r.ID, 10))
+	}
+	code, out, errOut = runWith(t, hooks{}, nil, "compare", "--config", cfgPath, ids[0], ids[1], "-o", "json")
+	var cmp CompareReport
+	if code != 0 || json.Unmarshal([]byte(out), &cmp) != nil || cmp.Tokens != 1000 || cmp.A.Kind != "benchmark" || cmp.A.JPerToken <= 0 || cmp.Ratio <= 0 {
+		t.Fatalf("compare: %d %+v %s", code, cmp, errOut)
+	}
+	if code, out, _ := runWith(t, hooks{}, nil, "compare", "--config", cfgPath, ids[0], ids[1]); code != 0 || !strings.Contains(out, "1000 generated tokens") {
+		t.Fatalf("compare table: %d %s", code, out)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "compare", "--config", cfgPath, "llama3.2", "qwen"); code != 2 || !strings.Contains(errOut, "GL0005") {
+		t.Fatalf("unknown models: %d %s", code, errOut)
 	}
 	for _, args := range [][]string{{"--group", "team"}, {"--group", "model", "--by", "day"}} {
 		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"report", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {

@@ -238,6 +238,58 @@ agent = "from the agent"
 database = "from the last calibration"
 none = "no calibration"
 
+[cli.bench]
+short = "Benchmark the energy of a model"
+long = "Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. With a calibration, the energy per token is on the energy above idle."
+no_baseline = "No calibration found: the energy per token includes idle power. Run 'greenlens calibrate' first for results that compare across machines."
+start = "Benchmarking {model} at {endpoint}: {runs} runs of {prompts} prompts after warming up."
+progress = "Run {run} of {runs} done."
+estimated = "The processor energy is estimated, not measured; these results are not comparable with measured ones."
+basis_dynamic = "above idle"
+basis_total = "including idle"
+summary = "Energy per generated token: {mean} +- {ci} (95% confidence), coefficient of variation {cv}%, {basis}."
+unstable = "The runs vary by {cv}%, more than 10%: the measurement is not stable. Likely causes:"
+saved = "Saved as benchmark {id}; compare it with 'greenlens compare {id} <other id>'."
+not_saved = "Not saved: the agent is not running."
+
+[cli.bench.col]
+run = "Run"
+dynamic = "Above idle"
+duration = "Duration"
+
+[cli.bench.cause]
+governor = "the CPU frequency governor is not 'performance'"
+temperature = "the processor warmed up by more than 10 degrees during the runs"
+throttling = "the processor throttled itself because of temperature"
+other_processes = "other processes used more than 20% of the CPU time"
+
+[cli.bench.flag]
+model = "Model to benchmark, as the backend names it"
+kind = "Kind of backend: ollama, llamacpp, vllm, tgi, sglang, localai or openai"
+endpoint = "Base URL of the backend; empty uses the default port of its kind"
+prompts = "File with one prompt per line instead of the built-in set"
+runs = "Measured runs, from 2 to 100"
+warmup = "Runs before measuring, which load the model"
+max_tokens = "Most tokens generated per prompt"
+interval = "Sampling interval of the energy, from 50ms to 10s"
+no_save = "Do not store the result in the agent"
+
+[cli.compare]
+short = "Compare the energy per token of two models or benchmarks"
+long = "Compare two benchmarks, by their ids, or two models, as backend/model or as a model name, by the energy per generated token measured in a period. It projects the energy, emissions and cost saved if the work of the first were done by the second: 1,000 generated tokens for benchmarks, the tokens the first model generated in the period for models."
+what = "Compared"
+tokens = "Generated tokens"
+saves = "Serving {tokens} generated tokens with B instead of A would use {b} instead of {a}: {saved} less ({percent}%), {co2e} of CO2e."
+costs = "Serving {tokens} generated tokens with B instead of A would use {b} instead of {a}: {saved} more ({percent}%), {co2e} of CO2e."
+noise = "The 95% confidence intervals overlap: the difference may be noise."
+
+[cli.compare.note]
+prompts = "the benchmarks used different prompt sets"
+basis = "one benchmark counts energy above idle and the other includes idle"
+hardware = "the benchmarks ran on different hardware"
+max_tokens = "the benchmarks generated a different number of tokens per prompt"
+traffic = "the projection assumes the second model would answer the same requests with as many tokens"
+
 [cli.proxy]
 short = "Show the state of the token-counting proxy"
 long = "Show the address, upstream and requests of the reverse proxy the agent runs for servers that do not count tokens, such as Ollama. The proxy forwards requests unchanged and reads only token counts; enable it under proxy in the configuration."
@@ -355,6 +407,11 @@ fix = "run '{command} --help' to see how to use it"
 message = "unsupported language '{lang}'"
 cause = "the language comes from {source}"
 fix = "use one of: {supported}"
+
+[errors.GL0015]
+message = "'{command}' takes {want} arguments"
+cause = "received {got}"
+fix = "run '{command} --help' to see how to use it"
 
 [errors.GL1001]
 message = "no measured energy source is available"
@@ -520,3 +577,8 @@ fix = "check that the server runs and listens there; for a declared backend, che
 message = "the backend {name} does not expose metrics"
 cause = "{kind} serves token counters only when started with {flag}"
 fix = "restart it with {flag}; until then its energy is measured but not split by model or token"
+
+[errors.GL2003]
+message = "the backend refused the benchmark"
+cause = "{endpoint} answered {detail}"
+fix = "check that the model {model} is available in the backend, for Ollama with 'ollama list', and that --kind matches the server"

@@ -30,6 +30,13 @@ All notable changes to GreenLens are recorded in this file. The format follows
   token counts of the responses, can return the energy of each request in
   `X-GreenLens-Energy-Joules`, and attributes energy to consumers identified
   by an HMAC of a request header. `greenlens proxy` shows its state.
+- `greenlens bench`: reproducible benchmarks of a model with greedy
+  decoding and a fixed seed, reporting the energy per generated token with
+  its mean, deviation, coefficient of variation and 95% confidence interval,
+  the conditions of the machine and the likely causes of unstable runs; only
+  the hash of the prompts is stored.
+- `greenlens compare`: compares two benchmarks or two models and projects
+  the energy, emissions and cost saved by switching.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.
