@@ -1,0 +1,6 @@
+# Read access to the RAPL energy counters for the greenlens-power group, so
+# the GreenLens agent can measure without running as root. The counters are
+# readable only by root by default because of the RAPL side channel
+# (CVE-2020-8694); granting them to a dedicated group keeps that exposure
+# limited to its members.
+ACTION=="add", SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*|intel-rapl-mmio:*", RUN+="/bin/chgrp greenlens-power /sys%p/energy_uj", RUN+="/bin/chmod g+r /sys%p/energy_uj"

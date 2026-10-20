@@ -1,0 +1,3 @@
+# Access to the IPMI device for the greenlens-power group, so the GreenLens
+# agent can read the server power from the BMC without running as root.
+SUBSYSTEM=="ipmi", KERNEL=="ipmi[0-9]*", GROUP="greenlens-power", MODE="0660"

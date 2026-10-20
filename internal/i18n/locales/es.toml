@@ -8,6 +8,13 @@ long = "GreenLens mide, atribuye y reporta la energía, las emisiones y el costo
 [cli.flag]
 help = "Muestra la ayuda de {command}"
 lang = "Idioma de los mensajes (`idioma`: en o es). Por defecto, el del sistema"
+output = "Formato de salida (`formato`: table, json, csv o yaml)"
+quiet = "Muestra solo el resultado, sin progreso ni consejos"
+verbose = "Muestra detalles de cada paso, como errores al leer sensores"
+config = "`Archivo` de configuración. Por defecto, /etc/greenlens/greenlens.yaml y luego el del usuario"
+no_color = "No colorea la salida; NO_COLOR tiene el mismo efecto"
+raw = "Muestra los valores en unidades base (J, W, g) con precisión completa"
+interval = "Intervalo de muestreo (por defecto, agent.sample_interval)"
 
 [cli.help_cmd]
 short = "Muestra la ayuda de un comando"
@@ -40,6 +47,197 @@ disabled = "desactivado en la configuración"
 duplicate = "{source} ya mide este dominio"
 forced = "{source} está forzado para este dominio"
 contained = "solo se reporta con {source}, la fuente del paquete"
+
+[cli]
+problems = "Problemas encontrados:"
+yes = "sí"
+no = "no"
+
+[cli.help_code]
+cause = "Causa:"
+fix = "Solución:"
+exit = "Código de salida:"
+
+[cli.col]
+domain = "Dominio"
+power = "Potencia"
+energy_since_start = "Energía desde el inicio"
+quality = "Calidad"
+source = "Fuente"
+channel = "Canal"
+status = "Estado"
+reason = "Motivo"
+period = "Periodo"
+components = "CPU, memoria y GPU"
+cost = "Costo"
+
+[domain]
+package = "Paquete de CPU"
+core = "Núcleos de CPU"
+uncore = "Uncore de CPU"
+dram = "Memoria"
+gpu = "GPU"
+psys = "Plataforma (psys)"
+platform = "Plataforma"
+wall = "Pared"
+
+[quality]
+measured = "medido"
+platform = "plataforma"
+estimated = "estimado"
+
+[level]
+component = "componente"
+contained = "parte del paquete"
+system = "incluye los componentes"
+
+[cli.agent]
+short = "Ejecuta el agente de medición"
+long = "Ejecuta el agente en primer plano: muestrea las fuentes de energía, guarda las mediciones y atiende a los demás comandos por su socket local. Con systemd corre como el servicio greenlens. SIGHUP recarga la configuración y SIGTERM lo detiene."
+
+[cli.status]
+short = "Muestra la potencia y el estado del agente en ejecución"
+long = "Muestra la potencia de cada dominio en la última muestra, la energía desde que inició el agente, la calidad de cada valor, la línea base de reposo y el consumo del propio agente."
+agent = "Agente"
+uptime = "en ejecución desde hace"
+samples = "muestras:"
+interval = "Muestreo cada"
+policy = "política de reposo"
+baseline = "Línea base de reposo de la CPU:"
+drift = "La potencia en reposo ahora es {idle}, a {percent}% de la calibración; ejecuta 'greenlens calibrate' de nuevo."
+no_calibration = "Sin calibración: ejecuta 'greenlens calibrate' con el equipo en reposo para separar la energía dinámica de la de reposo."
+self = "Energía del propio agente:"
+memory = "memoria"
+
+[cli.brief]
+no_agent = "El agente de GreenLens no está en ejecución."
+next_agent = "Siguiente paso: ejecuta 'greenlens doctor' para revisar las fuentes de energía y luego inicia el agente con 'greenlens agent'."
+running = "El agente está en ejecución: {power} en CPU, memoria y GPU ({quality})."
+next_calibrate = "Siguiente paso: ejecuta 'greenlens calibrate' con el equipo en reposo."
+next_status = "Siguiente paso: 'greenlens status' para ver detalles, o 'greenlens report' para la energía de un periodo."
+more = "Ejecuta 'greenlens --help' para ver todos los comandos."
+
+[cli.config]
+short = "Valida y muestra la configuración"
+long = "Revisa el archivo de configuración, muestra los valores en uso después de los valores por defecto y de las variables de entorno GREENLENS_*, o indica qué archivo se lee."
+validate = "Revisa la configuración y reporta todos los problemas"
+show = "Muestra la configuración en uso"
+path = "Muestra el archivo de configuración que se lee"
+valid = "La configuración es válida ({path})."
+defaults = "valores por defecto, sin archivo"
+none = "No hay archivo de configuración; se usan los valores por defecto."
+searched = "buscado: {path}"
+
+[cli.doctor]
+short = "Diagnostica las fuentes de energía y la instalación"
+long = "Revisa el equipo, los permisos y cada fuente de energía, muestra qué canales se usan y por qué no se usan los demás, y explica cómo corregir cada problema."
+environment = "Entorno"
+sources = "Fuentes de energía"
+kernel = "Kernel"
+cpu = "Procesador"
+virtualized = "Máquina virtual"
+container = "Contenedor"
+cgroup = "cgroup v2"
+paranoid = "perf_event_paranoid"
+group = "Grupo {group}"
+group_active = "miembro, activo en esta sesión"
+group_relogin = "miembro, activo desde el próximo inicio de sesión"
+group_missing = "no es miembro"
+landlock = "Landlock"
+landlock_on = "disponible, ABI {abi}"
+landlock_off = "no disponible"
+config = "Configuración"
+agent = "Agente"
+agent_on = "en ejecución en {socket}"
+agent_off = "no está en ejecución"
+selected = "se usa"
+discarded = "no se usa"
+measured = "La energía de la CPU se mide con contadores de hardware."
+estimated = "La energía de la CPU se estima con el modelo: {model}."
+
+[cli.perm]
+short = "Permite al agente leer los sensores de energía sin root"
+long = "Muestra los cambios que dan al grupo greenlens-power acceso de lectura a los contadores de energía RAPL y, de forma opcional, al dispositivo IPMI y la capacidad CAP_PERFMON para perf_event. Nada cambia hasta que el comando se ejecuta como root con --apply."
+plan = "Plan:"
+risk = "Leer contadores de energía con alta resolución puede filtrar información de otros procesos (CVE-2020-8694). Da el grupo solo al agente y a los administradores que lo necesiten."
+how = "No se cambió nada. Para aplicar el plan, ejecuta: sudo greenlens setup-permissions --apply"
+confirm = "¿Aplicar estos cambios? [s/N]"
+cancelled = "No se cambió nada."
+done = "hecho"
+after = "Los usuarios agregados al grupo obtienen acceso desde su próximo inicio de sesión. Revisa el resultado con 'greenlens doctor'."
+
+[cli.perm.flag]
+apply = "Aplica el plan; requiere root"
+yes = "No pide confirmación"
+perfmon = "También da CAP_PERFMON a este binario, para perf_event"
+ipmi = "También da al grupo acceso al dispositivo IPMI"
+user = "Agrega este `usuario` al grupo"
+
+[cli.perm.step]
+group = "Crear el grupo de sistema {group}"
+rule = "Escribir {path}"
+reload = "Recargar las reglas de udev"
+trigger = "Aplicar las reglas a los dispositivos existentes"
+user = "Agregar {user} a {group}"
+perfmon = "Dar CAP_PERFMON a {path}"
+
+[cli.calibrate]
+short = "Mide la potencia del equipo en reposo"
+long = "Mide la potencia de cada dominio mientras el equipo está en reposo y guarda la mediana como línea base de reposo. La política de reposo dynamic resta esta línea base antes de atribuir energía a los procesos. Detén otras cargas antes."
+start = "Midiendo la potencia en reposo durante {duration}. Mantén el equipo en reposo."
+samples = "Muestras:"
+frequency = "Frecuencia de CPU:"
+governor = "governor:"
+temperature = "temperatura:"
+saved = "Guardado en {where}."
+
+[cli.calibrate.flag]
+duration = "Cuánto tiempo medir"
+
+[cli.measure]
+short = "Mide la energía de un comando, proceso o unidad de systemd"
+long = "Mide la energía usada mientras corre un comando, mientras corren un proceso y sus hijos, o mientras corre una unidad de systemd, y le atribuye la parte de la energía de CPU y memoria que corresponde a su tiempo de CPU. Con un comando, su código de salida pasa a ser el de measure y el reporte va a la salida de error."
+no_baseline = "No se encontró calibración: toda la energía por encima de cero cuenta como dinámica. Ejecuta 'greenlens calibrate' para un mejor reparto."
+target = "Medido"
+duration = "Duración"
+energy = "Energía atribuida"
+cpu = "  CPU"
+dram = "  memoria"
+power = "Potencia promedio"
+share = "Proporción de CPU"
+node = "Energía del nodo"
+co2e = "Emisiones"
+cost = "Costo"
+water = "Agua"
+method = "Método"
+policy = "política de reposo"
+baseline = "Línea base de reposo"
+platform = "Energía de plataforma atribuida"
+
+[cli.measure.flag]
+pid = "Mide este proceso y sus hijos"
+unit = "Mide esta `unidad` de systemd"
+duration = "Termina después de este tiempo; por defecto, cuando termina lo medido"
+report = "Escribe el reporte en este `archivo` en lugar de la terminal"
+
+[cli.measure.baseline]
+agent = "del agente"
+database = "de la última calibración"
+none = "sin calibración"
+
+[cli.report]
+short = "Reporta la energía, las emisiones y el costo de un periodo"
+long = "Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d."
+period = "Del {from} al {to}"
+total = "total"
+factor = "Factor de emisión: {value} gCO2e/kWh ({source})."
+estimated = "Parte de la energía es estimada, no medida."
+system_levels = "Los valores de plataforma y pared incluyen los componentes y no se suman a ellos."
+
+[cli.report.flag]
+from = "Inicio del periodo"
+to = "Fin del periodo"
+by = "Agrupa por none, hour o day"
 
 [errors]
 label = "error"
@@ -186,3 +384,43 @@ fix = "detén el otro agente, o asigna a este otro agent.socket y otro agent.dat
 message = "el agente rechazó la solicitud"
 cause = "{status}: {detail}"
 fix = "revisa los registros del agente, por ejemplo con 'journalctl -u greenlens'"
+
+[errors.GL0009]
+message = "formato de salida no soportado '{value}'"
+cause = "la salida solo se puede escribir como {formats}"
+fix = "indica uno de ellos en --output"
+
+[errors.GL0010]
+message = "código de error desconocido '{code}'"
+cause = "{code} no es un código de error de GreenLens"
+fix = "consulta la referencia de códigos de error en la documentación"
+
+[errors.GL0011]
+message = "no se puede iniciar '{command}'"
+cause = "{detail}"
+fix = "revisa el nombre del comando y que esté en el PATH"
+
+[errors.GL0012]
+message = "measure necesita exactamente un objetivo"
+cause = "indica un comando después de --, o --pid, o --unit, pero solo uno de ellos"
+fix = "ejecuta 'greenlens measure --help' para ver ejemplos"
+
+[errors.GL0013]
+message = "el proceso {pid} no existe"
+cause = "ningún proceso tiene ese PID, o no es visible desde aquí"
+fix = "revisa el PID con ps, o mide un comando en su lugar"
+
+[errors.GL0014]
+message = "no se encuentra el cgroup de {unit}"
+cause = "no existe un directorio de cgroup v2 llamado {unit} bajo /sys/fs/cgroup"
+fix = "revisa el nombre con 'systemctl status' y que la unidad esté en ejecución"
+
+[errors.GL1011]
+message = "cambiar permisos requiere root"
+cause = "el comando se ejecuta como {user}"
+fix = "ejecuta 'sudo greenlens setup-permissions --apply'"
+
+[errors.GL1012]
+message = "falló el paso {step} del plan"
+cause = "{detail}"
+fix = "corrige el problema y ejecuta el comando de nuevo; los pasos ya completados se pueden repetir sin riesgo"

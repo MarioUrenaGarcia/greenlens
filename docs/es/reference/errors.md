@@ -16,6 +16,12 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL0006](#gl0006) | sintaxis de opción no válida '`{arg}`' | 2 |
 | [GL0007](#gl0007) | '`{command}`' no acepta argumentos | 2 |
 | [GL0008](#gl0008) | idioma no soportado '`{lang}`' | 2 |
+| [GL0009](#gl0009) | formato de salida no soportado '`{value}`' | 2 |
+| [GL0010](#gl0010) | código de error desconocido '`{code}`' | 2 |
+| [GL0011](#gl0011) | no se puede iniciar '`{command}`' | 1 |
+| [GL0012](#gl0012) | measure necesita exactamente un objetivo | 2 |
+| [GL0013](#gl0013) | el proceso `{pid}` no existe | 1 |
+| [GL0014](#gl0014) | no se encuentra el cgroup de `{unit}` | 1 |
 | [GL1001](#gl1001) | no hay ninguna fuente de energía medida disponible | 3 |
 | [GL1002](#gl1002) | no se pueden leer los contadores de energía RAPL | 5 |
 | [GL1003](#gl1003) | no se pueden abrir los contadores de energía de perf_event | 5 |
@@ -26,6 +32,8 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1008](#gl1008) | un contador de energía puede desbordarse más de una vez entre muestras | 1 |
 | [GL1009](#gl1009) | no se usa el sensor de potencia de un driver de hwmon desconocido | 3 |
 | [GL1010](#gl1010) | el procesador no está en la tabla de estimación | 3 |
+| [GL1011](#gl1011) | cambiar permisos requiere root | 5 |
+| [GL1012](#gl1012) | falló el paso `{step}` del plan | 5 |
 | [GL3001](#gl3001) | no se encontró el archivo de configuración | 6 |
 | [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
 | [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
@@ -92,6 +100,48 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** el idioma proviene de `{source}`
 - **Solución:** usa uno de: `{supported}`
 - **Código de salida:** 2
+
+## GL0009
+
+- **Mensaje:** formato de salida no soportado '`{value}`'
+- **Causa:** la salida solo se puede escribir como `{formats}`
+- **Solución:** indica uno de ellos en --output
+- **Código de salida:** 2
+
+## GL0010
+
+- **Mensaje:** código de error desconocido '`{code}`'
+- **Causa:** `{code}` no es un código de error de GreenLens
+- **Solución:** consulta la referencia de códigos de error en la documentación
+- **Código de salida:** 2
+
+## GL0011
+
+- **Mensaje:** no se puede iniciar '`{command}`'
+- **Causa:** `{detail}`
+- **Solución:** revisa el nombre del comando y que esté en el PATH
+- **Código de salida:** 1
+
+## GL0012
+
+- **Mensaje:** measure necesita exactamente un objetivo
+- **Causa:** indica un comando después de --, o --pid, o --unit, pero solo uno de ellos
+- **Solución:** ejecuta 'greenlens measure --help' para ver ejemplos
+- **Código de salida:** 2
+
+## GL0013
+
+- **Mensaje:** el proceso `{pid}` no existe
+- **Causa:** ningún proceso tiene ese PID, o no es visible desde aquí
+- **Solución:** revisa el PID con ps, o mide un comando en su lugar
+- **Código de salida:** 1
+
+## GL0014
+
+- **Mensaje:** no se encuentra el cgroup de `{unit}`
+- **Causa:** no existe un directorio de cgroup v2 llamado `{unit}` bajo /sys/fs/cgroup
+- **Solución:** revisa el nombre con 'systemctl status' y que la unidad esté en ejecución
+- **Código de salida:** 1
 
 ## GL1001
 
@@ -162,6 +212,20 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** '`{model}`' no tiene coeficientes de potencia publicados, así que se usa un promedio genérico por hilo
 - **Solución:** define sources.estimate.idle_watts y sources.estimate.full_watts en la configuración con valores para este procesador
 - **Código de salida:** 3
+
+## GL1011
+
+- **Mensaje:** cambiar permisos requiere root
+- **Causa:** el comando se ejecuta como `{user}`
+- **Solución:** ejecuta 'sudo greenlens setup-permissions --apply'
+- **Código de salida:** 5
+
+## GL1012
+
+- **Mensaje:** falló el paso `{step}` del plan
+- **Causa:** `{detail}`
+- **Solución:** corrige el problema y ejecuta el comando de nuevo; los pasos ya completados se pueden repetir sin riesgo
+- **Código de salida:** 5
 
 ## GL3001
 

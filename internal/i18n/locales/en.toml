@@ -8,6 +8,13 @@ long = "GreenLens measures, attributes and reports the energy, emissions and cos
 [cli.flag]
 help = "Show help for {command}"
 lang = "Language for messages (`code`: en or es). Defaults to the system locale"
+output = "Output format (`format`: table, json, csv or yaml)"
+quiet = "Print only the result, without progress or advice"
+verbose = "Print details of every step, such as sensor read errors"
+config = "Configuration `file`. Defaults to /etc/greenlens/greenlens.yaml, then the file of the user"
+no_color = "Do not color the output; NO_COLOR has the same effect"
+raw = "Show values in base units (J, W, g) with full precision"
+interval = "Sampling interval (default: agent.sample_interval)"
 
 [cli.help_cmd]
 short = "Show help for a command"
@@ -40,6 +47,197 @@ disabled = "disabled in the configuration"
 duplicate = "{source} already measures this domain"
 forced = "{source} is forced for this domain"
 contained = "reported only by {source}, the source of the package"
+
+[cli]
+problems = "Problems found:"
+yes = "yes"
+no = "no"
+
+[cli.help_code]
+cause = "Cause:"
+fix = "Fix:"
+exit = "Exit code:"
+
+[cli.col]
+domain = "Domain"
+power = "Power"
+energy_since_start = "Energy since start"
+quality = "Quality"
+source = "Source"
+channel = "Channel"
+status = "Status"
+reason = "Reason"
+period = "Period"
+components = "CPU, memory and GPU"
+cost = "Cost"
+
+[domain]
+package = "CPU package"
+core = "CPU cores"
+uncore = "CPU uncore"
+dram = "Memory"
+gpu = "GPU"
+psys = "Platform (psys)"
+platform = "Platform"
+wall = "Wall"
+
+[quality]
+measured = "measured"
+platform = "platform"
+estimated = "estimated"
+
+[level]
+component = "component"
+contained = "part of the package"
+system = "includes the components"
+
+[cli.agent]
+short = "Run the measuring agent"
+long = "Run the agent in the foreground: it samples the energy sources, stores the measurements and serves the other commands through its local socket. Under systemd it runs as the greenlens service. SIGHUP reloads the configuration and SIGTERM stops it."
+
+[cli.status]
+short = "Show the power and state of the running agent"
+long = "Show the power of every domain in the latest sample, the energy since the agent started, the quality of each value, the idle baseline and the consumption of the agent itself."
+agent = "Agent"
+uptime = "running for"
+samples = "samples:"
+interval = "Sampling every"
+policy = "idle policy"
+baseline = "Idle baseline of the CPU:"
+drift = "The idle power is now {idle}, {percent}% away from the calibration; run 'greenlens calibrate' again."
+no_calibration = "No calibration: run 'greenlens calibrate' with the machine idle so dynamic energy can be separated from idle energy."
+self = "Energy of the agent itself:"
+memory = "memory"
+
+[cli.brief]
+no_agent = "The GreenLens agent is not running."
+next_agent = "Next: run 'greenlens doctor' to check the energy sources, then start the agent with 'greenlens agent'."
+running = "The agent is running: {power} on CPU, memory and GPU ({quality})."
+next_calibrate = "Next: run 'greenlens calibrate' with the machine idle."
+next_status = "Next: 'greenlens status' for details, or 'greenlens report' for the energy of a period."
+more = "Run 'greenlens --help' for all commands."
+
+[cli.config]
+short = "Validate and show the configuration"
+long = "Check the configuration file, show the values in effect after defaults and GREENLENS_* environment variables, or show which file is read."
+validate = "Check the configuration and report every problem"
+show = "Show the configuration in effect"
+path = "Show the configuration file that is read"
+valid = "The configuration is valid ({path})."
+defaults = "defaults, no file"
+none = "No configuration file; the defaults apply."
+searched = "searched: {path}"
+
+[cli.doctor]
+short = "Diagnose the energy sources and the setup"
+long = "Check the machine, the permissions and every energy source, show which channels are used and why the others are not, and explain how to fix each problem."
+environment = "Environment"
+sources = "Energy sources"
+kernel = "Kernel"
+cpu = "Processor"
+virtualized = "Virtual machine"
+container = "Container"
+cgroup = "cgroup v2"
+paranoid = "perf_event_paranoid"
+group = "Group {group}"
+group_active = "member, active in this session"
+group_relogin = "member, active after the next login"
+group_missing = "not a member"
+landlock = "Landlock"
+landlock_on = "available, ABI {abi}"
+landlock_off = "not available"
+config = "Configuration"
+agent = "Agent"
+agent_on = "running on {socket}"
+agent_off = "not running"
+selected = "used"
+discarded = "not used"
+measured = "CPU energy is measured by hardware counters."
+estimated = "CPU energy is estimated with the model: {model}."
+
+[cli.perm]
+short = "Let the agent read the energy sensors without root"
+long = "Show the changes that give the greenlens-power group read access to the RAPL energy counters, and optionally the IPMI device and the CAP_PERFMON capability for perf_event. Nothing changes until the command runs as root with --apply."
+plan = "Plan:"
+risk = "Reading energy counters at high resolution can leak information about other processes (CVE-2020-8694). Only give the group to the agent and to administrators who need it."
+how = "Nothing was changed. To apply the plan, run: sudo greenlens setup-permissions --apply"
+confirm = "Apply these changes? [y/N]"
+cancelled = "Nothing was changed."
+done = "done"
+after = "Users added to the group get access after their next login. Check the result with 'greenlens doctor'."
+
+[cli.perm.flag]
+apply = "Apply the plan; needs root"
+yes = "Do not ask for confirmation"
+perfmon = "Also grant CAP_PERFMON to this binary, for perf_event"
+ipmi = "Also give the group access to the IPMI device"
+user = "Add this `user` to the group"
+
+[cli.perm.step]
+group = "Create the system group {group}"
+rule = "Write {path}"
+reload = "Reload the udev rules"
+trigger = "Apply the rules to the existing devices"
+user = "Add {user} to {group}"
+perfmon = "Grant CAP_PERFMON to {path}"
+
+[cli.calibrate]
+short = "Measure the idle power of the machine"
+long = "Measure the power of every domain while the machine is idle and store the median as the idle baseline. The dynamic idle policy subtracts this baseline before attributing energy to processes. Stop other workloads first."
+start = "Measuring idle power for {duration}. Keep the machine idle."
+samples = "Samples:"
+frequency = "CPU frequency:"
+governor = "governor:"
+temperature = "temperature:"
+saved = "Saved to {where}."
+
+[cli.calibrate.flag]
+duration = "How long to measure"
+
+[cli.measure]
+short = "Measure the energy of a command, a process or a systemd unit"
+long = "Measure the energy used while a command runs, while a process and its children run, or while a systemd unit runs, and attribute to it the share of CPU and memory energy that matches its CPU time. With a command, its exit code becomes the exit code of measure and the report goes to standard error."
+no_baseline = "No calibration found: all energy above zero counts as dynamic. Run 'greenlens calibrate' for a better split."
+target = "Measured"
+duration = "Duration"
+energy = "Attributed energy"
+cpu = "  CPU"
+dram = "  memory"
+power = "Average power"
+share = "CPU share"
+node = "Energy of the node"
+co2e = "Emissions"
+cost = "Cost"
+water = "Water"
+method = "Method"
+policy = "idle policy"
+baseline = "Idle baseline"
+platform = "Platform energy attributed"
+
+[cli.measure.flag]
+pid = "Measure this process and its children"
+unit = "Measure this systemd `unit`"
+duration = "Stop after this time; by default, when the target ends"
+report = "Write the report to this `file` instead of the terminal"
+
+[cli.measure.baseline]
+agent = "from the agent"
+database = "from the last calibration"
+none = "no calibration"
+
+[cli.report]
+short = "Report the energy, emissions and cost of a period"
+long = "Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d."
+period = "From {from} to {to}"
+total = "total"
+factor = "Emission factor: {value} gCO2e/kWh ({source})."
+estimated = "Part of the energy is estimated, not measured."
+system_levels = "Platform and wall values include the components and are not added to them."
+
+[cli.report.flag]
+from = "Start of the period"
+to = "End of the period"
+by = "Group by none, hour or day"
 
 [errors]
 label = "error"
@@ -186,3 +384,43 @@ fix = "stop the other agent, or give this one a different agent.socket and agent
 message = "the agent rejected the request"
 cause = "{status}: {detail}"
 fix = "check the agent logs, for example with 'journalctl -u greenlens'"
+
+[errors.GL0009]
+message = "unsupported output format '{value}'"
+cause = "the output can be written only as {formats}"
+fix = "pass one of these to --output"
+
+[errors.GL0010]
+message = "unknown error code '{code}'"
+cause = "{code} is not an error code of GreenLens"
+fix = "see the error code reference in the documentation"
+
+[errors.GL0011]
+message = "cannot start '{command}'"
+cause = "{detail}"
+fix = "check the name of the command and that it is in PATH"
+
+[errors.GL0012]
+message = "measure needs exactly one target"
+cause = "give a command after --, or --pid, or --unit, but only one of them"
+fix = "run 'greenlens measure --help' for examples"
+
+[errors.GL0013]
+message = "process {pid} does not exist"
+cause = "no process has that PID, or it is not visible from here"
+fix = "check the PID with ps, or measure a command instead"
+
+[errors.GL0014]
+message = "cannot find the cgroup of {unit}"
+cause = "no cgroup v2 directory named {unit} exists under /sys/fs/cgroup"
+fix = "check the name with 'systemctl status', and that the unit is running"
+
+[errors.GL1011]
+message = "changing permissions needs root"
+cause = "the command runs as {user}"
+fix = "run 'sudo greenlens setup-permissions --apply'"
+
+[errors.GL1012]
+message = "step {step} of the plan failed"
+cause = "{detail}"
+fix = "fix the problem and run the command again; completed steps can be repeated safely"

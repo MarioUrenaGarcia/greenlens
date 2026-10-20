@@ -30,6 +30,12 @@ const (
 	GL0006 Code = "GL0006" // malformed flag
 	GL0007 Code = "GL0007" // positional arguments where none are accepted
 	GL0008 Code = "GL0008" // unsupported language
+	GL0009 Code = "GL0009" // unsupported output format
+	GL0010 Code = "GL0010" // unknown error code asked to help
+	GL0011 Code = "GL0011" // command to measure cannot start
+	GL0012 Code = "GL0012" // measure needs exactly one target
+	GL0013 Code = "GL0013" // process to measure not found
+	GL0014 Code = "GL0014" // cgroup of the unit not found
 
 	GL1001 Code = "GL1001" // no measured energy source
 	GL1002 Code = "GL1002" // RAPL counters readable only by root
@@ -41,6 +47,8 @@ const (
 	GL1008 Code = "GL1008" // counter can wrap more than once per sample
 	GL1009 Code = "GL1009" // hwmon power sensor of an unknown driver
 	GL1010 Code = "GL1010" // processor not in the estimation table
+	GL1011 Code = "GL1011" // permission changes need root
+	GL1012 Code = "GL1012" // a permission change failed
 
 	GL3001 Code = "GL3001" // configuration file not found
 	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
@@ -74,6 +82,12 @@ var exitCodes = map[Code]int{
 	GL0006: ExitUsage,
 	GL0007: ExitUsage,
 	GL0008: ExitUsage,
+	GL0009: ExitUsage,
+	GL0010: ExitUsage,
+	GL0011: ExitError,
+	GL0012: ExitUsage,
+	GL0013: ExitError,
+	GL0014: ExitError,
 	GL1001: ExitNoSource,
 	GL1002: ExitPermission,
 	GL1003: ExitPermission,
@@ -84,6 +98,8 @@ var exitCodes = map[Code]int{
 	GL1008: ExitError,
 	GL1009: ExitNoSource,
 	GL1010: ExitNoSource,
+	GL1011: ExitPermission,
+	GL1012: ExitPermission,
 	GL3001: ExitConfig,
 	GL3002: ExitConfig,
 	GL3003: ExitConfig,
@@ -94,6 +110,17 @@ var exitCodes = map[Code]int{
 	GL4004: ExitConfig,
 	GL4005: ExitError,
 	GL4006: ExitError,
+}
+
+// IsCode reports whether s looks like an error code, such as GL1002.
+func IsCode(s string) bool {
+	return len(s) == 6 && strings.EqualFold(s[:2], "GL") && strings.Trim(s[2:], "0123456789") == ""
+}
+
+// Known reports whether c is a registered code.
+func Known(c Code) bool {
+	_, ok := exitCodes[c]
+	return ok
 }
 
 // Codes returns every registered error code.

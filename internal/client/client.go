@@ -107,7 +107,9 @@ func (c *Client) Status(ctx context.Context) (api.Status, error) {
 // Usage returns the node energy in [from, to), in buckets of the given size
 // or as one total when bucket is zero.
 func (c *Client) Usage(ctx context.Context, from, to time.Time, bucket time.Duration) (api.Usage, error) {
-	q := url.Values{"from": {from.UTC().Format(time.RFC3339)}, "to": {to.UTC().Format(time.RFC3339)}}
+	// Nanoseconds keep the last second of the period, which a truncated
+	// time would drop.
+	q := url.Values{"from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}}
 	if bucket > 0 {
 		q.Set("bucket", bucket.String())
 	}

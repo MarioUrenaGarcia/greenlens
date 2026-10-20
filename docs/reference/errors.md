@@ -16,6 +16,12 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL0006](#gl0006) | invalid flag syntax '`{arg}`' | 2 |
 | [GL0007](#gl0007) | '`{command}`' does not accept arguments | 2 |
 | [GL0008](#gl0008) | unsupported language '`{lang}`' | 2 |
+| [GL0009](#gl0009) | unsupported output format '`{value}`' | 2 |
+| [GL0010](#gl0010) | unknown error code '`{code}`' | 2 |
+| [GL0011](#gl0011) | cannot start '`{command}`' | 1 |
+| [GL0012](#gl0012) | measure needs exactly one target | 2 |
+| [GL0013](#gl0013) | process `{pid}` does not exist | 1 |
+| [GL0014](#gl0014) | cannot find the cgroup of `{unit}` | 1 |
 | [GL1001](#gl1001) | no measured energy source is available | 3 |
 | [GL1002](#gl1002) | cannot read RAPL energy counters | 5 |
 | [GL1003](#gl1003) | cannot open the perf_event energy counters | 5 |
@@ -26,6 +32,8 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL1008](#gl1008) | an energy counter can wrap more than once between samples | 1 |
 | [GL1009](#gl1009) | power sensor of an unknown hwmon driver is not used | 3 |
 | [GL1010](#gl1010) | the processor is not in the estimation table | 3 |
+| [GL1011](#gl1011) | changing permissions needs root | 5 |
+| [GL1012](#gl1012) | step `{step}` of the plan failed | 5 |
 | [GL3001](#gl3001) | configuration file not found | 6 |
 | [GL3002](#gl3002) | cannot read the configuration file | 6 |
 | [GL3003](#gl3003) | invalid configuration value for `{key}` | 6 |
@@ -92,6 +100,48 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** the language comes from `{source}`
 - **Fix:** use one of: `{supported}`
 - **Exit code:** 2
+
+## GL0009
+
+- **Message:** unsupported output format '`{value}`'
+- **Cause:** the output can be written only as `{formats}`
+- **Fix:** pass one of these to --output
+- **Exit code:** 2
+
+## GL0010
+
+- **Message:** unknown error code '`{code}`'
+- **Cause:** `{code}` is not an error code of GreenLens
+- **Fix:** see the error code reference in the documentation
+- **Exit code:** 2
+
+## GL0011
+
+- **Message:** cannot start '`{command}`'
+- **Cause:** `{detail}`
+- **Fix:** check the name of the command and that it is in PATH
+- **Exit code:** 1
+
+## GL0012
+
+- **Message:** measure needs exactly one target
+- **Cause:** give a command after --, or --pid, or --unit, but only one of them
+- **Fix:** run 'greenlens measure --help' for examples
+- **Exit code:** 2
+
+## GL0013
+
+- **Message:** process `{pid}` does not exist
+- **Cause:** no process has that PID, or it is not visible from here
+- **Fix:** check the PID with ps, or measure a command instead
+- **Exit code:** 1
+
+## GL0014
+
+- **Message:** cannot find the cgroup of `{unit}`
+- **Cause:** no cgroup v2 directory named `{unit}` exists under /sys/fs/cgroup
+- **Fix:** check the name with 'systemctl status', and that the unit is running
+- **Exit code:** 1
 
 ## GL1001
 
@@ -162,6 +212,20 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** '`{model}`' has no published power coefficients, so a generic average per thread is used
 - **Fix:** set sources.estimate.idle_watts and sources.estimate.full_watts in the configuration with values for this processor
 - **Exit code:** 3
+
+## GL1011
+
+- **Message:** changing permissions needs root
+- **Cause:** the command runs as `{user}`
+- **Fix:** run 'sudo greenlens setup-permissions --apply'
+- **Exit code:** 5
+
+## GL1012
+
+- **Message:** step `{step}` of the plan failed
+- **Cause:** `{detail}`
+- **Fix:** fix the problem and run the command again; completed steps can be repeated safely
+- **Exit code:** 5
 
 ## GL3001
 

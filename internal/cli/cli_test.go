@@ -27,7 +27,8 @@ func TestExecute(t *testing.T) {
 		wantErr    []string
 		wantNoText []string
 	}{
-		{name: "no arguments shows help", wantOut: []string{"Usage:", "Available commands:", "version"}},
+		{name: "no arguments shows the state and the next step", wantOut: []string{"agent is not running", "greenlens doctor", "greenlens --help"}},
+		{name: "help lists the commands", args: []string{"--help"}, wantOut: []string{"Usage:", "Available commands:", "measure", "doctor", "version"}},
 		{name: "version", args: []string{"version"}, wantOut: []string{"greenlens ", "Go version:", "Platform:"}},
 		{
 			name: "unknown command with suggestion", args: []string{"verson"}, wantCode: 2,
@@ -41,6 +42,9 @@ func TestExecute(t *testing.T) {
 		{name: "unexpected arguments", args: []string{"version", "extra"}, wantCode: 2, wantErr: []string{"GL0007", "extra"}},
 		{name: "unsupported language", args: []string{"--lang", "fr"}, wantCode: 2, wantErr: []string{"GL0008", "en, es"}},
 		{name: "help for a command", args: []string{"help", "version"}, wantOut: []string{"greenlens version [flags]", "Examples:"}},
+		{name: "help for an error code", args: []string{"help", "gl1002"}, wantOut: []string{"GL1002: cannot read RAPL energy counters", "Fix:", "Exit code: 5"}},
+		{name: "help for an unknown error code", args: []string{"help", "GL9999"}, wantCode: 2, wantErr: []string{"GL0010"}},
+		{name: "unknown output format", args: []string{"version", "--output", "xml"}, wantCode: 2, wantErr: []string{"GL0009", "table, json, csv, yaml"}},
 		{name: "help for an unknown command", args: []string{"help", "nope"}, wantCode: 2, wantErr: []string{"GL0002"}},
 		{
 			name: "spanish from the locale", env: map[string]string{"LANG": "es_MX.UTF-8"}, args: []string{"--help"},

@@ -4,14 +4,17 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 )
 
-func newRoot(l *i18n.Localizer) *cobra.Command {
+func newRoot(a *app) *cobra.Command {
+	l := a.l
 	root := &cobra.Command{
 		Use:           "greenlens",
 		Short:         l.T("cli.root.short"),
@@ -26,8 +29,11 @@ func newRoot(l *i18n.Localizer) *cobra.Command {
 			}
 			return nil
 		},
+		PersistentPreRunE: func(*cobra.Command, []string) error {
+			return a.checkGlobalFlags()
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return cmd.Help()
+			return a.brief(cmd.Context(), cmd)
 		},
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 		// SuggestionsFor does not apply cobra's default distance, only the
@@ -37,19 +43,36 @@ func newRoot(l *i18n.Localizer) *cobra.Command {
 	root.PersistentFlags().String("lang", "", l.T("cli.flag.lang"))
 	root.SetFlagErrorFunc(flagError)
 	root.SetUsageTemplate(usageTemplate(l))
-	root.SetHelpCommand(newHelpCmd(l))
-	root.AddCommand(newVersionCmd(l))
+	a.addGlobalFlags(root)
+	root.SetHelpCommand(newHelpCmd(a))
+	root.AddCommand(
+		newAgentCmd(a),
+		newCalibrateCmd(a),
+		newConfigCmd(a),
+		newDoctorCmd(a),
+		newMeasureCmd(a),
+		newReportCmd(a),
+		newSetupPermissionsCmd(a),
+		newStatusCmd(a),
+		newVersionCmd(l),
+	)
 	localizeCommands(root, l)
 	return root
 }
 
 // newHelpCmd replaces cobra's help command, whose texts are not translatable.
-func newHelpCmd(l *i18n.Localizer) *cobra.Command {
+// Besides commands, it explains error codes such as GL1002.
+func newHelpCmd(a *app) *cobra.Command {
+	l := a.l
 	return &cobra.Command{
-		Use:   "help [" + l.T("cli.usage.command_placeholder") + "]",
-		Short: l.T("cli.help_cmd.short"),
-		Long:  wrap(l.T("cli.help_cmd.long"), helpWidth),
+		Use:     "help [" + l.T("cli.usage.command_placeholder") + "]",
+		Short:   l.T("cli.help_cmd.short"),
+		Long:    wrap(l.T("cli.help_cmd.long"), helpWidth),
+		Example: "  greenlens help measure\n  greenlens help GL1002",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 1 && help.IsCode(args[0]) {
+				return a.explainCode(cmd, help.Code(strings.ToUpper(args[0])))
+			}
 			root := cmd.Root()
 			target, rest, err := root.Find(args)
 			if err != nil {
@@ -91,4 +114,17 @@ func usageTemplate(l *i18n.Localizer) string {
 	b.WriteString("{{if .HasAvailableInheritedFlags}}\n\n" + l.T("cli.usage.global_flags") + "\n{{.InheritedFlags.FlagUsagesWrapped 80 | trimTrailingWhitespaces}}{{end}}")
 	b.WriteString("{{if .HasAvailableSubCommands}}\n\n" + l.T("cli.usage.more", "command", "{{.CommandPath}}") + "{{end}}\n")
 	return b.String()
+}
+
+// explainCode prints the documentation of an error code.
+func (a *app) explainCode(cmd *cobra.Command, c help.Code) error {
+	if !help.Known(c) {
+		return help.New(help.GL0010, "code", string(c))
+	}
+	e := help.New(c)
+	l := a.l
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n\n%s\n  %s\n\n%s\n  %s\n\n%s %d\n",
+		c, e.Message(l), l.T("cli.help_code.cause"), wrap(e.Cause(l), helpWidth-2), l.T("cli.help_code.fix"), wrap(e.Fix(l), helpWidth-2),
+		l.T("cli.help_code.exit"), e.ExitCode())
+	return err
 }

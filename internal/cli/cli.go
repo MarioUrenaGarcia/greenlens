@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
@@ -19,6 +20,10 @@ import (
 // Execute runs the command line with args and returns the process exit code.
 // getenv is os.Getenv in production and a map lookup in tests.
 func Execute(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string) int {
+	return execute(ctx, args, stdout, stderr, getenv, hooks{})
+}
+
+func execute(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string, h hooks) int {
 	lang, langErr := i18n.Resolve(langFlag(args), getenv)
 	l, err := i18n.New(lang)
 	if err != nil {
@@ -32,12 +37,18 @@ func Execute(ctx context.Context, args []string, stdout, stderr io.Writer, geten
 		return help.ExitUsage
 	}
 
-	root := newRoot(l)
+	a := &app{l: l, stdout: stdout, stderr: stderr, getenv: getenv, hooks: h}
+	root := newRoot(a) //nolint:contextcheck // commands get ctx from ExecuteContext below
 	root.SetArgs(args)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	if err := root.ExecuteContext(ctx); err != nil {
-		_, _ = fmt.Fprintln(stderr, help.Render(l, err))
+	err = root.ExecuteContext(ctx)
+	var exit *exitError
+	if errors.As(err, &exit) {
+		return exit.code
+	}
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, help.RenderAll(l, err))
 		return help.ExitCode(err)
 	}
 	return help.ExitOK
@@ -60,6 +71,12 @@ func langFlag(args []string) string {
 	}
 	return ""
 }
+
+// exitError ends the process with a code without printing anything, as
+// when measure passes on the exit code of the command it ran.
+type exitError struct{ code int }
+
+func (e *exitError) Error() string { return "exit status " + strconv.Itoa(e.code) }
 
 func languageError(err error) error {
 	var u *i18n.UnsupportedError
