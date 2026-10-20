@@ -1,0 +1,9 @@
+# HELP sglang:prompt_tokens_total Number of prefill tokens processed.
+# TYPE sglang:prompt_tokens_total counter
+sglang:prompt_tokens_total{model_name="meta-llama/Llama-3.1-8B-Instruct"} 8.128902e+06
+# HELP sglang:generation_tokens_total Number of generation tokens processed.
+# TYPE sglang:generation_tokens_total counter
+sglang:generation_tokens_total{model_name="meta-llama/Llama-3.1-8B-Instruct"} 7.557572e+06
+# HELP sglang:num_running_reqs The number of running requests
+# TYPE sglang:num_running_reqs gauge
+sglang:num_running_reqs{model_name="meta-llama/Llama-3.1-8B-Instruct"} 3.0

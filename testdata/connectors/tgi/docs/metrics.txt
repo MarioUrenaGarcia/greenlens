@@ -1,0 +1,12 @@
+# TYPE tgi_request_input_length histogram
+tgi_request_input_length_bucket{le="+Inf"} 12
+tgi_request_input_length_sum 960
+tgi_request_input_length_count 12
+# TYPE tgi_request_generated_tokens histogram
+tgi_request_generated_tokens_bucket{le="+Inf"} 12
+tgi_request_generated_tokens_sum 2400
+tgi_request_generated_tokens_count 12
+# TYPE tgi_request_success counter
+tgi_request_success 12
+# TYPE tgi_batch_current_size gauge
+tgi_batch_current_size 1
