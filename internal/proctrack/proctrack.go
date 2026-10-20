@@ -143,6 +143,16 @@ func (t *Tracker) Groups() map[string]int {
 	return out
 }
 
+// PIDs returns the tracked processes.
+func (t *Tracker) PIDs() []int {
+	out := make([]int, 0, len(t.procs))
+	for pid := range t.procs {
+		out = append(out, pid)
+	}
+	slices.Sort(out)
+	return out
+}
+
 // GroupOf returns the group of a tracked process.
 func (t *Tracker) GroupOf(pid int) (string, bool) {
 	p, ok := t.procs[pid]

@@ -29,6 +29,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/backends"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
+	"github.com/MarioUrenaGarcia/greenlens/internal/drmfdinfo"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/hostfs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
@@ -93,6 +94,7 @@ type Agent struct {
 	// The tracker and the accountant are used only by the sampling loop,
 	// the splitter only by the usage worker.
 	tracker    *proctrack.Tracker
+	drm        *drmfdinfo.Reader
 	acc        *usage.Accountant
 	split      *usage.Splitter
 	reader     *backends.Reader
@@ -160,6 +162,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		a.hostFS = hostfs.Root(o.Config.Agent.HostRoot)
 	}
 	a.tracker = proctrack.New(a.hostFS)
+	a.drm = drmfdinfo.New(a.hostFS)
 	policy, _ := attribution.ParsePolicy(o.Config.Attribution.IdlePolicy)
 	a.acc = usage.NewAccountant(policy, time.Now())
 	a.ring = newRing(int(LiveWindow / o.Config.Agent.SampleInterval.D()))

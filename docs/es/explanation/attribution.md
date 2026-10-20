@@ -30,8 +30,12 @@ de la memoria, como arriba.
 
 La energía de una GPU va a los backends que corren en ella:
 
-- cuando el driver reporta el uso de cada proceso, como NVML, según ese uso
-  (`attributed_gpu_process`);
+- cuando el driver reporta el uso de cada proceso, según ese uso
+  (`attributed_gpu_process`): NVML lo reporta para tarjetas NVIDIA, y las
+  estadísticas DRM de `/proc/<pid>/fdinfo` para amdgpu, i915 y xe. El kernel
+  muestra esas estadísticas solo al dueño del proceso y a lectores con
+  privilegios, así que un agente que corre como otro usuario pasa a la
+  siguiente regla;
 - cuando solo reporta qué procesos tienen un contexto, toda al único backend
   que hay, o en partes iguales entre varios (`estimated`).
 

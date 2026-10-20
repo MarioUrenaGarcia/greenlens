@@ -53,6 +53,7 @@ func (a *Agent) refreshBackends(ctx context.Context) {
 	a.mu.RUnlock()
 	bs := backends.Resolve(a.hostFS, snap, static, discover)
 	a.tracker.Refresh(snap, backends.Roots(bs))
+	a.drm.Scan(a.tracker.PIDs())
 	groups := a.tracker.Groups()
 
 	var infos []store.BackendInfo
@@ -107,7 +108,9 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 		}
 	}
 
-	use := map[string]source.GPUUse{}
+	// The DRM statistics of the backends cover the GPUs whose source
+	// reports no processes, as hwmon does for amdgpu, xe and i915.
+	use := a.drm.Use()
 	for _, u := range users {
 		for inst, g := range u.GPUUse() {
 			use[inst] = g
