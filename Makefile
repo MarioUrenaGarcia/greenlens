@@ -86,7 +86,8 @@ docs:
 
 docs-check:
 	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && cp -r docs "$$tmp/docs" && \
-		$(GO) run ./scripts/gen-docs -root "$$tmp/docs" && diff -ru docs "$$tmp/docs" \
+		$(GO) run ./scripts/gen-docs -root "$$tmp/docs" -schema "$$tmp/config.schema.json" && \
+		diff -ru docs "$$tmp/docs" && diff -u api/config.schema.json "$$tmp/config.schema.json" \
 		|| { echo "generated documentation is stale; run make docs"; exit 1; }
 
 # Animated terminal sessions shown in the README and on the site.

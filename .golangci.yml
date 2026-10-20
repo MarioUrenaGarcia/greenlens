@@ -22,10 +22,11 @@ linters:
       default-signifies-exhaustive: true
     misspell:
       locale: US
-      # Spanish words in the tests of the Spanish catalog.
+      # Spanish words in the Spanish texts and their tests.
       ignore-rules:
         - comando
         - comandos
+        - editores
     revive:
       rules:
         - name: exported
