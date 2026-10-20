@@ -1,0 +1,170 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Mario Ureña García
+
+// Package help holds the catalog of error codes and the rendering shared by
+// every interface: a one-line message, the cause and how to fix it.
+package help
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
+)
+
+// Code identifies an error condition. Codes are stable across releases so
+// that documentation, scripts and support requests can refer to them.
+type Code string
+
+// Error codes. The GL0xxx range covers the command line and general errors.
+const (
+	GL0001 Code = "GL0001" // unexpected internal error
+	GL0002 Code = "GL0002" // unknown command
+	GL0003 Code = "GL0003" // unknown flag
+	GL0004 Code = "GL0004" // flag without its value
+	GL0005 Code = "GL0005" // flag value of the wrong type
+	GL0006 Code = "GL0006" // malformed flag
+	GL0007 Code = "GL0007" // positional arguments where none are accepted
+	GL0008 Code = "GL0008" // unsupported language
+)
+
+// Process exit codes of the command line.
+const (
+	ExitOK    = 0
+	ExitError = 1
+	ExitUsage = 2
+)
+
+var exitCodes = map[Code]int{
+	GL0001: ExitError,
+	GL0002: ExitUsage,
+	GL0003: ExitUsage,
+	GL0004: ExitUsage,
+	GL0005: ExitUsage,
+	GL0006: ExitUsage,
+	GL0007: ExitUsage,
+	GL0008: ExitUsage,
+}
+
+// Codes returns every registered error code.
+func Codes() []Code {
+	out := make([]Code, 0, len(exitCodes))
+	for c := range exitCodes {
+		out = append(out, c)
+	}
+	return out
+}
+
+// Error is an error with a stable code whose message, cause and fix come from
+// the translation catalogs under errors.<code>.
+type Error struct {
+	Code Code
+	// Args holds name/value pairs for the {placeholders} of the messages.
+	Args []any
+	// FixKey, when set, names the catalog key under errors.<code> used for
+	// the fix instead of "fix".
+	FixKey string
+	// Err is the underlying error, if any.
+	Err error
+}
+
+// New returns an Error for code with the given name/value pairs.
+func New(code Code, args ...any) *Error {
+	return &Error{Code: code, Args: args}
+}
+
+// WithFix selects an alternative fix message, such as "fix_suggest".
+func (e *Error) WithFix(key string) *Error {
+	e.FixKey = key
+	return e
+}
+
+// Wrap records the underlying error.
+func (e *Error) Wrap(err error) *Error {
+	e.Err = err
+	return e
+}
+
+// Error returns the code and the English message, for logs.
+func (e *Error) Error() string {
+	l, err := i18n.New(i18n.Default)
+	if err != nil {
+		return string(e.Code)
+	}
+	return string(e.Code) + ": " + e.Message(l)
+}
+
+// Unwrap returns the underlying error.
+func (e *Error) Unwrap() error { return e.Err }
+
+// ExitCode returns the process exit code associated with the error code.
+func (e *Error) ExitCode() int {
+	if c, ok := exitCodes[e.Code]; ok {
+		return c
+	}
+	return ExitError
+}
+
+// Message returns the one-line message in the Localizer's language.
+func (e *Error) Message(l *i18n.Localizer) string {
+	return l.T(e.key("message"), e.Args...)
+}
+
+// Cause returns the cause in the Localizer's language.
+func (e *Error) Cause(l *i18n.Localizer) string {
+	return l.T(e.key("cause"), e.Args...)
+}
+
+// Fix returns the suggested fix in the Localizer's language.
+func (e *Error) Fix(l *i18n.Localizer) string {
+	name := "fix"
+	if e.FixKey != "" {
+		name = e.FixKey
+	}
+	return l.T(e.key(name), e.Args...)
+}
+
+func (e *Error) key(name string) string {
+	return "errors." + string(e.Code) + "." + name
+}
+
+// As returns err as an *Error. Errors without a code become GL0001 with the
+// original text as the cause, so every failure is reported in the same form.
+func As(err error) *Error {
+	var e *Error
+	if errors.As(err, &e) {
+		return e
+	}
+	return New(GL0001, "detail", err.Error()).Wrap(err)
+}
+
+// ExitCode returns the process exit code for err; nil means success.
+func ExitCode(err error) int {
+	if err == nil {
+		return ExitOK
+	}
+	return As(err).ExitCode()
+}
+
+// Render formats err for a terminal:
+//
+//	error GL1002: cannot read RAPL energy counters
+//	  cause: ...
+//	  fix:   ...
+func Render(l *i18n.Localizer, err error) string {
+	e := As(err)
+	causeLabel := l.T("errors.cause")
+	fixLabel := l.T("errors.fix")
+	width := max(utf8.RuneCountInString(causeLabel), utf8.RuneCountInString(fixLabel))
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s %s: %s\n", l.T("errors.label"), e.Code, e.Message(l))
+	fmt.Fprintf(&b, "  %s %s\n", pad(causeLabel, width), e.Cause(l))
+	fmt.Fprintf(&b, "  %s %s", pad(fixLabel, width), e.Fix(l))
+	return b.String()
+}
+
+func pad(s string, width int) string {
+	return s + strings.Repeat(" ", width-utf8.RuneCountInString(s))
+}
