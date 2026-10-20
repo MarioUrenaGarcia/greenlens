@@ -163,6 +163,13 @@ func Select(cands []Candidate, opt Options) Selection {
 		}
 	}
 
+	// A problem of a channel that works but is not used, such as the
+	// accuracy of the model when RAPL measures the package, does not apply.
+	sel.Problems = slices.DeleteFunc(sel.Problems, func(p source.Problem) bool {
+		return p.Channel != "" && slices.ContainsFunc(sel.Decisions, func(d Decision) bool {
+			return d.Channel.ID == p.Channel && !d.Selected
+		})
+	})
 	if winner[slot{domain: source.DomainPackage}] == estimate.ID {
 		sel.Estimated = true
 		sel.Problems = append(sel.Problems, source.Problem{Code: help.GL1007, Channel: estimate.ChannelID})

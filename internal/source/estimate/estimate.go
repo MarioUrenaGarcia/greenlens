@@ -110,7 +110,7 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 		s.fullW = float64(threads) * c.MaxW
 		s.Model = Model{Name: c.Name, Threads: threads, MinW: c.MinW, MaxW: c.MaxW, IdleW: s.idleW, FullW: s.fullW}
 		if !known {
-			res.Problems = append(res.Problems, source.Problem{Code: help.GL1010, Args: []any{"model", cpu.ModelName}})
+			res.Problems = append(res.Problems, source.Problem{Code: help.GL1010, Args: []any{"model", cpu.ModelName}, Channel: ChannelID})
 		}
 	}
 	if s.last, err = procfs.SystemCPU(s.fsys); err != nil {

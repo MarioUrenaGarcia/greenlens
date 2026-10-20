@@ -236,3 +236,17 @@ func TestAPUSensorDoesNotDisplacePowercap(t *testing.T) {
 		t.Fatalf("RAPL must win the package: %v", ids(sel.Channels))
 	}
 }
+
+func TestProblemsOfUnusedChannelsAreDropped(t *testing.T) {
+	gl1010 := func(sel selector.Selection) bool {
+		return slices.ContainsFunc(sel.Problems, func(p source.Problem) bool { return p.Code == help.GL1010 })
+	}
+	// The Ryzen 9 7900X is not in the estimation table.
+	if sel := selector.Select(probe(t, "amd-zen4-desktop", nil), selector.Options{}); gl1010(sel) {
+		t.Fatalf("GL1010 reported while RAPL measures the package: %+v", sel.Problems)
+	}
+	sel := selector.Select(probe(t, "amd-zen4-desktop", nil), selector.Options{Disable: []string{"rapl", "perf_event", "hwmon_gpu"}})
+	if !sel.Estimated || !gl1010(sel) {
+		t.Fatalf("GL1010 missing while the model is used: %+v", sel.Problems)
+	}
+}
