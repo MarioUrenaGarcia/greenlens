@@ -16,6 +16,16 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL0006](#gl0006) | invalid flag syntax '`{arg}`' | 2 |
 | [GL0007](#gl0007) | '`{command}`' does not accept arguments | 2 |
 | [GL0008](#gl0008) | unsupported language '`{lang}`' | 2 |
+| [GL1001](#gl1001) | no measured energy source is available | 3 |
+| [GL1002](#gl1002) | cannot read RAPL energy counters | 5 |
+| [GL1003](#gl1003) | cannot open the perf_event energy counters | 5 |
+| [GL1004](#gl1004) | cannot open the IPMI device | 5 |
+| [GL1005](#gl1005) | cannot read a hwmon power sensor | 5 |
+| [GL1006](#gl1006) | the BMC does not report power readings | 3 |
+| [GL1007](#gl1007) | CPU energy is estimated | 3 |
+| [GL1008](#gl1008) | an energy counter can wrap more than once between samples | 1 |
+| [GL1009](#gl1009) | power sensor of an unknown hwmon driver is not used | 3 |
+| [GL1010](#gl1010) | the processor is not in the estimation table | 3 |
 
 ## GL0001
 
@@ -72,3 +82,73 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** the language comes from `{source}`
 - **Fix:** use one of: `{supported}`
 - **Exit code:** 2
+
+## GL1001
+
+- **Message:** no measured energy source is available
+- **Cause:** this machine exposes no readable energy counter, as in most virtual machines
+- **Fix:** run 'greenlens doctor' to see which sources were found and how to enable them
+- **Exit code:** 3
+
+## GL1002
+
+- **Message:** cannot read RAPL energy counters
+- **Cause:** `{path}` is readable only by root
+- **Fix:** run 'sudo greenlens setup-permissions' or see 'greenlens help GL1002'
+- **Exit code:** 5
+
+## GL1003
+
+- **Message:** cannot open the perf_event energy counters
+- **Cause:** system-wide perf events need perf_event_paranoid 0 or less, or CAP_PERFMON (perf_event_paranoid is `{paranoid}`)
+- **Fix:** run 'sudo greenlens setup-permissions --perfmon', or rely on the powercap counters
+- **Exit code:** 5
+
+## GL1004
+
+- **Message:** cannot open the IPMI device
+- **Cause:** `{path}` is not accessible to this user
+- **Fix:** run 'sudo greenlens setup-permissions --ipmi'
+- **Exit code:** 5
+
+## GL1005
+
+- **Message:** cannot read a hwmon power sensor
+- **Cause:** `{path}` is not readable by this user
+- **Fix:** run 'sudo greenlens setup-permissions' or check the permissions of the sensor
+- **Exit code:** 5
+
+## GL1006
+
+- **Message:** the BMC does not report power readings
+- **Cause:** the DCMI power reading command returned `{detail}`
+- **Fix:** enable power monitoring in the BMC settings, or use another platform source
+- **Exit code:** 3
+
+## GL1007
+
+- **Message:** CPU energy is estimated
+- **Cause:** no energy counter of the processor is readable on this machine
+- **Fix:** on bare metal run 'sudo greenlens setup-permissions'; in a virtual machine set sources.estimate in the configuration
+- **Exit code:** 3
+
+## GL1008
+
+- **Message:** an energy counter can wrap more than once between samples
+- **Cause:** `{channel}` wraps after `{range}`, which takes `{period}` at the highest power seen, and the sampling interval is `{interval}`
+- **Fix:** set agent.sample_interval below `{limit}`
+- **Exit code:** 1
+
+## GL1009
+
+- **Message:** power sensor of an unknown hwmon driver is not used
+- **Cause:** hwmon device '`{name}`' reports power or energy, but its domain is not known
+- **Fix:** report the driver name at https://github.com/MarioUrenaGarcia/greenlens/issues so it can be classified
+- **Exit code:** 3
+
+## GL1010
+
+- **Message:** the processor is not in the estimation table
+- **Cause:** '`{model}`' has no published power coefficients, so a generic average per thread is used
+- **Fix:** set sources.estimate.idle_watts and sources.estimate.full_watts in the configuration with values for this processor
+- **Exit code:** 3

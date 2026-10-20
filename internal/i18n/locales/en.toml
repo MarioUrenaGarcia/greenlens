@@ -79,3 +79,53 @@ fix = "run '{command} --help' to see how to use it"
 message = "unsupported language '{lang}'"
 cause = "the language comes from {source}"
 fix = "use one of: {supported}"
+
+[errors.GL1001]
+message = "no measured energy source is available"
+cause = "this machine exposes no readable energy counter, as in most virtual machines"
+fix = "run 'greenlens doctor' to see which sources were found and how to enable them"
+
+[errors.GL1002]
+message = "cannot read RAPL energy counters"
+cause = "{path} is readable only by root"
+fix = "run 'sudo greenlens setup-permissions' or see 'greenlens help GL1002'"
+
+[errors.GL1003]
+message = "cannot open the perf_event energy counters"
+cause = "system-wide perf events need perf_event_paranoid 0 or less, or CAP_PERFMON (perf_event_paranoid is {paranoid})"
+fix = "run 'sudo greenlens setup-permissions --perfmon', or rely on the powercap counters"
+
+[errors.GL1004]
+message = "cannot open the IPMI device"
+cause = "{path} is not accessible to this user"
+fix = "run 'sudo greenlens setup-permissions --ipmi'"
+
+[errors.GL1005]
+message = "cannot read a hwmon power sensor"
+cause = "{path} is not readable by this user"
+fix = "run 'sudo greenlens setup-permissions' or check the permissions of the sensor"
+
+[errors.GL1006]
+message = "the BMC does not report power readings"
+cause = "the DCMI power reading command returned {detail}"
+fix = "enable power monitoring in the BMC settings, or use another platform source"
+
+[errors.GL1007]
+message = "CPU energy is estimated"
+cause = "no energy counter of the processor is readable on this machine"
+fix = "on bare metal run 'sudo greenlens setup-permissions'; in a virtual machine set sources.estimate in the configuration"
+
+[errors.GL1008]
+message = "an energy counter can wrap more than once between samples"
+cause = "{channel} wraps after {range}, which takes {period} at the highest power seen, and the sampling interval is {interval}"
+fix = "set agent.sample_interval below {limit}"
+
+[errors.GL1009]
+message = "power sensor of an unknown hwmon driver is not used"
+cause = "hwmon device '{name}' reports power or energy, but its domain is not known"
+fix = "report the driver name at https://github.com/MarioUrenaGarcia/greenlens/issues so it can be classified"
+
+[errors.GL1010]
+message = "the processor is not in the estimation table"
+cause = "'{model}' has no published power coefficients, so a generic average per thread is used"
+fix = "set sources.estimate.idle_watts and sources.estimate.full_watts in the configuration with values for this processor"

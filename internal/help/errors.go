@@ -18,7 +18,9 @@ import (
 // that documentation, scripts and support requests can refer to them.
 type Code string
 
-// Error codes. The GL0xxx range covers the command line and general errors.
+// Error codes. GL0xxx covers the command line and general errors, GL1xxx
+// the energy sources, GL3xxx the configuration and GL4xxx the agent and its
+// storage.
 const (
 	GL0001 Code = "GL0001" // unexpected internal error
 	GL0002 Code = "GL0002" // unknown command
@@ -28,13 +30,26 @@ const (
 	GL0006 Code = "GL0006" // malformed flag
 	GL0007 Code = "GL0007" // positional arguments where none are accepted
 	GL0008 Code = "GL0008" // unsupported language
+
+	GL1001 Code = "GL1001" // no measured energy source
+	GL1002 Code = "GL1002" // RAPL counters readable only by root
+	GL1003 Code = "GL1003" // perf_event energy counters not permitted
+	GL1004 Code = "GL1004" // IPMI device not accessible
+	GL1005 Code = "GL1005" // hwmon sensor not readable
+	GL1006 Code = "GL1006" // BMC without power readings
+	GL1007 Code = "GL1007" // CPU energy is estimated
+	GL1008 Code = "GL1008" // counter can wrap more than once per sample
+	GL1009 Code = "GL1009" // hwmon power sensor of an unknown driver
+	GL1010 Code = "GL1010" // processor not in the estimation table
 )
 
 // Process exit codes of the command line.
 const (
-	ExitOK    = 0
-	ExitError = 1
-	ExitUsage = 2
+	ExitOK         = 0
+	ExitError      = 1
+	ExitUsage      = 2
+	ExitNoSource   = 3
+	ExitPermission = 5
 )
 
 var exitCodes = map[Code]int{
@@ -46,6 +61,16 @@ var exitCodes = map[Code]int{
 	GL0006: ExitUsage,
 	GL0007: ExitUsage,
 	GL0008: ExitUsage,
+	GL1001: ExitNoSource,
+	GL1002: ExitPermission,
+	GL1003: ExitPermission,
+	GL1004: ExitPermission,
+	GL1005: ExitPermission,
+	GL1006: ExitNoSource,
+	GL1007: ExitNoSource,
+	GL1008: ExitError,
+	GL1009: ExitNoSource,
+	GL1010: ExitNoSource,
 }
 
 // Codes returns every registered error code.

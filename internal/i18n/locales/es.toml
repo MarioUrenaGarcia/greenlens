@@ -79,3 +79,53 @@ fix = "ejecuta '{command} --help' para ver cómo usarlo"
 message = "idioma no soportado '{lang}'"
 cause = "el idioma proviene de {source}"
 fix = "usa uno de: {supported}"
+
+[errors.GL1001]
+message = "no hay ninguna fuente de energía medida disponible"
+cause = "este equipo no expone ningún contador de energía legible, como ocurre en la mayoría de las máquinas virtuales"
+fix = "ejecuta 'greenlens doctor' para ver qué fuentes se encontraron y cómo habilitarlas"
+
+[errors.GL1002]
+message = "no se pueden leer los contadores de energía RAPL"
+cause = "{path} solo puede leerlo root"
+fix = "ejecuta 'sudo greenlens setup-permissions' o consulta 'greenlens help GL1002'"
+
+[errors.GL1003]
+message = "no se pueden abrir los contadores de energía de perf_event"
+cause = "los eventos perf de todo el sistema requieren perf_event_paranoid 0 o menor, o CAP_PERFMON (perf_event_paranoid vale {paranoid})"
+fix = "ejecuta 'sudo greenlens setup-permissions --perfmon', o usa los contadores de powercap"
+
+[errors.GL1004]
+message = "no se puede abrir el dispositivo IPMI"
+cause = "{path} no es accesible para este usuario"
+fix = "ejecuta 'sudo greenlens setup-permissions --ipmi'"
+
+[errors.GL1005]
+message = "no se puede leer un sensor de potencia de hwmon"
+cause = "{path} no es legible para este usuario"
+fix = "ejecuta 'sudo greenlens setup-permissions' o revisa los permisos del sensor"
+
+[errors.GL1006]
+message = "el BMC no reporta lecturas de potencia"
+cause = "el comando DCMI de lectura de potencia respondió {detail}"
+fix = "activa la medición de potencia en la configuración del BMC, o usa otra fuente de plataforma"
+
+[errors.GL1007]
+message = "la energía de la CPU es estimada"
+cause = "ningún contador de energía del procesador es legible en este equipo"
+fix = "en hardware físico ejecuta 'sudo greenlens setup-permissions'; en una máquina virtual define sources.estimate en la configuración"
+
+[errors.GL1008]
+message = "un contador de energía puede desbordarse más de una vez entre muestras"
+cause = "{channel} se desborda al llegar a {range}, lo que tarda {period} con la potencia más alta observada, y el intervalo de muestreo es {interval}"
+fix = "define agent.sample_interval por debajo de {limit}"
+
+[errors.GL1009]
+message = "no se usa el sensor de potencia de un driver de hwmon desconocido"
+cause = "el dispositivo hwmon '{name}' reporta potencia o energía, pero no se conoce su dominio"
+fix = "reporta el nombre del driver en https://github.com/MarioUrenaGarcia/greenlens/issues para clasificarlo"
+
+[errors.GL1010]
+message = "el procesador no está en la tabla de estimación"
+cause = "'{model}' no tiene coeficientes de potencia publicados, así que se usa un promedio genérico por hilo"
+fix = "define sources.estimate.idle_watts y sources.estimate.full_watts en la configuración con valores para este procesador"

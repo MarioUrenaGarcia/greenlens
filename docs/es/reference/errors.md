@@ -16,6 +16,16 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL0006](#gl0006) | sintaxis de opción no válida '`{arg}`' | 2 |
 | [GL0007](#gl0007) | '`{command}`' no acepta argumentos | 2 |
 | [GL0008](#gl0008) | idioma no soportado '`{lang}`' | 2 |
+| [GL1001](#gl1001) | no hay ninguna fuente de energía medida disponible | 3 |
+| [GL1002](#gl1002) | no se pueden leer los contadores de energía RAPL | 5 |
+| [GL1003](#gl1003) | no se pueden abrir los contadores de energía de perf_event | 5 |
+| [GL1004](#gl1004) | no se puede abrir el dispositivo IPMI | 5 |
+| [GL1005](#gl1005) | no se puede leer un sensor de potencia de hwmon | 5 |
+| [GL1006](#gl1006) | el BMC no reporta lecturas de potencia | 3 |
+| [GL1007](#gl1007) | la energía de la CPU es estimada | 3 |
+| [GL1008](#gl1008) | un contador de energía puede desbordarse más de una vez entre muestras | 1 |
+| [GL1009](#gl1009) | no se usa el sensor de potencia de un driver de hwmon desconocido | 3 |
+| [GL1010](#gl1010) | el procesador no está en la tabla de estimación | 3 |
 
 ## GL0001
 
@@ -72,3 +82,73 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** el idioma proviene de `{source}`
 - **Solución:** usa uno de: `{supported}`
 - **Código de salida:** 2
+
+## GL1001
+
+- **Mensaje:** no hay ninguna fuente de energía medida disponible
+- **Causa:** este equipo no expone ningún contador de energía legible, como ocurre en la mayoría de las máquinas virtuales
+- **Solución:** ejecuta 'greenlens doctor' para ver qué fuentes se encontraron y cómo habilitarlas
+- **Código de salida:** 3
+
+## GL1002
+
+- **Mensaje:** no se pueden leer los contadores de energía RAPL
+- **Causa:** `{path}` solo puede leerlo root
+- **Solución:** ejecuta 'sudo greenlens setup-permissions' o consulta 'greenlens help GL1002'
+- **Código de salida:** 5
+
+## GL1003
+
+- **Mensaje:** no se pueden abrir los contadores de energía de perf_event
+- **Causa:** los eventos perf de todo el sistema requieren perf_event_paranoid 0 o menor, o CAP_PERFMON (perf_event_paranoid vale `{paranoid}`)
+- **Solución:** ejecuta 'sudo greenlens setup-permissions --perfmon', o usa los contadores de powercap
+- **Código de salida:** 5
+
+## GL1004
+
+- **Mensaje:** no se puede abrir el dispositivo IPMI
+- **Causa:** `{path}` no es accesible para este usuario
+- **Solución:** ejecuta 'sudo greenlens setup-permissions --ipmi'
+- **Código de salida:** 5
+
+## GL1005
+
+- **Mensaje:** no se puede leer un sensor de potencia de hwmon
+- **Causa:** `{path}` no es legible para este usuario
+- **Solución:** ejecuta 'sudo greenlens setup-permissions' o revisa los permisos del sensor
+- **Código de salida:** 5
+
+## GL1006
+
+- **Mensaje:** el BMC no reporta lecturas de potencia
+- **Causa:** el comando DCMI de lectura de potencia respondió `{detail}`
+- **Solución:** activa la medición de potencia en la configuración del BMC, o usa otra fuente de plataforma
+- **Código de salida:** 3
+
+## GL1007
+
+- **Mensaje:** la energía de la CPU es estimada
+- **Causa:** ningún contador de energía del procesador es legible en este equipo
+- **Solución:** en hardware físico ejecuta 'sudo greenlens setup-permissions'; en una máquina virtual define sources.estimate en la configuración
+- **Código de salida:** 3
+
+## GL1008
+
+- **Mensaje:** un contador de energía puede desbordarse más de una vez entre muestras
+- **Causa:** `{channel}` se desborda al llegar a `{range}`, lo que tarda `{period}` con la potencia más alta observada, y el intervalo de muestreo es `{interval}`
+- **Solución:** define agent.sample_interval por debajo de `{limit}`
+- **Código de salida:** 1
+
+## GL1009
+
+- **Mensaje:** no se usa el sensor de potencia de un driver de hwmon desconocido
+- **Causa:** el dispositivo hwmon '`{name}`' reporta potencia o energía, pero no se conoce su dominio
+- **Solución:** reporta el nombre del driver en https://github.com/MarioUrenaGarcia/greenlens/issues para clasificarlo
+- **Código de salida:** 3
+
+## GL1010
+
+- **Mensaje:** el procesador no está en la tabla de estimación
+- **Causa:** '`{model}`' no tiene coeficientes de potencia publicados, así que se usa un promedio genérico por hilo
+- **Solución:** define sources.estimate.idle_watts y sources.estimate.full_watts en la configuración con valores para este procesador
+- **Código de salida:** 3
