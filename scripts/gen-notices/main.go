@@ -23,7 +23,7 @@ import (
 
 const mainModule = "github.com/MarioUrenaGarcia/greenlens"
 
-var licenseName = regexp.MustCompile(`(?i)^(licen[cs]e|copying)(\.(md|txt))?$`)
+var licenseName = regexp.MustCompile(`(?i)^(licen[cs]e|copying|notice)(\.(md|txt))?$`)
 
 type goPackage struct {
 	ImportPath string
