@@ -172,6 +172,11 @@ func Scan(fsys fs.FS) ([]Candidate, error) {
 	if err != nil {
 		return nil, err
 	}
+	return ScanSnapshot(fsys, snap), nil
+}
+
+// ScanSnapshot is Scan on processes already read.
+func ScanSnapshot(fsys fs.FS, snap procfs.Snapshot) []Candidate {
 	kinds := map[int]Kind{}
 	argvs := map[int][]string{}
 	for pid := range snap {
@@ -212,8 +217,28 @@ func Scan(fsys fs.FS) ([]Candidate, error) {
 		out = append(out, c)
 	}
 	slices.SortFunc(out, func(a, b Candidate) int { return a.PID - b.PID })
-	return out, nil
+	return out
 }
+
+// Executable returns the processes that run the named executable and whose
+// parent does not, so a server and its workers count once.
+func Executable(fsys fs.FS, snap procfs.Snapshot, name string) []int {
+	runs := func(pid int) bool {
+		argv := cmdline(fsys, pid)
+		return (len(argv) > 0 && path.Base(argv[0]) == name) || snap[pid].Comm == name
+	}
+	var out []int
+	for pid, p := range snap {
+		if runs(pid) && (p.PPID <= 1 || !runs(p.PPID)) {
+			out = append(out, pid)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+// Container returns the container of a process, or "".
+func Container(fsys fs.FS, pid int) string { return containerID(fsys, pid) }
 
 // Name returns the name of a discovered backend: the kind and the port, so
 // it stays the same when the process restarts with another PID.

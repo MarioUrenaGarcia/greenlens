@@ -1,0 +1,317 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Mario Ureña García
+
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
+)
+
+// Watermarks of the usage rollups in rollup_state.
+const (
+	usage1m = "usage_1m"
+	usage1h = "usage_1h"
+)
+
+// usageLag is how long after a minute ends its usage rows are folded.
+// Rows are written once the counters of the backends have been read,
+// which takes up to the connector timeout after the interval ends.
+const usageLag = 30 * time.Second
+
+// BackendInfo describes a backend for the backends table.
+type BackendInfo struct {
+	Name     string
+	Kind     string
+	Endpoint string
+}
+
+// EnsureBackends records the backends and refreshes their last_seen time.
+func (s *Store) EnsureBackends(ctx context.Context, bs []BackendInfo, now time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, b := range bs {
+		if _, err := s.backendID(ctx, s.db, b, now); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type execQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+func (s *Store) backendID(ctx context.Context, db execQuerier, b BackendInfo, now time.Time) (int64, error) {
+	var endpoint sql.NullString
+	if b.Endpoint != "" {
+		endpoint = sql.NullString{String: b.Endpoint, Valid: true}
+	}
+	ms := now.UnixMilli()
+	var id int64
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO backends (name, kind, endpoint, first_seen, last_seen) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(name) DO UPDATE SET kind = excluded.kind, endpoint = excluded.endpoint, last_seen = excluded.last_seen
+		RETURNING id`, b.Name, b.Kind, endpoint, ms, ms).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("record backend %s: %w", b.Name, err)
+	}
+	return id, nil
+}
+
+func modelID(ctx context.Context, db execQuerier, backend int64, name string, now time.Time) (sql.NullInt64, error) {
+	if name == "" {
+		return sql.NullInt64{}, nil
+	}
+	ms := now.UnixMilli()
+	var id int64
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO models (backend_id, name, first_seen, last_seen) VALUES (?, ?, ?, ?)
+		ON CONFLICT(backend_id, name) DO UPDATE SET last_seen = excluded.last_seen
+		RETURNING id`, backend, name, ms, ms).Scan(&id)
+	if err != nil {
+		return sql.NullInt64{}, fmt.Errorf("record model %s: %w", name, err)
+	}
+	return sql.NullInt64{Int64: id, Valid: true}, nil
+}
+
+func nullable(v *int64) sql.NullInt64 {
+	if v == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *v, Valid: true}
+}
+
+// InsertUsage stores the rows of one interval. info gives the kind and
+// endpoint of the backends; a backend missing from it is recorded as a
+// generic process.
+func (s *Store) InsertUsage(ctx context.Context, rows []usage.Row, info map[string]BackendInfo, now time.Time) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	ids := map[string]int64{}
+	for _, r := range rows {
+		id, ok := ids[r.Backend]
+		if !ok {
+			b, known := info[r.Backend]
+			if !known {
+				b = BackendInfo{Name: r.Backend, Kind: "process"}
+			}
+			if id, err = s.backendID(ctx, tx, b, now); err != nil {
+				_ = tx.Rollback()
+				return err
+			}
+			ids[r.Backend] = id
+		}
+		model, err := modelID(ctx, tx, id, r.Model, now)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO usage_intervals (ts_ms, interval_ms, backend_id, model_id, consumer_id,
+				cpu_energy_j, dram_energy_j, gpu_energy_j, platform_energy_j,
+				prompt_tokens, generated_tokens, requests, method, quality)
+			VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			r.Start.UnixMilli(), r.Interval.Milliseconds(), id, model,
+			r.CPUJ, r.DRAMJ, r.GPUJ, r.PlatformJ,
+			nullable(r.PromptTokens), nullable(r.GeneratedTokens), nullable(r.Requests), r.Method, string(r.Quality)); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("store usage of %s: %w", r.Backend, err)
+		}
+	}
+	return tx.Commit()
+}
+
+// energyExpr is the energy of a usage row: the platform share under the
+// wall policy, otherwise processor, memory and GPU.
+const energyExpr = `CASE WHEN platform_energy_j > 0 THEN platform_energy_j ELSE cpu_energy_j + dram_energy_j + gpu_energy_j END`
+
+// rollupUsage folds usage rows as Rollup does for samples. Each bucket is
+// folded once, so plain inserts are enough; rows without a model have a
+// NULL key that a conflict clause would not match anyway. Indicators are
+// derived from the energy when queried, with the factors configured then.
+func (s *Store) rollupUsage(ctx context.Context, now time.Time) error {
+	steps := []struct {
+		res, query, first string
+		until             int64
+	}{
+		{usage1m, `
+			INSERT INTO usage_rollups (bucket_start_ms, resolution, backend_id, model_id, consumer_id,
+				energy_j, prompt_tokens, generated_tokens, requests)
+			SELECT (ts_ms / 60000) * 60000, '1m', backend_id, model_id, consumer_id,
+				sum(` + energyExpr + `), sum(prompt_tokens), sum(generated_tokens), sum(requests)
+			FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?
+			GROUP BY 1, backend_id, model_id, consumer_id`,
+			`SELECT coalesce(min(ts_ms), 9223372036854775807) FROM usage_intervals`,
+			now.Add(-usageLag).Truncate(time.Minute).UnixMilli()},
+		{usage1h, `
+			INSERT INTO usage_rollups (bucket_start_ms, resolution, backend_id, model_id, consumer_id,
+				energy_j, prompt_tokens, generated_tokens, requests)
+			SELECT (bucket_start_ms / 3600000) * 3600000, '1h', backend_id, model_id, consumer_id,
+				sum(energy_j), sum(prompt_tokens), sum(generated_tokens), sum(requests)
+			FROM usage_rollups WHERE resolution = '1m' AND bucket_start_ms >= ? AND bucket_start_ms < ?
+			GROUP BY 1, backend_id, model_id, consumer_id`,
+			`SELECT coalesce(min(bucket_start_ms), 9223372036854775807) FROM usage_rollups WHERE resolution = '1m'`,
+			0},
+	}
+	for i, st := range steps {
+		until := st.until
+		if i == 1 {
+			// Hours are folded from the minutes already folded.
+			var m int64
+			if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, usage1m).Scan(&m); err != nil {
+				return err
+			}
+			until = time.UnixMilli(m).Truncate(time.Hour).UnixMilli()
+		}
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		var from int64
+		err = tx.QueryRowContext(ctx, `SELECT done_until_ms FROM rollup_state WHERE resolution = ?`, st.res).Scan(&from)
+		if errors.Is(err, sql.ErrNoRows) {
+			err = tx.QueryRowContext(ctx, st.first).Scan(&from)
+		}
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		if from >= until {
+			_ = tx.Rollback()
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, st.query, from, until); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("rollup %s: %w", st.res, err)
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO rollup_state (resolution, done_until_ms) VALUES (?, ?)
+			ON CONFLICT(resolution) DO UPDATE SET done_until_ms = excluded.done_until_ms`, st.res, until); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UsageEnergy is the energy and tokens of one backend, or one model of it,
+// in a period.
+type UsageEnergy struct {
+	Backend         string  `json:"backend"`
+	Kind            string  `json:"kind"`
+	Model           string  `json:"model,omitempty"`
+	EnergyJ         float64 `json:"energy_j"`
+	PromptTokens    int64   `json:"prompt_tokens"`
+	GeneratedTokens int64   `json:"generated_tokens"`
+	Requests        int64   `json:"requests"`
+	// Counted is false when the backend reported no tokens in the period.
+	Counted bool `json:"tokens_counted"`
+}
+
+// Usage groupings.
+const (
+	ByBackend = "backend"
+	ByModel   = "model"
+)
+
+// Usage sums the usage in [from, to) by backend or by model, from the
+// finest resolution kept for from plus the rows not folded yet.
+func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now time.Time, r Retention) ([]UsageEnergy, string, error) {
+	res := Resolution1h
+	switch {
+	case !from.Before(now.Add(-r.Raw)):
+		res = ResolutionRaw
+	case !from.Before(now.Add(-r.Rollup1m)):
+		res = Resolution1m
+	}
+	raw := `SELECT backend_id, model_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+		FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`
+	q := raw
+	args := []any{from.UnixMilli(), to.UnixMilli()}
+	if res != ResolutionRaw {
+		mark := usage1m
+		if res == Resolution1h {
+			mark = usage1h
+		}
+		var done int64
+		if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, mark).Scan(&done); err != nil {
+			return nil, res, err
+		}
+		q = `SELECT backend_id, model_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ? UNION ALL ` + raw
+		args = []any{res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli()}
+	}
+	group, model := `b.id`, `''`
+	if by == ByModel {
+		group, model = `b.id, u.model_id`, `coalesce(m.name, '')`
+	}
+	// Only the constant fragments above are formatted into the query;
+	// every value goes through placeholders.
+	//nolint:gosec // constant fragments, see above
+	query := `SELECT b.name, b.kind, ` + model + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
+			count(u.p) > 0 OR count(u.g) > 0
+		FROM (` + q + `) AS u JOIN backends b ON b.id = u.backend_id LEFT JOIN models m ON m.id = u.model_id
+		GROUP BY ` + group + ` ORDER BY sum(u.e) DESC, b.name`
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, res, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []UsageEnergy
+	for rows.Next() {
+		var u UsageEnergy
+		if err := rows.Scan(&u.Backend, &u.Kind, &u.Model, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
+			return nil, res, err
+		}
+		out = append(out, u)
+	}
+	return out, res, rows.Err()
+}
+
+// IntervalTokens is one usage interval of one model, for the regression of
+// energy on tokens.
+type IntervalTokens struct {
+	EnergyJ         float64
+	PromptTokens    float64
+	GeneratedTokens float64
+}
+
+// ModelIntervals returns the raw usage intervals of a model in [from, to)
+// that counted tokens and were attributed to it alone, so their energy is
+// not itself a split by tokens.
+func (s *Store) ModelIntervals(ctx context.Context, backend, model string, from, to time.Time) ([]IntervalTokens, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT `+energyExpr+`, u.prompt_tokens, u.generated_tokens
+		FROM usage_intervals u JOIN backends b ON b.id = u.backend_id JOIN models m ON m.id = u.model_id
+		WHERE b.name = ? AND m.name = ? AND u.ts_ms >= ? AND u.ts_ms < ?
+			AND u.prompt_tokens IS NOT NULL AND u.generated_tokens IS NOT NULL AND u.method <> ?
+		ORDER BY u.ts_ms`, backend, model, from.UnixMilli(), to.UnixMilli(), usage.MethodTokenWeighted)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []IntervalTokens
+	for rows.Next() {
+		var it IntervalTokens
+		if err := rows.Scan(&it.EnergyJ, &it.PromptTokens, &it.GeneratedTokens); err != nil {
+			return nil, err
+		}
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}

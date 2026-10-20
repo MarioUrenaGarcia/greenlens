@@ -37,6 +37,8 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1013](#gl1013) | hay una GPU NVIDIA pero greenlens-nvml no está instalado | 3 |
 | [GL1014](#gl1014) | no se puede usar la biblioteca de gestión de NVIDIA (NVML) | 3 |
 | [GL1015](#gl1015) | nvidia-smi no puede leer las GPU NVIDIA | 3 |
+| [GL2001](#gl2001) | no se puede leer el backend `{name}` | 4 |
+| [GL2002](#gl2002) | el backend `{name}` no expone métricas | 4 |
 | [GL3001](#gl3001) | no se encontró el archivo de configuración | 6 |
 | [GL3002](#gl3002) | no se puede leer el archivo de configuración | 6 |
 | [GL3003](#gl3003) | valor de configuración no válido para `{key}` | 6 |
@@ -250,6 +252,20 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** `{detail}`
 - **Solución:** verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente
 - **Código de salida:** 3
+
+## GL2001
+
+- **Mensaje:** no se puede leer el backend `{name}`
+- **Causa:** `{endpoint}` no respondió: `{detail}`
+- **Solución:** verifica que el servidor esté en ejecución y escuche ahí; si es un backend declarado, revisa su endpoint en la configuración
+- **Código de salida:** 4
+
+## GL2002
+
+- **Mensaje:** el backend `{name}` no expone métricas
+- **Causa:** `{kind}` solo ofrece contadores de tokens cuando se inicia con `{flag}`
+- **Solución:** reinícialo con `{flag}`; mientras tanto su energía se mide pero no se reparte por modelo ni por token
+- **Código de salida:** 4
 
 ## GL3001
 

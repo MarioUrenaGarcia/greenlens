@@ -252,7 +252,7 @@ func (s *Store) Rollup(ctx context.Context, now time.Time) error {
 			return err
 		}
 	}
-	return nil
+	return s.rollupUsage(ctx, now)
 }
 
 func (s *Store) firstData(ctx context.Context, tx *sql.Tx, from string) (int64, error) {
@@ -290,6 +290,9 @@ func (s *Store) Prune(ctx context.Context, now time.Time, r Retention) (int64, e
 		{`DELETE FROM node_samples WHERE ts_ms < ?`, min(now.Add(-r.Raw).UnixMilli(), done(Resolution1m))},
 		{`DELETE FROM node_rollups WHERE resolution = '1m' AND bucket_start_ms < ?`, min(now.Add(-r.Rollup1m).UnixMilli(), done(Resolution1h))},
 		{`DELETE FROM node_rollups WHERE resolution = '1h' AND bucket_start_ms < ?`, now.Add(-r.Rollup1h).UnixMilli()},
+		{`DELETE FROM usage_intervals WHERE ts_ms < ?`, min(now.Add(-r.Raw).UnixMilli(), done(usage1m))},
+		{`DELETE FROM usage_rollups WHERE resolution = '1m' AND bucket_start_ms < ?`, min(now.Add(-r.Rollup1m).UnixMilli(), done(usage1h))},
+		{`DELETE FROM usage_rollups WHERE resolution = '1h' AND bucket_start_ms < ?`, now.Add(-r.Rollup1h).UnixMilli()},
 	} {
 		res, err := s.db.ExecContext(ctx, d.query, d.cutoff)
 		if err != nil {

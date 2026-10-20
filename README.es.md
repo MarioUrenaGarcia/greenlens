@@ -55,8 +55,8 @@ emisiones, costo y la Software Carbon Intensity (ISO/IEC 21031:2024).
 
 ## Estado
 
-GreenLens mide la energía del nodo y la atribuye a los comandos, procesos y
-unidades de systemd que elijas:
+GreenLens mide la energía del nodo y la atribuye a backends de inferencia,
+modelos y los comandos, procesos y unidades de systemd que elijas:
 
 - `greenlens doctor` encuentra cada fuente de energía, muestra cuáles se usan
   y explica cómo corregir cada problema;
@@ -65,11 +65,14 @@ unidades de systemd que elijas:
   a los demás comandos;
 - `greenlens calibrate`, `measure`, `status` y `report` miden la potencia en
   reposo, atribuyen energía y reportan kWh, gCO2e y costo;
+- las GPU se miden con NVML, amdgpu, xe e i915, y el agente encuentra
+  servidores de Ollama, llama.cpp, vLLM, TGI, SGLang y LocalAI y reporta la
+  energía de cada backend y modelo, y por token generado;
 - cada mensaje está en inglés y en español, y cada error tiene un código, una
   causa y una solución.
 
-La atribución a backends de inferencia y modelos, las GPU y la interfaz
-gráfica forman parte del diseño que se muestra abajo.
+El proxy que cuenta tokens, los benchmarks y la interfaz gráfica forman parte
+del diseño que se muestra abajo.
 
 <p align="center">
   <img src="site/static/images/terminal-es.svg" alt="Sesión de terminal con greenlens: ayuda, sugerencia de comando y error con causa y solución" width="820">

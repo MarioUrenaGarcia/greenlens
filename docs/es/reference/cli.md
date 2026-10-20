@@ -197,7 +197,7 @@ greenlens measure --unit ollama.service --duration 10m
 
 ## greenlens report
 
-Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d.
+Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d.
 
 **Uso**
 
@@ -211,6 +211,7 @@ greenlens report [opciones]
 |---|---|---|
 | `--by` | Agrupa por none, hour o day | `none` |
 | `--from` | Inicio del periodo | `24h` |
+| `--group` | Reporta por backend o model en lugar de por dominio |  |
 | `--to` | Fin del periodo | `now` |
 
 **Ejemplos**
@@ -218,6 +219,7 @@ greenlens report [opciones]
 ```bash
 greenlens report
 greenlens report --from 7d --by day
+greenlens report --from 7d --group model
 greenlens report --from 2026-10-01 --to 2026-11-01 --output csv
 ```
 

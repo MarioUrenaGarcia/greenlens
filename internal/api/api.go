@@ -26,6 +26,7 @@ const (
 	PathUsage        = "/api/v1/usage"
 	PathCalibrations = "/api/v1/calibrations"
 	PathLive         = "/api/v1/live"
+	PathBackends     = "/api/v1/backends"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -35,6 +36,7 @@ type Problem struct {
 	Code    help.Code         `json:"code"`
 	Args    map[string]string `json:"args,omitempty"`
 	Channel string            `json:"channel,omitempty"`
+	Backend string            `json:"backend,omitempty"`
 }
 
 // FromProblem converts a source problem.
@@ -116,6 +118,7 @@ type Status struct {
 	Calibration   *Calibration `json:"calibration,omitempty"`
 	Self          Self         `json:"self"`
 	IdlePolicy    string       `json:"idle_policy"`
+	Backends      []Backend    `json:"backends,omitempty"`
 }
 
 // Usage is the document of PathUsage.
@@ -145,4 +148,56 @@ type Live struct {
 // ErrorBody is returned with every error status.
 type ErrorBody struct {
 	Error string `json:"error"`
+}
+
+// Model is the use of one model of a backend since the agent started.
+type Model struct {
+	Name            string  `json:"name"`
+	EnergyJ         float64 `json:"energy_j"`
+	PromptTokens    int64   `json:"prompt_tokens"`
+	GeneratedTokens int64   `json:"generated_tokens"`
+	Requests        int64   `json:"requests"`
+	// JoulesPerToken is the energy per generated token, zero when no
+	// token was counted.
+	JoulesPerToken float64 `json:"joules_per_generated_token"`
+	Method         string  `json:"method"`
+	Quality        string  `json:"quality"`
+}
+
+// Backend is an inference server with its use since the agent started.
+type Backend struct {
+	Name          string    `json:"name"`
+	Kind          string    `json:"kind"`
+	Endpoint      string    `json:"endpoint,omitempty"`
+	Static        bool      `json:"static"`
+	ContainerID   string    `json:"container_id,omitempty"`
+	Processes     int       `json:"processes"`
+	Version       string    `json:"version,omitempty"`
+	TokenCounters bool      `json:"token_counters"`
+	LastRead      time.Time `json:"last_read,omitzero"`
+	Problem       *Problem  `json:"problem,omitempty"`
+	// PowerW is the mean power of the backend in the last usage interval.
+	PowerW  float64 `json:"power_w"`
+	EnergyJ float64 `json:"energy_j"`
+	CPUJ    float64 `json:"cpu_energy_j"`
+	DRAMJ   float64 `json:"dram_energy_j"`
+	GPUJ    float64 `json:"gpu_energy_j"`
+	Models  []Model `json:"models,omitempty"`
+}
+
+// Backends lists the backends of the node.
+type Backends struct {
+	SchemaVersion int       `json:"schema_version"`
+	IntervalMS    int64     `json:"interval_ms"`
+	Backends      []Backend `json:"backends"`
+}
+
+// BackendUsage is the usage of a period grouped by backend or model.
+type BackendUsage struct {
+	SchemaVersion int                 `json:"schema_version"`
+	From          time.Time           `json:"from"`
+	To            time.Time           `json:"to"`
+	GroupBy       string              `json:"group_by"`
+	Resolution    string              `json:"resolution"`
+	Rows          []store.UsageEnergy `json:"rows"`
 }

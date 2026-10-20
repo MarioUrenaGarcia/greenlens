@@ -26,12 +26,14 @@ import (
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
+	"github.com/MarioUrenaGarcia/greenlens/internal/backends"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/hostfs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/procfs"
+	"github.com/MarioUrenaGarcia/greenlens/internal/proctrack"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sampler"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sandbox"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -39,6 +41,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/registry"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
+	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 )
 
 // LiveWindow is how much recent data is kept in memory.
@@ -67,6 +70,8 @@ type Options struct {
 	Ready chan<- struct{}
 	// Reload, when set, replaces SIGHUP as the reload trigger.
 	Reload <-chan struct{}
+	// UsageInterval replaces usage.Interval, for tests.
+	UsageInterval time.Duration
 }
 
 // Agent is a running agent.
@@ -83,22 +88,38 @@ type Agent struct {
 	started  time.Time
 	ready    atomic.Bool
 
-	mu        sync.RWMutex
-	cfg       config.Config
-	sel       selector.Selection
-	smp       *sampler.Sampler
-	ring      *ring
-	idle      *calibrate.IdleTracker
-	calib     *calibrate.Result
-	last      sampler.Sample
-	samples   uint64
-	energy    map[source.Domain]float64
-	selfJ     float64
-	selfTicks uint64
-	selfPrev  uint64
-	sysPrev   procfs.CPUTimes
-	haveSelf  bool
-	lastLog   map[string]time.Time
+	// The tracker and the accountant are used only by the sampling loop,
+	// the splitter only by the usage worker.
+	tracker    *proctrack.Tracker
+	acc        *usage.Accountant
+	split      *usage.Splitter
+	reader     *backends.Reader
+	cuts       chan usage.Cut
+	workerDone chan struct{}
+
+	bmu    sync.Mutex
+	bs     []backends.Backend
+	bstate map[string]*backendState
+
+	mu         sync.RWMutex
+	pkgQuality source.Quality
+	gpuUsers   []source.GPUUser
+	cfg        config.Config
+	sel        selector.Selection
+	smp        *sampler.Sampler
+	ring       *ring
+	idle       *calibrate.IdleTracker
+	calib      *calibrate.Result
+	last       sampler.Sample
+	samples    uint64
+	energy     map[source.Domain]float64
+	selfJ      float64
+	selfTicks  uint64
+	selfPrev   uint64
+	sysPrev    procfs.CPUTimes
+	haveSys    bool
+	haveSelf   bool
+	lastLog    map[string]time.Time
 }
 
 // Run runs the agent until ctx is canceled.
@@ -127,10 +148,17 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		energy:  map[source.Domain]float64{},
 		idle:    calibrate.NewIdleTracker(),
 		lastLog: map[string]time.Time{},
+		bstate:  map[string]*backendState{},
+		reader:  backends.NewReader(),
+		cuts:    make(chan usage.Cut, 4),
+		split:   usage.NewSplitter(o.Config.Attribution.MaxModelsPerBackend),
 	}
 	if a.hostFS == nil {
 		a.hostFS = hostfs.Root(o.Config.Agent.HostRoot)
 	}
+	a.tracker = proctrack.New(a.hostFS)
+	policy, _ := attribution.ParsePolicy(o.Config.Attribution.IdlePolicy)
+	a.acc = usage.NewAccountant(policy, time.Now())
 	a.ring = newRing(int(LiveWindow / o.Config.Agent.SampleInterval.D()))
 
 	var err error
@@ -195,8 +223,23 @@ func (a *Agent) selectSources(ctx context.Context) error {
 	for _, p := range sel.Problems {
 		a.log.Warn("energy source problem", "code", p.Code, "channel", p.Channel, "detail", help.New(p.Code, p.Args...).Error())
 	}
+	// The processor quality is the worst of the selected package channels,
+	// and the GPU users are the selected sources that report processes.
+	var quality source.Quality
+	var users []source.GPUUser
+	selected := sel.Sources()
+	for _, c := range sel.Channels {
+		if c.Domain == source.DomainPackage && (quality == "" || c.Quality == source.QualityEstimated) {
+			quality = c.Quality
+		}
+	}
+	for _, src := range a.srcs {
+		if u, ok := src.(source.GPUUser); ok && slices.Contains(selected, src.ID()) {
+			users = append(users, u)
+		}
+	}
 	a.mu.Lock()
-	a.sel, a.smp = sel, smp
+	a.sel, a.smp, a.pkgQuality, a.gpuUsers = sel, smp, quality, users
 	a.mu.Unlock()
 	return nil
 }
@@ -261,6 +304,13 @@ func (a *Agent) serve(ctx context.Context) error {
 		return err
 	}
 	a.confine()
+	// Processes are read before the API answers, so the first status
+	// already lists the backends.
+	a.refreshBackends(ctx)
+	a.workerDone = make(chan struct{})
+	workerCtx, stopWorker := context.WithCancel(context.WithoutCancel(ctx))
+	defer stopWorker()
+	go a.usageWorker(workerCtx)
 	srv := &http.Server{
 		Handler:           a.handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -295,6 +345,14 @@ func (a *Agent) serve(ctx context.Context) error {
 	// The parent context is already canceled; closing still needs time.
 	shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownGrace)
 	defer cancel()
+	// The last, partial interval is stored too.
+	a.cutUsage(time.Now())
+	close(a.cuts)
+	select {
+	case <-a.workerDone:
+	case <-shutdown.Done():
+		a.log.Warn("the last usage interval was not stored in time")
+	}
 	if serr := srv.Shutdown(shutdown); serr != nil {
 		a.log.Warn("closing the API", "error", serr)
 	}
@@ -319,6 +377,17 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 	defer tick.Stop()
 	minute := time.NewTicker(time.Minute)
 	defer minute.Stop()
+	every := usage.Interval
+	if a.o.UsageInterval > 0 {
+		every = a.o.UsageInterval
+	}
+	usageTick := time.NewTicker(every)
+	defer usageTick.Stop()
+	a.mu.RLock()
+	discoverEvery := a.cfg.Discovery.Interval.D()
+	a.mu.RUnlock()
+	discover := time.NewTicker(discoverEvery)
+	defer discover.Stop()
 	hour := time.NewTicker(time.Hour)
 	defer hour.Stop()
 	lastCheck := time.Now()
@@ -333,6 +402,10 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 			return fmt.Errorf("API server: %w", err)
 		case <-tick.C:
 			a.step(ctx)
+		case now := <-usageTick.C:
+			a.cutUsage(now)
+		case <-discover.C:
+			a.refreshBackends(ctx)
 		case <-minute.C:
 			if err := a.st.Rollup(ctx, time.Now()); err != nil {
 				a.limited("rollup", "rollup failed", "error", err)
@@ -345,6 +418,17 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 				interval = d
 				tick.Reset(interval)
 			}
+			a.mu.RLock()
+			every, policy := a.cfg.Discovery.Interval.D(), a.cfg.Attribution.IdlePolicy
+			a.mu.RUnlock()
+			if p, err := attribution.ParsePolicy(policy); err == nil {
+				a.acc.SetPolicy(p)
+			}
+			if every != discoverEvery && every > 0 {
+				discoverEvery = every
+				discover.Reset(every)
+			}
+			a.refreshBackends(ctx)
 		}
 	}
 }
@@ -399,7 +483,16 @@ func (a *Agent) step(ctx context.Context) {
 	if err := a.st.InsertSample(ctx, s); err != nil {
 		a.limited("insert", "storing a sample failed", "error", err)
 	}
-	a.accountSelf(s)
+	if sys, err := procfs.SystemCPU(a.hostFS); err == nil {
+		a.mu.Lock()
+		busy, ok := sys.Busy()-a.sysPrev.Busy(), a.haveSys
+		a.sysPrev, a.haveSys = sys, true
+		a.mu.Unlock()
+		if ok {
+			a.accountSelf(s, busy)
+			a.accountBackends(s, busy)
+		}
+	}
 	a.mu.Lock()
 	a.last = s
 	a.samples++
@@ -416,12 +509,8 @@ func (a *Agent) step(ctx context.Context) {
 
 // accountSelf attributes to the agent the share of energy that matches its
 // own CPU time, so its overhead is visible.
-func (a *Agent) accountSelf(s sampler.Sample) {
+func (a *Agent) accountSelf(s sampler.Sample, busy uint64) {
 	self, err := procfs.Process(a.selfFS, os.Getpid())
-	if err != nil {
-		return
-	}
-	sys, err := procfs.SystemCPU(a.hostFS)
 	if err != nil {
 		return
 	}
@@ -429,7 +518,6 @@ func (a *Agent) accountSelf(s sampler.Sample) {
 	defer a.mu.Unlock()
 	if a.haveSelf {
 		dSelf := self.CPU() - a.selfPrev
-		dBusy := sys.Busy() - a.sysPrev.Busy()
 		cpuJ, _ := s.DomainEnergy(source.DomainPackage)
 		dramJ, _ := s.DomainEnergy(source.DomainDRAM)
 		base := attribution.Baseline{}
@@ -437,12 +525,12 @@ func (a *Agent) accountSelf(s sampler.Sample) {
 			base = a.calib.Baseline()
 		}
 		policy, _ := attribution.ParsePolicy(a.cfg.Attribution.IdlePolicy)
-		r := attribution.Split(attribution.Node{Interval: s.Interval, CPUJ: cpuJ, DRAMJ: dramJ, Idle: base, BusyTicks: dBusy},
+		r := attribution.Split(attribution.Node{Interval: s.Interval, CPUJ: cpuJ, DRAMJ: dramJ, Idle: base, BusyTicks: busy},
 			[]attribution.Usage{{ID: "self", Ticks: dSelf}}, policy)
 		a.selfJ += r[0].CPUJ + r[0].DRAMJ
 		a.selfTicks += dSelf
 	}
-	a.selfPrev, a.sysPrev, a.haveSelf = self.CPU(), sys, true
+	a.selfPrev, a.haveSelf = self.CPU(), true
 }
 
 func (a *Agent) checkWrap() {

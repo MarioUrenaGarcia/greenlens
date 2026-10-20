@@ -21,6 +21,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
+	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 )
 
 // maxBody limits request bodies; a calibration is a few hundred bytes.
@@ -75,6 +76,9 @@ func (a *Agent) handler() http.Handler {
 		writeJSON(w, http.StatusOK, a.Status().Channels)
 	})
 	mux.HandleFunc("GET "+api.PathUsage, a.handleUsage)
+	mux.HandleFunc("GET "+api.PathBackends, func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, a.Backends())
+	})
 	mux.HandleFunc("GET "+api.PathLive, func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, a.Live())
 	})
@@ -101,6 +105,24 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 	to, err2 := time.Parse(time.RFC3339, q.Get("to"))
 	if err1 != nil || err2 != nil || !from.Before(to) || to.Sub(from) > maxRange {
 		writeError(w, http.StatusBadRequest, "from and to must be RFC 3339 times with from before to, at most three years apart")
+		return
+	}
+	switch by := q.Get("group_by"); by {
+	case "":
+	case store.ByBackend, store.ByModel:
+		rows, res, err := a.st.Usage(r.Context(), from, to, by, time.Now(), a.retention())
+		if err != nil {
+			a.log.Error("usage query failed", "error", err)
+			writeError(w, http.StatusInternalServerError, "usage query failed")
+			return
+		}
+		if rows == nil {
+			rows = []store.UsageEnergy{}
+		}
+		writeJSON(w, http.StatusOK, api.BackendUsage{SchemaVersion: api.SchemaVersion, From: from, To: to, GroupBy: by, Resolution: res, Rows: rows})
+		return
+	default:
+		writeError(w, http.StatusBadRequest, "group_by must be backend or model")
 		return
 	}
 	var bucket time.Duration
@@ -169,6 +191,7 @@ func validCalibration(c calibrate.Result) error {
 
 // Status assembles the status document.
 func (a *Agent) Status() api.Status {
+	bs := a.Backends().Backends
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	st := api.Status{
@@ -180,6 +203,7 @@ func (a *Agent) Status() api.Status {
 		Samples:       a.samples,
 		Estimated:     a.sel.Estimated,
 		IdlePolicy:    a.cfg.Attribution.IdlePolicy,
+		Backends:      bs,
 		Self:          api.Self{EnergyJ: a.selfJ, CPUSeconds: float64(a.selfTicks) / 100, RSSBytes: rss()},
 	}
 	quality := map[source.Domain]source.Quality{}
@@ -218,6 +242,11 @@ func (a *Agent) Status() api.Status {
 	}
 	for _, p := range a.smp.WrapRisk(a.cfg.Agent.SampleInterval.D()) {
 		st.Problems = append(st.Problems, api.FromProblem(p))
+	}
+	for _, b := range bs {
+		if b.Problem != nil {
+			st.Problems = append(st.Problems, *b.Problem)
+		}
 	}
 	if a.calib != nil {
 		c := &api.Calibration{At: a.calib.StartedAt, Baseline: a.calib.Baseline()}

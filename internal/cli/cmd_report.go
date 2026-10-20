@@ -13,10 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/output"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
+	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 	"github.com/MarioUrenaGarcia/greenlens/internal/units"
 )
 
@@ -65,12 +67,12 @@ func parseTime(s string, now time.Time) (time.Time, error) {
 
 func newReportCmd(a *app) *cobra.Command {
 	l := a.l
-	var fromS, toS, by string
+	var fromS, toS, by, group string
 	cmd := &cobra.Command{
 		Use:     "report",
 		Short:   l.T("cli.report.short"),
 		Long:    wrap(l.T("cli.report.long"), helpWidth),
-		Example: "  greenlens report\n  greenlens report --from 7d --by day\n  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
+		Example: "  greenlens report\n  greenlens report --from 7d --by day\n  greenlens report --from 7d --group model\n  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
 		Args:    noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			now := time.Now()
@@ -86,6 +88,9 @@ func newReportCmd(a *app) *cobra.Command {
 			if !ok {
 				return help.New(help.GL0005, "flag", "--by", "value", by, "command", cmd.CommandPath())
 			}
+			if group != "" && (group != store.ByBackend && group != store.ByModel || by != "none") {
+				return help.New(help.GL0005, "flag", "--group", "value", group, "command", cmd.CommandPath())
+			}
 			cfg, _, err := a.config()
 			if err != nil {
 				return err
@@ -93,6 +98,13 @@ func newReportCmd(a *app) *cobra.Command {
 			c, err := a.agent(cmd.Context(), cfg)
 			if err != nil {
 				return err
+			}
+			if group != "" {
+				u, err := c.BackendUsage(cmd.Context(), from, to, group)
+				if err != nil {
+					return err
+				}
+				return a.writeBackendReport(cmd, backendReport(u, cfg.Factors()))
 			}
 			u, err := c.Usage(cmd.Context(), from, to, bucket)
 			if err != nil {
@@ -140,6 +152,7 @@ func newReportCmd(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&fromS, "from", "24h", l.T("cli.report.flag.from"))
 	cmd.Flags().StringVar(&toS, "to", "now", l.T("cli.report.flag.to"))
 	cmd.Flags().StringVar(&by, "by", "none", l.T("cli.report.flag.by"))
+	cmd.Flags().StringVar(&group, "group", "", l.T("cli.report.flag.group"))
 	return cmd
 }
 
@@ -201,5 +214,104 @@ func (a *app) writeReport(cmd *cobra.Command, rep Report) error {
 		notes = append(notes, l.T("cli.report.system_levels"))
 	}
 	_, err := fmt.Fprintln(w, "\n"+strings.Join(notes, "\n"))
+	return err
+}
+
+// BackendReportRow is the energy of one backend, or one model, in a period.
+type BackendReportRow struct {
+	Backend         string            `json:"backend"`
+	Kind            string            `json:"kind"`
+	Model           string            `json:"model,omitempty"`
+	EnergyJ         float64           `json:"energy_j"`
+	PromptTokens    int64             `json:"prompt_tokens"`
+	GeneratedTokens int64             `json:"generated_tokens"`
+	Requests        int64             `json:"requests"`
+	TokensCounted   bool              `json:"tokens_counted"`
+	JoulesPerToken  float64           `json:"joules_per_generated_token"`
+	Indicators      indicators.Values `json:"indicators"`
+}
+
+// BackendReport is the document of greenlens report --group.
+type BackendReport struct {
+	SchemaVersion  int                `json:"schema_version"`
+	From           time.Time          `json:"from"`
+	To             time.Time          `json:"to"`
+	GroupBy        string             `json:"group_by"`
+	Resolution     string             `json:"resolution"`
+	EmissionGKWh   float64            `json:"emission_factor_g_per_kwh"`
+	EmissionSource string             `json:"emission_factor_source"`
+	Currency       string             `json:"currency,omitempty"`
+	Rows           []BackendReportRow `json:"rows"`
+}
+
+func backendReport(u api.BackendUsage, f indicators.Factors) BackendReport {
+	rep := BackendReport{SchemaVersion: 1, From: u.From, To: u.To, GroupBy: u.GroupBy, Resolution: u.Resolution,
+		EmissionGKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, Rows: []BackendReportRow{}}
+	if f.TariffPerKWh != nil {
+		rep.Currency = f.Currency
+	}
+	for _, r := range u.Rows {
+		row := BackendReportRow{Backend: r.Backend, Kind: r.Kind, Model: r.Model, EnergyJ: r.EnergyJ,
+			PromptTokens: r.PromptTokens, GeneratedTokens: r.GeneratedTokens, Requests: r.Requests, TokensCounted: r.Counted,
+			Indicators: f.Compute(r.EnergyJ)}
+		if r.GeneratedTokens > 0 {
+			row.JoulesPerToken = r.EnergyJ / float64(r.GeneratedTokens)
+		}
+		rep.Rows = append(rep.Rows, row)
+	}
+	return rep
+}
+
+func (a *app) writeBackendReport(cmd *cobra.Command, rep BackendReport) error {
+	l := a.l
+	header := []string{l.T("cli.col.backend")}
+	if rep.GroupBy == store.ByModel {
+		header = append(header, l.T("cli.col.model"))
+	}
+	header = append(header, l.T("cli.col.energy"), "kWh", "CO2e")
+	if rep.Currency != "" {
+		header = append(header, l.T("cli.col.cost"))
+	}
+	header = append(header, l.T("cli.col.tokens"), l.T("cli.col.joules_per_token"))
+	g := output.Grid{Header: header}
+	for _, r := range rep.Rows {
+		row := []string{r.Backend}
+		if rep.GroupBy == store.ByModel {
+			model := r.Model
+			if model == "" {
+				model = "-"
+			}
+			row = append(row, model)
+		}
+		row = append(row, units.Energy(r.EnergyJ, a.raw), strconv.FormatFloat(r.Indicators.KWh, 'f', 4, 64), units.CO2e(r.Indicators.CO2eG, a.raw))
+		if rep.Currency != "" {
+			cost := "-"
+			if r.Indicators.Cost != nil {
+				cost = units.Money(*r.Indicators.Cost, rep.Currency, a.raw)
+			}
+			row = append(row, cost)
+		}
+		tokens, jpt := l.T("cli.status.not_counted"), "-"
+		if r.TokensCounted {
+			tokens = fmt.Sprintf("%d / %d", r.PromptTokens, r.GeneratedTokens)
+		}
+		if r.JoulesPerToken > 0 {
+			jpt = units.Energy(r.JoulesPerToken, a.raw)
+		}
+		g.Rows = append(g.Rows, append(row, tokens, jpt))
+	}
+	if a.out() != output.Table {
+		return output.Write(cmd.OutOrStdout(), a.out(), rep, g)
+	}
+	w := cmd.OutOrStdout()
+	_, _ = fmt.Fprintln(w, l.T("cli.report.period", "from", rep.From.Local().Format(time.DateTime), "to", rep.To.Local().Format(time.DateTime)))
+	if len(rep.Rows) == 0 {
+		_, err := fmt.Fprintln(w, l.T("cli.report.no_usage"))
+		return err
+	}
+	if err := output.WriteGrid(w, g); err != nil {
+		return err
+	}
+	_, err := fmt.Fprintln(w, "\n"+l.T("cli.report.factor", "value", strconv.FormatFloat(rep.EmissionGKWh, 'f', -1, 64), "source", rep.EmissionSource))
 	return err
 }

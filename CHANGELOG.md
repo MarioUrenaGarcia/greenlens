@@ -17,6 +17,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
   cannot be read.
 - NVIDIA GPU energy through NVML, loaded by the greenlens-nvml helper so the
   main binary stays static, with nvidia-smi as a fallback.
+- Energy per inference backend and model: the agent finds Ollama,
+  llama.cpp, vLLM, TGI, SGLang and LocalAI servers or uses the declared
+  ones, attributes processor, memory and GPU energy to each, splits it
+  between models by tokens, and stores it for `status`, `report --group`
+  and the API.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

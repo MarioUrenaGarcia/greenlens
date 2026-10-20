@@ -70,6 +70,12 @@ reason = "Reason"
 period = "Period"
 components = "CPU, memory and GPU"
 cost = "Cost"
+backend = "Backend"
+model = "Model"
+energy = "Energy"
+kind = "Kind"
+tokens = "Tokens in/out"
+joules_per_token = "J per generated token"
 
 [domain]
 package = "CPU package"
@@ -108,6 +114,8 @@ drift = "The idle power is now {idle}, {percent}% away from the calibration; run
 no_calibration = "No calibration: run 'greenlens calibrate' with the machine idle so dynamic energy can be separated from idle energy."
 self = "Energy of the agent itself:"
 memory = "memory"
+no_backends = "No inference backend found. Declare yours under backends in the configuration if discovery cannot see it."
+not_counted = "not counted"
 
 [cli.brief]
 no_agent = "The GreenLens agent is not running."
@@ -230,7 +238,8 @@ none = "no calibration"
 
 [cli.report]
 short = "Report the energy, emissions and cost of a period"
-long = "Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d."
+long = "Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. With --group, report the energy attributed to each backend or model instead, with its tokens. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d."
+no_usage = "No energy was attributed to a backend in this period."
 period = "From {from} to {to}"
 total = "total"
 factor = "Emission factor: {value} gCO2e/kWh ({source})."
@@ -241,6 +250,7 @@ system_levels = "Platform and wall values include the components and are not add
 from = "Start of the period"
 to = "End of the period"
 by = "Group by none, hour or day"
+group = "Report by backend or model instead of by domain"
 
 [config.doc]
 agent_sample_interval = "How often energy is sampled, from 50ms to 60s."
@@ -476,3 +486,13 @@ fix = "check that the NVIDIA driver is loaded and that 'nvidia-smi' works for th
 message = "nvidia-smi cannot read the NVIDIA GPUs"
 cause = "{detail}"
 fix = "check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent"
+
+[errors.GL2001]
+message = "cannot read the backend {name}"
+cause = "{endpoint} did not answer: {detail}"
+fix = "check that the server runs and listens there; for a declared backend, check its endpoint in the configuration"
+
+[errors.GL2002]
+message = "the backend {name} does not expose metrics"
+cause = "{kind} serves token counters only when started with {flag}"
+fix = "restart it with {flag}; until then its energy is measured but not split by model or token"

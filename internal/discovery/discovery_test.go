@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/MarioUrenaGarcia/greenlens/internal/procfs"
 )
 
 func TestMatch(t *testing.T) {
@@ -149,5 +151,28 @@ func TestThisMachine(t *testing.T) {
 			t.Errorf("incoherent candidate %+v", c)
 		}
 		t.Logf("found %s pid %d endpoints %v", c.Kind, c.PID, c.Endpoints)
+	}
+}
+
+func TestExecutable(t *testing.T) {
+	fsys := fstest.MapFS{
+		"proc/100/stat":    {Data: stat(100, 1)},
+		"proc/100/cmdline": {Data: []byte("/usr/bin/python3\x00job.py\x00")},
+		"proc/101/stat":    {Data: stat(101, 100)},
+		"proc/101/cmdline": {Data: []byte("/usr/bin/python3\x00-c\x00worker\x00")},
+		"proc/200/stat":    {Data: stat(200, 1)},
+		"proc/200/cmdline": {Data: []byte("bash\x00")},
+		// A kernel thread has no command line; its name is in stat.
+		"proc/300/stat": {Data: []byte("300 (python3) S 2 0 0 0 -1 0 0 0 0 0 1 1 0 0 20 0 1 0 5 0 0")},
+	}
+	snap, err := procfs.TakeSnapshot(fsys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Executable(fsys, snap, "python3"); !slices.Equal(got, []int{100, 300}) {
+		t.Fatalf("roots %v", got)
+	}
+	if got := Executable(fsys, snap, "ollama"); len(got) != 0 {
+		t.Fatalf("roots %v", got)
 	}
 }

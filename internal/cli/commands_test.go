@@ -335,6 +335,23 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if code, _, errOut := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--by", "week"); code != 2 || !strings.Contains(errOut, "GL0005") {
 		t.Fatalf("bad --by: %d %s", code, errOut)
 	}
+	// The recorded host runs no inference server.
+	if code, out, _ := runWith(t, hooks{}, nil, "status", "--config", cfgPath); code != 0 || !strings.Contains(out, "No inference backend found") {
+		t.Fatalf("status without backends: %d\n%s", code, out)
+	}
+	code, out, errOut = runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--group", "model", "-o", "json")
+	var brep BackendReport
+	if code != 0 || json.Unmarshal([]byte(out), &brep) != nil || brep.GroupBy != "model" || brep.Rows == nil || len(brep.Rows) != 0 {
+		t.Fatalf("report by model: %d %+v\n%s", code, brep, errOut)
+	}
+	if code, out, _ := runWith(t, hooks{}, map[string]string{"GREENLENS_LANG": "es"}, "report", "--config", cfgPath, "--group", "backend"); code != 0 || !strings.Contains(out, "no se atribuyó energía") {
+		t.Fatalf("report by backend: %d %s", code, out)
+	}
+	for _, args := range [][]string{{"--group", "team"}, {"--group", "model", "--by", "day"}} {
+		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"report", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
+			t.Fatalf("%v: %d %s", args, code, errOut)
+		}
+	}
 }
 
 func TestStatusWithoutAgent(t *testing.T) {

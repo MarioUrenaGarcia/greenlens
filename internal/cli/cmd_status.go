@@ -50,7 +50,7 @@ func (a *app) qualityName(q source.Quality) string { return a.l.T("quality." + s
 func (a *app) writeStatus(cmd *cobra.Command, st api.Status) error {
 	l := a.l
 	if a.out() != output.Table {
-		return output.Write(cmd.OutOrStdout(), a.out(), st, a.statusGrid(st))
+		return output.Write(cmd.OutOrStdout(), a.out(), st, a.statusGrid(st), a.backendsGrid(st.Backends))
 	}
 	w := cmd.OutOrStdout()
 	_, _ = fmt.Fprintf(w, "%s %s, %s %s, %s %d\n",
@@ -60,6 +60,12 @@ func (a *app) writeStatus(cmd *cobra.Command, st api.Status) error {
 	_, _ = fmt.Fprintf(w, "%s %s, %s %s\n\n", l.T("cli.status.interval"), time.Duration(st.IntervalMS)*time.Millisecond,
 		l.T("cli.status.policy"), st.IdlePolicy)
 	if err := output.WriteGrid(w, a.statusGrid(st)); err != nil {
+		return err
+	}
+	_, _ = fmt.Fprintln(w)
+	if len(st.Backends) == 0 {
+		_, _ = fmt.Fprintln(w, l.T("cli.status.no_backends"))
+	} else if err := output.WriteGrid(w, a.backendsGrid(st.Backends)); err != nil {
 		return err
 	}
 	if st.Calibration != nil {
@@ -85,6 +91,26 @@ func (a *app) statusGrid(st api.Status) output.Grid {
 			name += " (" + l.T("level."+d.Level) + ")"
 		}
 		g.Rows = append(g.Rows, []string{name, units.Power(d.PowerW, a.raw), units.Energy(d.EnergyJ, a.raw), a.qualityName(d.Quality)})
+	}
+	return g
+}
+
+// backendsGrid lists every backend with its models below it.
+func (a *app) backendsGrid(bs []api.Backend) output.Grid {
+	l := a.l
+	g := output.Grid{Header: []string{l.T("cli.col.backend"), l.T("cli.col.kind"), l.T("cli.col.power"), l.T("cli.col.energy_since_start"), l.T("cli.col.tokens"), l.T("cli.col.joules_per_token")}}
+	for _, b := range bs {
+		g.Rows = append(g.Rows, []string{b.Name, b.Kind, units.Power(b.PowerW, a.raw), units.Energy(b.EnergyJ, a.raw), "", ""})
+		for _, m := range b.Models {
+			tokens, jpt := l.T("cli.status.not_counted"), "-"
+			if b.TokenCounters || m.PromptTokens+m.GeneratedTokens > 0 {
+				tokens = fmt.Sprintf("%d / %d", m.PromptTokens, m.GeneratedTokens)
+			}
+			if m.JoulesPerToken > 0 {
+				jpt = units.Energy(m.JoulesPerToken, a.raw)
+			}
+			g.Rows = append(g.Rows, []string{"  " + m.Name, "", "", units.Energy(m.EnergyJ, a.raw), tokens, jpt})
+		}
 	}
 	return g
 }

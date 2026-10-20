@@ -40,7 +40,7 @@ func TestOpenCreatesSchemaOnce(t *testing.T) {
 	if err != nil || info.Mode().Perm() != 0o600 {
 		t.Fatalf("database mode %v, err %v", info.Mode(), err)
 	}
-	if v, err := s.SchemaVersion(ctx); err != nil || v != 2 {
+	if v, err := s.SchemaVersion(ctx); err != nil || v != 3 {
 		t.Fatalf("schema version %d, err %v", v, err)
 	}
 	tables, err := s.Tables(ctx)

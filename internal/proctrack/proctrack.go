@@ -142,3 +142,12 @@ func (t *Tracker) Groups() map[string]int {
 	}
 	return out
 }
+
+// GroupOf returns the group of a tracked process.
+func (t *Tracker) GroupOf(pid int) (string, bool) {
+	p, ok := t.procs[pid]
+	if !ok {
+		return "", false
+	}
+	return p.group, true
+}

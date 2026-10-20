@@ -53,6 +53,9 @@ const (
 	GL1014 Code = "GL1014" // NVML cannot be used
 	GL1015 Code = "GL1015" // nvidia-smi cannot be used
 
+	GL2001 Code = "GL2001" // backend not reachable
+	GL2002 Code = "GL2002" // backend without metrics
+
 	GL3001 Code = "GL3001" // configuration file not found
 	GL3002 Code = "GL3002" // configuration file cannot be read or parsed
 	GL3003 Code = "GL3003" // invalid configuration value
@@ -72,6 +75,7 @@ const (
 	ExitError      = 1
 	ExitUsage      = 2
 	ExitNoSource   = 3
+	ExitBackend    = 4
 	ExitPermission = 5
 	ExitConfig     = 6
 )
@@ -106,6 +110,8 @@ var exitCodes = map[Code]int{
 	GL1013: ExitNoSource,
 	GL1014: ExitNoSource,
 	GL1015: ExitNoSource,
+	GL2001: ExitBackend,
+	GL2002: ExitBackend,
 	GL3001: ExitConfig,
 	GL3002: ExitConfig,
 	GL3003: ExitConfig,

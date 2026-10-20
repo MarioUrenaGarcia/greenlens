@@ -22,6 +22,28 @@ La energía de memoria se atribuye con la misma proporción. La suma de lo
 atribuido nunca supera lo medido; las pruebas verifican esta propiedad en
 decenas de miles de casos aleatorios.
 
+## Backends, GPU y modelos
+
+Cada backend de inferencia es un grupo de procesos: su servidor y todos sus
+descendientes. Su tiempo de CPU da su parte de la energía del procesador y
+de la memoria, como arriba.
+
+La energía de una GPU va a los backends que corren en ella:
+
+- cuando el driver reporta el uso de cada proceso, como NVML, según ese uso
+  (`attributed_gpu_process`);
+- cuando solo reporta qué procesos tienen un contexto, toda al único backend
+  que hay, o en partes iguales entre varios (`estimated`).
+
+Con la política `dynamic` solo se atribuye la energía sobre la potencia en
+reposo de cada GPU, medida por `greenlens calibrate`.
+
+Cada diez segundos la energía de un backend se reparte entre sus modelos
+según los tokens que procesó cada uno, de prompt y generados
+(`token_weighted`). Un único modelo activo se la queda toda. Los modelos más
+allá de `attribution.max_models_per_backend` se reportan juntos como
+`other`.
+
 ## Políticas de reposo
 
 `attribution.idle_policy` decide qué pasa con la energía de reposo:

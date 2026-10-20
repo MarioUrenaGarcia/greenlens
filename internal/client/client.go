@@ -118,6 +118,21 @@ func (c *Client) Usage(ctx context.Context, from, to time.Time, bucket time.Dura
 	return u, err
 }
 
+// BackendUsage returns the usage of a period by backend or by model.
+func (c *Client) BackendUsage(ctx context.Context, from, to time.Time, groupBy string) (api.BackendUsage, error) {
+	q := url.Values{"from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}, "group_by": {groupBy}}
+	var u api.BackendUsage
+	err := c.get(ctx, api.PathUsage, q, &u)
+	return u, err
+}
+
+// Backends returns the backends of the node.
+func (c *Client) Backends(ctx context.Context) (api.Backends, error) {
+	var b api.Backends
+	err := c.get(ctx, api.PathBackends, nil, &b)
+	return b, err
+}
+
 // Live returns the samples the agent keeps in memory.
 func (c *Client) Live(ctx context.Context) (api.Live, error) {
 	var l api.Live

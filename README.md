@@ -55,8 +55,8 @@ Intensity (ISO/IEC 21031:2024).
 
 ## Status
 
-GreenLens measures the energy of the node and attributes it to the commands,
-processes and systemd units you choose:
+GreenLens measures the energy of the node and attributes it to inference
+backends, models and the commands, processes and systemd units you choose:
 
 - `greenlens doctor` finds every energy source, shows which ones are used and
   explains how to fix each problem;
@@ -65,11 +65,14 @@ processes and systemd units you choose:
   the other commands;
 - `greenlens calibrate`, `measure`, `status` and `report` measure idle power,
   attribute energy and report kWh, gCO2e and cost;
+- GPUs are measured through NVML, amdgpu, xe and i915, and the agent finds
+  Ollama, llama.cpp, vLLM, TGI, SGLang and LocalAI servers and reports the
+  energy of each backend and model, and per generated token;
 - every message is available in English and Spanish, and every error has a
   code, a cause and a fix.
 
-Attribution to inference backends and models, GPUs and the graphical
-interface belong to the design shown below.
+The token-counting proxy, benchmarks and the graphical interface belong to
+the design shown below.
 
 <p align="center">
   <img src="site/static/images/terminal-en.svg" alt="Terminal session with greenlens: help, a command suggestion and an error with its cause and fix" width="820">

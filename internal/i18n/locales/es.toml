@@ -70,6 +70,12 @@ reason = "Motivo"
 period = "Periodo"
 components = "CPU, memoria y GPU"
 cost = "Costo"
+backend = "Backend"
+model = "Modelo"
+energy = "Energía"
+kind = "Tipo"
+tokens = "Tokens entrada/salida"
+joules_per_token = "J por token generado"
 
 [domain]
 package = "Paquete de CPU"
@@ -108,6 +114,8 @@ drift = "La potencia en reposo ahora es {idle}, a {percent}% de la calibración;
 no_calibration = "Sin calibración: ejecuta 'greenlens calibrate' con el equipo en reposo para separar la energía dinámica de la de reposo."
 self = "Energía del propio agente:"
 memory = "memoria"
+no_backends = "No se encontró ningún backend de inferencia. Declara el tuyo en backends de la configuración si el descubrimiento no lo ve."
+not_counted = "sin conteo"
 
 [cli.brief]
 no_agent = "El agente de GreenLens no está en ejecución."
@@ -230,7 +238,8 @@ none = "sin calibración"
 
 [cli.report]
 short = "Reporta la energía, las emisiones y el costo de un periodo"
-long = "Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d."
+long = "Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d."
+no_usage = "En este periodo no se atribuyó energía a ningún backend."
 period = "Del {from} al {to}"
 total = "total"
 factor = "Factor de emisión: {value} gCO2e/kWh ({source})."
@@ -241,6 +250,7 @@ system_levels = "Los valores de plataforma y pared incluyen los componentes y no
 from = "Inicio del periodo"
 to = "Fin del periodo"
 by = "Agrupa por none, hour o day"
+group = "Reporta por backend o model en lugar de por dominio"
 
 [config.doc]
 agent_sample_interval = "Cada cuánto se muestrea la energía, de 50ms a 60s."
@@ -476,3 +486,13 @@ fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcion
 message = "nvidia-smi no puede leer las GPU NVIDIA"
 cause = "{detail}"
 fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente"
+
+[errors.GL2001]
+message = "no se puede leer el backend {name}"
+cause = "{endpoint} no respondió: {detail}"
+fix = "verifica que el servidor esté en ejecución y escuche ahí; si es un backend declarado, revisa su endpoint en la configuración"
+
+[errors.GL2002]
+message = "el backend {name} no expone métricas"
+cause = "{kind} solo ofrece contadores de tokens cuando se inicia con {flag}"
+fix = "reinícialo con {flag}; mientras tanto su energía se mide pero no se reparte por modelo ni por token"
