@@ -97,3 +97,59 @@ func TestParsePolicy(t *testing.T) {
 		t.Error("unknown policy accepted")
 	}
 }
+
+func TestSplitGPU(t *testing.T) {
+	g := GPU{Interval: time.Second, EnergyJ: 100, IdleW: 20, Busy: map[string]float64{"vllm": 60, "ollama": 20}, Other: 20}
+	got, m := SplitGPU(g, Dynamic)
+	// 80 J above idle, split 60:20:20 with the share of other processes
+	// left unattributed.
+	if m != MethodGPUProcess || !near(got["vllm"], 48) || !near(got["ollama"], 16) || len(got) != 2 {
+		t.Fatalf("%v %s", got, m)
+	}
+	if got, _ := SplitGPU(g, Full); !near(got["vllm"], 60) {
+		t.Fatalf("full: %v", got)
+	}
+	// Without utilization, the only consumer on the GPU gets all of it.
+	got, m = SplitGPU(GPU{Interval: time.Second, EnergyJ: 50, Holders: []string{"llama", "llama"}}, Dynamic)
+	if m != MethodGPUProcess || !near(got["llama"], 50) {
+		t.Fatalf("%v %s", got, m)
+	}
+	// Several consumers without utilization share it equally, as an estimate.
+	got, m = SplitGPU(GPU{Interval: time.Second, EnergyJ: 30, Holders: []string{"b", "a", "c"}}, Proportional)
+	if m != MethodEstimated || !near(got["a"], 10) || !near(got["c"], 10) {
+		t.Fatalf("%v %s", got, m)
+	}
+	if got, m := SplitGPU(GPU{Interval: time.Second, EnergyJ: 30}, Dynamic); got != nil || m != "" {
+		t.Fatalf("nobody on the GPU: %v %s", got, m)
+	}
+	// Below idle nothing is attributed.
+	if got, _ := SplitGPU(GPU{Interval: time.Second, EnergyJ: 10, IdleW: 20, Holders: []string{"a"}}, Dynamic); got["a"] != 0 {
+		t.Fatalf("%v", got)
+	}
+}
+
+func TestSplitGPUNeverExceedsMeasured(t *testing.T) {
+	rng := rand.New(rand.NewPCG(7, 11))
+	for range 2000 {
+		g := GPU{Interval: time.Duration(rng.IntN(5000)+1) * time.Millisecond, EnergyJ: rng.Float64() * 500, IdleW: rng.Float64() * 50, Other: rng.Float64() * 10, Busy: map[string]float64{}}
+		for i := range rng.IntN(4) {
+			g.Busy[string(rune('a'+i))] = rng.Float64()*100 - 10
+		}
+		for i := range rng.IntN(4) {
+			g.Holders = append(g.Holders, string(rune('a'+i)))
+		}
+		for _, p := range Policies {
+			got, _ := SplitGPU(g, p)
+			sum := 0.0
+			for _, e := range got {
+				if e < 0 {
+					t.Fatalf("negative energy %v for %+v", got, g)
+				}
+				sum += e
+			}
+			if sum > g.EnergyJ+1e-9 {
+				t.Fatalf("%s: attributed %v of %v J", p, sum, g.EnergyJ)
+			}
+		}
+	}
+}

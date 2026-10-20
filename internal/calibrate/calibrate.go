@@ -36,24 +36,34 @@ type Stats struct {
 
 // Result is one calibration.
 type Result struct {
-	StartedAt    time.Time                `json:"started_at"`
-	Duration     time.Duration            `json:"duration"`
-	Samples      int                      `json:"samples"`
-	Domains      map[source.Domain]Stats  `json:"domains"`
-	Quality      map[source.Domain]string `json:"quality"`
-	FrequencyMHz float64                  `json:"frequency_mhz,omitempty"`
-	Governor     string                   `json:"governor,omitempty"`
-	TemperatureC float64                  `json:"temperature_c,omitempty"`
+	StartedAt time.Time                `json:"started_at"`
+	Duration  time.Duration            `json:"duration"`
+	Samples   int                      `json:"samples"`
+	Domains   map[source.Domain]Stats  `json:"domains"`
+	Quality   map[source.Domain]string `json:"quality"`
+	// GPUs holds the power of each GPU by PCI address; the gpu domain is
+	// their sum.
+	GPUs         map[string]Stats `json:"gpus,omitempty"`
+	FrequencyMHz float64          `json:"frequency_mhz,omitempty"`
+	Governor     string           `json:"governor,omitempty"`
+	TemperatureC float64          `json:"temperature_c,omitempty"`
 }
 
 // Baseline returns the idle power used by attribution: the median of each
 // domain.
 func (r Result) Baseline() attribution.Baseline {
-	return attribution.Baseline{
+	b := attribution.Baseline{
 		CPUW:      r.Domains[source.DomainPackage].P50,
 		DRAMW:     r.Domains[source.DomainDRAM].P50,
 		PlatformW: r.Domains[source.DomainPlatform].P50,
 	}
+	if len(r.GPUs) > 0 {
+		b.GPUW = map[string]float64{}
+		for inst, st := range r.GPUs {
+			b.GPUW[inst] = st.P50
+		}
+	}
+	return b
 }
 
 // ErrNoSamples is returned when the duration was too short to measure.
@@ -67,8 +77,10 @@ func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval
 		return res, err
 	}
 	powers := map[source.Domain][]float64{}
+	gpus := map[string][]float64{}
 	quality := map[source.Domain]string{}
-	for _, ch := range s.Channels() {
+	chans := s.Channels()
+	for _, ch := range chans {
 		if ch.Domain.Level() != source.LevelContained {
 			quality[ch.Domain] = string(ch.Quality)
 		}
@@ -92,6 +104,12 @@ func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval
 				powers[d] = append(powers[d], w)
 			}
 		}
+		for _, c := range smp.Channels {
+			if c.Domain == source.DomainGPU {
+				inst := chans[c.Channel].Instance
+				gpus[inst] = append(gpus[inst], c.PowerW)
+			}
+		}
 		res.Samples++
 		if progress != nil {
 			progress(time.Since(start))
@@ -104,6 +122,12 @@ func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval
 		}
 		res.Domains[d] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
 		res.Quality[d] = quality[d]
+	}
+	for inst, ws := range gpus {
+		if res.GPUs == nil {
+			res.GPUs = map[string]Stats{}
+		}
+		res.GPUs[inst] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
 	}
 	if len(res.Domains) == 0 {
 		return res, errors.Join(append([]error{ErrNoSamples}, errs...)...)

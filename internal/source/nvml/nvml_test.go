@@ -203,3 +203,13 @@ func TestHelperThatDies(t *testing.T) {
 		t.Errorf("%+v, %v", rs, err)
 	}
 }
+
+func TestGPUUse(t *testing.T) {
+	s := New(host("0000:01:00.0"), fakeHelper(t, fixture(t, "driver-595.jsonl")))
+	probeRead(t, s, 1)
+	var _ source.GPUUser = s
+	u := s.GPUUse()["0000:01:00.0"]
+	if len(u.PIDs) != 3 || u.Busy[1002] != 31 || len(u.Busy) != 1 {
+		t.Fatalf("%+v", u)
+	}
+}

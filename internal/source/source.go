@@ -154,3 +154,19 @@ type Source interface {
 	// Close releases the resources the source opened.
 	Close() error
 }
+
+// GPUUse is what a GPU driver reports about the processes using one GPU
+// in the last interval.
+type GPUUse struct {
+	// PIDs are the processes with a context on the GPU.
+	PIDs []int
+	// Busy is the share of the GPU each process used, in percent, when the
+	// driver reports it.
+	Busy map[int]float64
+}
+
+// GPUUser is implemented by sources that report the processes of each GPU,
+// keyed by the instance of its channel.
+type GPUUser interface {
+	GPUUse() map[string]GPUUse
+}

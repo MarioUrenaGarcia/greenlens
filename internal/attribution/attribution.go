@@ -56,6 +56,8 @@ type Baseline struct {
 	CPUW      float64 `json:"cpu_w"`
 	DRAMW     float64 `json:"dram_w"`
 	PlatformW float64 `json:"platform_w"`
+	// GPUW is the idle power of each GPU by PCI address.
+	GPUW map[string]float64 `json:"gpu_w,omitempty"`
 }
 
 // Node is the energy of the node over one interval.

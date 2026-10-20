@@ -99,6 +99,23 @@ func (s *Source) Usage() map[string]Usage {
 	return out
 }
 
+// GPUUse implements source.GPUUser with the streaming multiprocessor use of
+// each process.
+func (s *Source) GPUUse() map[string]source.GPUUse {
+	out := map[string]source.GPUUse{}
+	for inst, u := range s.Usage() {
+		g := source.GPUUse{PIDs: u.PIDs}
+		if len(u.Processes) > 0 {
+			g.Busy = map[int]float64{}
+			for _, p := range u.Processes {
+				g.Busy[p.PID] = float64(p.SM)
+			}
+		}
+		out[inst] = g
+	}
+	return out
+}
+
 // Probe implements source.Source.
 func (s *Source) Probe(ctx context.Context) (source.ProbeResult, error) {
 	res := source.ProbeResult{Source: ID}
