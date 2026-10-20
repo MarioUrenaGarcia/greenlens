@@ -413,10 +413,13 @@ func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.
 			WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`, raw)
 		args = append(args, res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli())
 	}
-	q := `SELECT u.b, s.name, s.kind, s.domain, s.quality, sum(u.energy_j), sum(u.n)
-		FROM (` + strings.Join(queries, " UNION ALL ") + `) AS u
-		JOIN sources s ON s.id = u.source_id GROUP BY u.b, s.id ORDER BY u.b, s.name`
-	rows, err := s.db.QueryContext(ctx, q, args...) //nolint:gosec // only numbers are formatted into the query
+	union := strings.Join(queries, " UNION ALL ")
+	// The subqueries are constants of this function with only integers
+	// formatted into them; every value goes through placeholders.
+	//nolint:gosec // constant subqueries, see above
+	q := `SELECT u.b, s.name, s.kind, s.domain, s.quality, sum(u.energy_j), sum(u.n) FROM (` + union +
+		`) AS u JOIN sources s ON s.id = u.source_id GROUP BY u.b, s.id ORDER BY u.b, s.name`
+	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, res, err
 	}
