@@ -100,7 +100,9 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 			}
 			energyPath := path.Join(dir, "energy_uj")
 			if _, err := hostfs.Uint64(s.fsys, energyPath); err != nil {
-				if hostfs.IsPermission(err) {
+				// Every zone has the same permissions, so the first
+				// unreadable one is enough to explain the problem.
+				if hostfs.IsPermission(err) && len(res.Problems) == 0 {
 					res.Problems = append(res.Problems, source.Problem{
 						Code:    help.GL1002,
 						Args:    []any{"path", "/" + energyPath},
