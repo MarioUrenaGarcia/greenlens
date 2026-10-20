@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-labelledby="t">
+<title id="t">Arquitectura de GreenLens</title>
+<style>
+text{font-family:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;fill:#E8F0FA}
+.h{font-size:15px;fill:#9DB2C9;letter-spacing:.3px}
+.b{font-size:15px}.s{font-size:13px;fill:#9DB2C9}.big{font-size:20px;font-weight:600}
+.flow{fill:none;stroke-width:2;stroke-dasharray:5 11;animation:flow 1.4s linear infinite}
+.load{stroke:#F2A541}.eff{stroke:#35C9B0}.tok{stroke:#9DB2C9}
+@keyframes flow{to{stroke-dashoffset:-32}}
+.pulse{animation:pulse 6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F1B2D"/><stop offset="1" stop-color="#0B1524"/></linearGradient>
+<radialGradient id="gl" cx="0.12" cy="0.5" r="0.45"><stop offset="0" stop-color="#F2A541" stop-opacity=".20"/><stop offset="1" stop-color="#F2A541" stop-opacity="0"/></radialGradient>
+<radialGradient id="ge" cx="0.9" cy="0.45" r="0.45"><stop offset="0" stop-color="#35C9B0" stop-opacity=".18"/><stop offset="1" stop-color="#35C9B0" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1200" height="600" rx="24" fill="url(#bg)"/>
+<rect class="pulse" width="1200" height="600" rx="24" fill="url(#gl)"/>
+<rect class="pulse" width="1200" height="600" rx="24" fill="url(#ge)"/>
+<text x="40" y="58" class="h">Fuentes de energía</text>
+<rect x="40" y="76" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="95.0" r="4" fill="#F2A541"/>
+<text x="70" y="100" class="b">powercap RAPL</text>
+<text x="278" y="100" class="s" text-anchor="end">CPU, DRAM</text>
+<rect x="40" y="124" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="143.0" r="4" fill="#F2A541"/>
+<text x="70" y="148" class="b">perf_event power</text>
+<text x="278" y="148" class="s" text-anchor="end">CPU, DRAM</text>
+<rect x="40" y="172" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="191.0" r="4" fill="#F2A541"/>
+<text x="70" y="196" class="b">hwmon</text>
+<text x="278" y="196" class="s" text-anchor="end">CPU, SoC</text>
+<rect x="40" y="220" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="239.0" r="4" fill="#F2A541"/>
+<text x="70" y="244" class="b">NVML, amdgpu, xe</text>
+<text x="278" y="244" class="s" text-anchor="end">GPU</text>
+<rect x="40" y="268" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="287.0" r="4" fill="#F2A541"/>
+<text x="70" y="292" class="b">Batería</text>
+<text x="278" y="292" class="s" text-anchor="end">laptop</text>
+<rect x="40" y="316" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="335.0" r="4" fill="#F2A541"/>
+<text x="70" y="340" class="b">IPMI, Redfish</text>
+<text x="278" y="340" class="s" text-anchor="end">servidor</text>
+<rect x="40" y="364" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="383.0" r="4" fill="#F2A541"/>
+<text x="70" y="388" class="b">Medidor de pared</text>
+<text x="278" y="388" class="s" text-anchor="end">opcional</text>
+<rect x="40" y="412" width="250" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="56" cy="431.0" r="4" fill="#F2A541"/>
+<text x="70" y="436" class="b">Modelo estimado</text>
+<text x="278" y="436" class="s" text-anchor="end">VMs</text>
+<rect x="410" y="70" width="380" height="400" rx="20" fill="#000" opacity=".25"/>
+<rect x="410" y="60" width="380" height="400" rx="20" fill="#D6E8FF" fill-opacity="0.09" stroke="#E2EEFF" stroke-opacity=".2"/>
+<text x="434" y="98" class="big">greenlens agent</text>
+<text x="766" y="98" class="s" text-anchor="end">sin root, sin telemetría</text>
+<rect x="434" y="122" width="332" height="42" rx="10" fill="#D6E8FF" fill-opacity="0.08" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="454" y="149" class="b">Selector de fuentes</text>
+<text x="746" y="149" class="s" text-anchor="end">mejor por dominio</text>
+<path class="flow load" d="M600.0 164 V180"/>
+<rect x="434" y="180" width="332" height="42" rx="10" fill="#D6E8FF" fill-opacity="0.08" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="454" y="207" class="b">Muestreo</text>
+<text x="746" y="207" class="s" text-anchor="end">1 s, monotónico</text>
+<path class="flow load" d="M600.0 222 V238"/>
+<rect x="434" y="238" width="332" height="42" rx="10" fill="#D6E8FF" fill-opacity="0.08" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="454" y="265" class="b">Atribución</text>
+<text x="746" y="265" class="s" text-anchor="end">backend, modelo, equipo</text>
+<path class="flow load" d="M600.0 280 V296"/>
+<rect x="434" y="296" width="332" height="42" rx="10" fill="#D6E8FF" fill-opacity="0.08" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="454" y="323" class="b">Indicadores</text>
+<text x="746" y="323" class="s" text-anchor="end">kWh, gCO2e, costo, SCI</text>
+<path class="flow load" d="M600.0 338 V354"/>
+<rect x="434" y="354" width="332" height="42" rx="10" fill="#D6E8FF" fill-opacity="0.08" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="454" y="381" class="b">Almacén SQLite</text>
+<text x="746" y="381" class="s" text-anchor="end">agregados, retención</text>
+<path class="flow load" d="M290 95.0 C360 95.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 143.0 C360 143.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 191.0 C360 191.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 239.0 C360 239.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 287.0 C360 287.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 335.0 C360 335.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 383.0 C360 383.0, 340 200, 410 200"/>
+<path class="flow load" d="M290 431.0 C360 431.0, 340 200, 410 200"/>
+<text x="900" y="58" class="h">Interfaces</text>
+<rect x="900" y="76" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="95.0" r="4" fill="#35C9B0"/>
+<text x="930" y="100" class="b">CLI</text>
+<text x="1148" y="100" class="s" text-anchor="end">scripts</text>
+<path class="flow eff" d="M790 260 C850 260, 840 95.0, 900 95.0"/>
+<rect x="900" y="132" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="151.0" r="4" fill="#35C9B0"/>
+<text x="930" y="156" class="b">TUI</text>
+<text x="1148" y="156" class="s" text-anchor="end">por SSH</text>
+<path class="flow eff" d="M790 260 C850 260, 840 151.0, 900 151.0"/>
+<rect x="900" y="188" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="207.0" r="4" fill="#35C9B0"/>
+<text x="930" y="212" class="b">GUI</text>
+<text x="1148" y="212" class="s" text-anchor="end">instalable</text>
+<path class="flow eff" d="M790 260 C850 260, 840 207.0, 900 207.0"/>
+<rect x="900" y="244" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="263.0" r="4" fill="#35C9B0"/>
+<text x="930" y="268" class="b">API HTTP y SSE</text>
+<text x="1148" y="268" class="s" text-anchor="end">OpenAPI</text>
+<path class="flow eff" d="M790 260 C850 260, 840 263.0, 900 263.0"/>
+<rect x="900" y="300" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="319.0" r="4" fill="#35C9B0"/>
+<text x="930" y="324" class="b">Prometheus</text>
+<text x="1148" y="324" class="s" text-anchor="end">/metrics</text>
+<path class="flow eff" d="M790 260 C850 260, 840 319.0, 900 319.0"/>
+<rect x="900" y="356" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="375.0" r="4" fill="#35C9B0"/>
+<text x="930" y="380" class="b">OpenTelemetry</text>
+<text x="1148" y="380" class="s" text-anchor="end">opcional</text>
+<path class="flow eff" d="M790 260 C850 260, 840 375.0, 900 375.0"/>
+<rect x="900" y="412" width="260" height="38" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<circle cx="916" cy="431.0" r="4" fill="#35C9B0"/>
+<text x="930" y="436" class="b">Hub de flota</text>
+<text x="1148" y="436" class="s" text-anchor="end">mTLS</text>
+<path class="flow eff" d="M790 260 C850 260, 840 431.0, 900 431.0"/>
+<text x="410" y="494" class="h">Backends de inferencia</text>
+<rect x="410" y="506" width="58.8" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="423" y="528" class="b">vLLM</text>
+<rect x="478.8" y="506" width="50.599999999999994" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="491.8" y="528" class="b">TGI</text>
+<rect x="539.4" y="506" width="99.8" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="552.4" y="528" class="b">llama.cpp</text>
+<rect x="649.1999999999999" y="506" width="75.19999999999999" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="662.1999999999999" y="528" class="b">Ollama</text>
+<rect x="734.3999999999999" y="506" width="75.19999999999999" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="747.3999999999999" y="528" class="b">SGLang</text>
+<rect x="819.5999999999999" y="506" width="83.39999999999999" height="34" rx="9" fill="#D6E8FF" fill-opacity="0.07" stroke="#E2EEFF" stroke-opacity=".16"/>
+<text x="832.5999999999999" y="528" class="b">LocalAI</text>
+<path class="flow tok" d="M600.0 476 V460"/>
+<text x="612.0" y="470" class="s">conteo de tokens</text>
+<text x="1160" y="576" class="s" text-anchor="end">ámbar: energía    turquesa: datos y eficiencia</text>
+</svg>
