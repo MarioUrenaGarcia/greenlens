@@ -90,6 +90,51 @@ func TestScan(t *testing.T) {
 	if Name(VLLM, "http://127.0.0.1:8001") != "vllm-8001" {
 		t.Error("Name")
 	}
+
+	// With the socket tables, only ports something listens on are kept:
+	// Ollama on loopback, vLLM on every IPv6 address, and not the default
+	// port 8000 of vLLM.
+	fsys["proc/net/tcp"] = &fstest.MapFile{Data: []byte(tcpHeader +
+		"   0: 0100007F:2CAA 00000000:0000 0A 00000000:00000000 00:00000000 00000000   997        0 1001 1 0000000000000000 100 0 0 10 0\n" +
+		"   1: 0100007F:1F40 0100007F:9C40 01 00000000:00000000 00:00000000 00000000  1000        0 1002 1 0000000000000000 20 4 30 10 -1\n")}
+	fsys["proc/net/tcp6"] = &fstest.MapFile{Data: []byte(tcp6Header +
+		"   0: 00000000000000000000000000000000:1F41 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 1003 1 0000000000000000 100 0 0 10 0\n")}
+	got, err = Scan(fsys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(got[0].Endpoints, []string{"http://127.0.0.1:11434"}) || !slices.Equal(got[1].Endpoints, []string{"http://[::1]:8001"}) {
+		t.Errorf("endpoints %v and %v", got[0].Endpoints, got[1].Endpoints)
+	}
+}
+
+const (
+	tcpHeader  = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+	tcp6Header = "  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+)
+
+func TestListening(t *testing.T) {
+	fsys := fstest.MapFS{
+		"proc/net/tcp": {Data: []byte(tcpHeader +
+			"   0: 0100007F:0521 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 166885 2 0000000000000000 100 0 0 10 0\n" +
+			"   1: 0A0200C0:1F90 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 9415 1 0000000000000000 100 0 0 10 5\n" +
+			"   2: garbage\n")},
+		"proc/net/tcp6": {Data: []byte(tcp6Header +
+			"   0: 00000000000000000000000001000000:0277 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 44996 1 0000000000000000 100 0 0 10 0\n")},
+	}
+	got, ok := Listening(fsys)
+	if !ok || len(got) != 3 {
+		t.Fatalf("%v %v", got, ok)
+	}
+	if got[0x521][0].String() != "127.0.0.1" || got[8080][0].String() != "192.0.2.10" || got[0x277][0].String() != "::1" {
+		t.Errorf("%v", got)
+	}
+	if endpoint(got[0x277][0], 0x277) != "http://[::1]:631" {
+		t.Error(endpoint(got[0x277][0], 0x277))
+	}
+	if _, ok := Listening(fstest.MapFS{}); ok {
+		t.Error("no tables must be reported")
+	}
 }
 
 // TestThisMachine runs the scan on the real /proc. It cannot assert what
@@ -100,7 +145,7 @@ func TestThisMachine(t *testing.T) {
 		t.Skip("no /proc:", err)
 	}
 	for _, c := range cands {
-		if c.PID <= 0 || len(c.Endpoints) == 0 || !slices.Contains(Kinds, c.Kind) {
+		if c.PID <= 0 || !slices.Contains(Kinds, c.Kind) {
 			t.Errorf("incoherent candidate %+v", c)
 		}
 		t.Logf("found %s pid %d endpoints %v", c.Kind, c.PID, c.Endpoints)

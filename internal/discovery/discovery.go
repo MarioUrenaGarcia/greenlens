@@ -181,6 +181,7 @@ func Scan(fsys fs.FS) ([]Candidate, error) {
 			argvs[pid] = argv
 		}
 	}
+	listening, haveListening := Listening(fsys)
 	var out []Candidate
 	for pid, k := range kinds {
 		nested := false
@@ -198,8 +199,16 @@ func Scan(fsys fs.FS) ([]Candidate, error) {
 		}
 		c := Candidate{Backend: Backend{Kind: k, PID: pid, StartTime: snap[pid].StartTime, ContainerID: containerID(fsys, pid)}}
 		for _, port := range ports(k, argvs[pid]) {
-			c.Endpoints = append(c.Endpoints, fmt.Sprintf("http://127.0.0.1:%d", port))
+			switch addrs, known := listening[port]; {
+			case !haveListening:
+				c.Endpoints = append(c.Endpoints, fmt.Sprintf("http://127.0.0.1:%d", port))
+			case known:
+				// Only ports something listens on are tried; the first
+				// address is enough to reach it.
+				c.Endpoints = append(c.Endpoints, endpoint(addrs[0], port))
+			}
 		}
+		c.Endpoints = slices.Compact(c.Endpoints)
 		out = append(out, c)
 	}
 	slices.SortFunc(out, func(a, b Candidate) int { return a.PID - b.PID })
