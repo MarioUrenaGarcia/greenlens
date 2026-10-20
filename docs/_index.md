@@ -11,6 +11,7 @@ Linux. This documentation follows four kinds of pages:
 - **Reference** describes commands, settings and error codes exactly.
 - **Explanation** covers the design decisions behind GreenLens.
 
-The current release provides the command line foundation: help in English and
-Spanish, `greenlens version` and coded errors. Each page describes only what
-the current release does.
+The current release measures CPU and platform energy: `greenlens doctor`,
+`setup-permissions`, `agent`, `calibrate`, `measure`, `status` and `report`,
+in English and Spanish. Each page describes only what the current release
+does.

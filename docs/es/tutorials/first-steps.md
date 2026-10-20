@@ -1,17 +1,19 @@
 ---
-title: "Primeros pasos"
-description: "Compila GreenLens desde el código fuente, ejecútalo y lee su ayuda y sus errores."
+title: "Primeros diez minutos"
+description: "Compila GreenLens, deja que lea los contadores de energía, calibra y mide un comando."
 weight: 10
 ---
 
-Este tutorial compila GreenLens desde el código fuente y muestra las partes de
-la línea de comandos en las que se apoya cada función posterior: la ayuda, los
-idiomas y los mensajes de error. Toma unos cinco minutos.
+Este tutorial te lleva del código fuente a tu primera medición. Toma unos
+diez minutos en un equipo Linux con procesador Intel o AMD.
 
 ## Qué necesitas
 
-- Un equipo Linux en amd64 o arm64.
+- Linux en amd64 o arm64, en hardware físico para medir energía real. En una
+  máquina virtual GreenLens también funciona, con valores estimados.
 - Go en la versión que declara `go.mod`, git y make.
+- Una cuenta de administrador para un paso: dar al agente acceso de lectura a
+  los contadores de energía.
 
 ## 1. Compila el binario
 
@@ -24,48 +26,83 @@ make build
 El binario queda en `bin/greenlens`. Está enlazado de forma estática, así que
 puedes copiarlo a cualquier equipo Linux de la misma arquitectura.
 
-## 2. Comprueba la compilación
+## 2. Mira lo que ofrece el equipo
 
 ```bash
-bin/greenlens version
+bin/greenlens doctor
 ```
 
-La salida muestra la versión, la revisión del código fuente, la versión de Go
-y la plataforma del binario.
+`doctor` lista las fuentes de energía que encontró, cuáles usaría y por qué no
+usa las demás. En un equipo recién instalado suele reportar `GL1002`: los
+contadores de energía RAPL solo los puede leer root.
 
-## 3. Lee la ayuda
+## 3. Permite que GreenLens lea los contadores sin root
+
+Primero revisa el plan; todavía no cambia nada:
 
 ```bash
-bin/greenlens --help
+bin/greenlens setup-permissions --user $USER
 ```
 
-Cada comando tiene su propia ayuda:
+Después aplícalo:
 
 ```bash
-bin/greenlens help version
+sudo bin/greenlens setup-permissions --apply --user $USER
 ```
 
-## 4. Cambia el idioma
-
-GreenLens sigue el idioma de tu sistema. Para elegirlo de forma explícita:
+El plan crea el grupo `greenlens-power`, instala una regla de udev que permite
+a ese grupo leer los contadores y agrega tu usuario al grupo. Cierra sesión y
+vuelve a entrar para que tu sesión tenga el grupo nuevo, y revisa:
 
 ```bash
-bin/greenlens --lang es --help
+bin/greenlens doctor
 ```
 
-## 5. Lee un error
+La tabla de fuentes ahora muestra `rapl` en uso, con calidad `medido`.
 
-Escribe mal un comando a propósito:
+## 4. Inicia el agente
+
+En una segunda terminal:
 
 ```bash
-bin/greenlens --lang es verson
+bin/greenlens agent
 ```
 
-```text
-error GL0002: comando desconocido 'verson'
-  causa:    'verson' no es un comando de 'greenlens'
-  solución: ¿quisiste decir 'version'? Ejecuta 'greenlens --help' para ver los comandos disponibles
+El agente muestrea la energía cada segundo, la guarda y atiende a los demás
+comandos. Revísalo desde la primera terminal:
+
+```bash
+bin/greenlens status
 ```
 
-Cada error tiene un código, una causa y una solución. La
-[referencia de códigos de error](../../reference/errors/) los lista todos.
+## 5. Calibra la potencia en reposo
+
+Cierra otros programas y deja el equipo quieto durante un minuto:
+
+```bash
+bin/greenlens calibrate
+```
+
+La mediana de ese minuto se vuelve la línea base de reposo. Con la política
+`dynamic` por defecto, GreenLens atribuye a los procesos solo la energía por
+encima de ella.
+
+## 6. Mide un comando
+
+```bash
+bin/greenlens measure -- sh -c 'timeout 10 sha256sum /dev/zero; true'
+```
+
+Cuando el comando termina, `measure` reporta la energía que se le atribuye, su
+potencia promedio, sus emisiones con el factor de emisión FESEN 2024 y la
+calidad de los valores. La [guía de measure](../../guides/measure/) explica
+cada línea.
+
+## 7. Reporta un periodo
+
+```bash
+bin/greenlens report --from 1h
+```
+
+Ya tienes al agente midiendo el equipo. La [guía del agente](../../guides/agent/)
+muestra cómo ejecutarlo como servicio del sistema.

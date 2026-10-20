@@ -1,17 +1,19 @@
 ---
-title: "First steps"
-description: "Build GreenLens from source, run it and read its help and errors."
+title: "First ten minutes"
+description: "Build GreenLens, let it read the energy counters, calibrate and measure a command."
 weight: 10
 ---
 
-This tutorial builds GreenLens from source and shows the parts of the command
-line that every later feature relies on: help, languages and error messages.
-It takes about five minutes.
+This tutorial takes you from the source code to your first measurement. It
+takes about ten minutes on a Linux machine with an Intel or AMD processor.
 
 ## What you need
 
-- A Linux machine on amd64 or arm64.
+- Linux on amd64 or arm64, on bare metal to measure real energy. In a virtual
+  machine GreenLens works too, with estimated values.
 - Go at the version declared in `go.mod`, git and make.
+- An administrator account for one step: giving the agent read access to the
+  energy counters.
 
 ## 1. Build the binary
 
@@ -24,48 +26,82 @@ make build
 The binary is written to `bin/greenlens`. It is statically linked, so you can
 copy it to any Linux machine of the same architecture.
 
-## 2. Check the build
+## 2. See what the machine offers
 
 ```bash
-bin/greenlens version
+bin/greenlens doctor
 ```
 
-The output shows the version, the source revision, the Go version and the
-platform of the binary.
+`doctor` lists the energy sources it found, which ones it would use and why
+the others are not used. On a fresh machine it usually reports `GL1002`: the
+RAPL energy counters are readable only by root.
 
-## 3. Read the help
+## 3. Let GreenLens read the counters without root
+
+Look at the plan first; nothing changes yet:
 
 ```bash
-bin/greenlens --help
+bin/greenlens setup-permissions --user $USER
 ```
 
-Every command has its own help:
+Then apply it:
 
 ```bash
-bin/greenlens help version
+sudo bin/greenlens setup-permissions --apply --user $USER
 ```
 
-## 4. Switch the language
-
-GreenLens follows the language of your system. To choose it explicitly:
+The plan creates the `greenlens-power` group, installs a udev rule that lets
+that group read the counters and adds your user to the group. Log out and log
+in again so your session gets the new group, then check:
 
 ```bash
-bin/greenlens --lang es --help
+bin/greenlens doctor
 ```
 
-## 5. Read an error
+The sources table now shows `rapl` as used, with quality `measured`.
 
-Mistype a command on purpose:
+## 4. Start the agent
+
+In a second terminal:
 
 ```bash
-bin/greenlens verson
+bin/greenlens agent
 ```
 
-```text
-error GL0002: unknown command 'verson'
-  cause: 'verson' is not a command of 'greenlens'
-  fix:   did you mean 'version'? Run 'greenlens --help' to list the available commands
+The agent samples energy every second, stores it and serves the other
+commands. Check it from the first terminal:
+
+```bash
+bin/greenlens status
 ```
 
-Every error has a code, a cause and a fix. The
-[error code reference](../../reference/errors/) lists all of them.
+## 5. Calibrate the idle power
+
+Close other programs and leave the machine alone for one minute:
+
+```bash
+bin/greenlens calibrate
+```
+
+The median of that minute becomes the idle baseline. With the default
+`dynamic` policy, GreenLens attributes to processes only the energy above it.
+
+## 6. Measure a command
+
+```bash
+bin/greenlens measure -- sh -c 'timeout 10 sha256sum /dev/zero; true'
+```
+
+When the command ends, `measure` reports the energy attributed to it, its
+average power, its emissions with the FESEN 2024 emission factor and the
+quality of the values. The [measure guide](../../guides/measure/) explains
+each line.
+
+## 7. Report a period
+
+```bash
+bin/greenlens report --from 1h
+```
+
+You now have the agent measuring the machine. The
+[agent guide](../../guides/agent/) shows how to run it as a system service.

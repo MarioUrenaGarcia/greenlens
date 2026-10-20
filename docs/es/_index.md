@@ -12,6 +12,7 @@ páginas:
 - **Referencia**: describe con exactitud comandos, ajustes y códigos de error.
 - **Explicación**: cubre las decisiones de diseño detrás de GreenLens.
 
-La versión actual ofrece la base de la línea de comandos: ayuda en inglés y en
-español, `greenlens version` y errores con código. Cada página describe solo
-lo que hace la versión actual.
+La versión actual mide la energía de CPU y de plataforma: `greenlens doctor`,
+`setup-permissions`, `agent`, `calibrate`, `measure`, `status` y `report`, en
+inglés y en español. Cada página describe solo lo que hace la versión
+actual.
