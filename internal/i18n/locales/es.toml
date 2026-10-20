@@ -1,0 +1,81 @@
+# Mensajes en español. Cada clave debe existir también en en.toml con los
+# mismos {marcadores}. Los valores son cadenas básicas de una sola línea.
+
+[cli.root]
+short = "Observabilidad energética para inferencia de IA local"
+long = "GreenLens mide, atribuye y reporta la energía, las emisiones y el costo de los modelos de IA que se ejecutan en este equipo."
+
+[cli.flag]
+help = "Muestra la ayuda de {command}"
+lang = "Idioma de los mensajes (`idioma`: en o es). Por defecto, el del sistema"
+
+[cli.help_cmd]
+short = "Muestra la ayuda de un comando"
+long = "Muestra la ayuda de un comando. Sin argumentos, muestra la ayuda de greenlens."
+
+[cli.usage]
+usage = "Uso:"
+aliases = "Alias:"
+examples = "Ejemplos:"
+commands = "Comandos disponibles:"
+flags = "Opciones:"
+global_flags = "Opciones globales:"
+flags_placeholder = "opciones"
+command_placeholder = "comando"
+more = "Ejecuta '{command} [comando] --help' para ver más información de un comando."
+
+[cli.version]
+short = "Muestra la versión y la información de compilación"
+long = "Muestra la versión de este binario, la revisión del código fuente con la que se compiló, la versión de Go y la plataforma."
+revision = "Revisión:"
+modified = "con cambios locales"
+commit_time = "Fecha del commit:"
+go = "Versión de Go:"
+platform = "Plataforma:"
+unknown = "desconocida"
+
+[errors]
+label = "error"
+cause = "causa:"
+fix = "solución:"
+
+[errors.GL0001]
+message = "error interno inesperado"
+cause = "{detail}"
+fix = "repórtalo en https://github.com/MarioUrenaGarcia/greenlens/issues con la salida de 'greenlens version'"
+
+[errors.GL0002]
+message = "comando desconocido '{command}'"
+cause = "'{command}' no es un comando de '{parent}'"
+fix = "ejecuta '{parent} --help' para ver los comandos disponibles"
+fix_suggest = "¿quisiste decir '{suggestion}'? Ejecuta '{parent} --help' para ver los comandos disponibles"
+
+[errors.GL0003]
+message = "opción desconocida '{flag}'"
+cause = "'{command}' no acepta la opción '{flag}'"
+fix = "ejecuta '{command} --help' para ver las opciones aceptadas"
+
+[errors.GL0004]
+message = "la opción '{flag}' necesita un valor"
+cause = "la opción se indicó sin valor"
+fix = "indica un valor después de la opción, por ejemplo '{flag} <valor>'"
+
+[errors.GL0005]
+message = "valor '{value}' no válido para la opción '{flag}'"
+cause = "el valor no tiene el tipo que espera '{flag}'"
+fix = "ejecuta '{command} --help' para ver los valores aceptados"
+
+[errors.GL0006]
+message = "sintaxis de opción no válida '{arg}'"
+cause = "una opción empieza con '-' seguido de una letra, o con '--' seguido de un nombre"
+fix = "ejecuta '{command} --help' para ver cómo se escribe cada opción"
+
+[errors.GL0007]
+message = "'{command}' no acepta argumentos"
+cause = "se recibió: {args}"
+fix = "ejecuta '{command} --help' para ver cómo usarlo"
+
+[errors.GL0008]
+message = "idioma no soportado '{lang}'"
+cause = "el idioma proviene de {source}"
+fix = "usa uno de: {supported}"

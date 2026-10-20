@@ -1,0 +1,81 @@
+# English messages. Every key must also exist in es.toml with the same
+# {placeholders}. Values are single-line basic strings.
+
+[cli.root]
+short = "Energy observability for local AI inference"
+long = "GreenLens measures, attributes and reports the energy, emissions and cost of AI models that run on this machine."
+
+[cli.flag]
+help = "Show help for {command}"
+lang = "Language for messages (`code`: en or es). Defaults to the system locale"
+
+[cli.help_cmd]
+short = "Show help for a command"
+long = "Show help for a command. Without arguments, show help for greenlens."
+
+[cli.usage]
+usage = "Usage:"
+aliases = "Aliases:"
+examples = "Examples:"
+commands = "Available commands:"
+flags = "Flags:"
+global_flags = "Global flags:"
+flags_placeholder = "flags"
+command_placeholder = "command"
+more = "Run '{command} [command] --help' for more information about a command."
+
+[cli.version]
+short = "Show version and build information"
+long = "Show the version of this binary, the source revision it was built from, the Go version and the platform."
+revision = "Revision:"
+modified = "with local changes"
+commit_time = "Commit time:"
+go = "Go version:"
+platform = "Platform:"
+unknown = "unknown"
+
+[errors]
+label = "error"
+cause = "cause:"
+fix = "fix:"
+
+[errors.GL0001]
+message = "unexpected internal error"
+cause = "{detail}"
+fix = "report it at https://github.com/MarioUrenaGarcia/greenlens/issues with the output of 'greenlens version'"
+
+[errors.GL0002]
+message = "unknown command '{command}'"
+cause = "'{command}' is not a command of '{parent}'"
+fix = "run '{parent} --help' to list the available commands"
+fix_suggest = "did you mean '{suggestion}'? Run '{parent} --help' to list the available commands"
+
+[errors.GL0003]
+message = "unknown flag '{flag}'"
+cause = "'{command}' does not accept the flag '{flag}'"
+fix = "run '{command} --help' to list the accepted flags"
+
+[errors.GL0004]
+message = "flag '{flag}' needs a value"
+cause = "the flag was given without a value"
+fix = "pass a value after the flag, for example '{flag} <value>'"
+
+[errors.GL0005]
+message = "invalid value '{value}' for flag '{flag}'"
+cause = "the value does not have the type that '{flag}' expects"
+fix = "run '{command} --help' to see the accepted values"
+
+[errors.GL0006]
+message = "invalid flag syntax '{arg}'"
+cause = "a flag starts with '-' followed by one letter, or '--' followed by a name"
+fix = "run '{command} --help' to see how to write each flag"
+
+[errors.GL0007]
+message = "'{command}' does not accept arguments"
+cause = "received: {args}"
+fix = "run '{command} --help' to see how to use it"
+
+[errors.GL0008]
+message = "unsupported language '{lang}'"
+cause = "the language comes from {source}"
+fix = "use one of: {supported}"
