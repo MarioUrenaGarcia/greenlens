@@ -144,7 +144,7 @@ func render(lines []line, totalMS int, lang string) []byte {
 		width, height, width, height, html.EscapeString(demoLabel(lang)))
 	b.WriteString("<style>\n")
 	b.WriteString(`text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:14px;white-space:pre}` + "\n")
-	b.WriteString(".o{fill:#E8F0FA}.c{fill:#E8F0FA}.p{fill:#35C9B0}.e{fill:#F2A541}.m{fill:#9DB2C9}\n")
+	b.WriteString(".o{fill:#E8F7EF}.c{fill:#E8F7EF}.p{fill:#34D399}.e{fill:#F2A541}.m{fill:#9CC4AF}\n")
 	b.WriteString("@keyframes cur{0%,49%{opacity:1}50%,100%{opacity:0}}.cur{animation:cur 1s steps(1) infinite}\n")
 	for i, l := range lines {
 		if l.text == "" {
@@ -181,10 +181,10 @@ func render(lines []line, totalMS int, lang string) []byte {
 	fmt.Fprintf(&b, "%s{transform:translateY(-%.1fpx)}100%%{transform:translateY(-%.1fpx)}}", pct(fadeStart), last, last)
 	fmt.Fprintf(&b, ".scroll{animation:scroll %dms linear infinite}\n", totalMS)
 	b.WriteString("@media (prefers-reduced-motion:reduce){*{animation:none!important}}\n</style>\n")
-	fmt.Fprintf(&b, `<rect width="%.0f" height="%.0f" rx="12" fill="#0F1B2D"/>`+"\n", width, height)
-	fmt.Fprintf(&b, `<rect x=".5" y=".5" width="%.0f" height="%.0f" rx="12" fill="none" stroke="#E2EEFF" stroke-opacity=".16"/>`+"\n", width-1, height-1)
-	fmt.Fprintf(&b, `<rect width="%.0f" height="34" rx="12" fill="#D6E8FF" fill-opacity=".07"/>`+"\n", width)
-	for i, c := range []string{"#EF5A5A", "#F2A541", "#35C9B0"} {
+	fmt.Fprintf(&b, `<rect width="%.0f" height="%.0f" rx="12" fill="#0A1F17"/>`+"\n", width, height)
+	fmt.Fprintf(&b, `<rect x=".5" y=".5" width="%.0f" height="%.0f" rx="12" fill="none" stroke="#DCFFEC" stroke-opacity=".16"/>`+"\n", width-1, height-1)
+	fmt.Fprintf(&b, `<rect width="%.0f" height="34" rx="12" fill="#D6FFEA" fill-opacity=".07"/>`+"\n", width)
+	for i, c := range []string{"#EF5A5A", "#F2A541", "#34D399"} {
 		fmt.Fprintf(&b, `<circle cx="%d" cy="17" r="6" fill="%s" fill-opacity=".85"/>`+"\n", 22+i*20, c)
 	}
 	fmt.Fprintf(&b, `<text x="%.1f" y="22" text-anchor="middle" class="m">%s</text>`+"\n", width/2, title)
@@ -203,9 +203,9 @@ func render(lines []line, totalMS int, lang string) []byte {
 			fmt.Fprintf(&b, `<g class="s%d"><text x="%.1f" y="%.1f" class="p">$</text>`, i, padX, y)
 			fmt.Fprintf(&b, `<text x="%.1f" y="%.1f" class="c" textLength="%.1f" lengthAdjust="spacingAndGlyphs">%s</text>`,
 				x, y, float64(n)*charWidth, html.EscapeString(l.text[2:]))
-			fmt.Fprintf(&b, `<g class="t%d"><rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#0F1B2D"/>`,
+			fmt.Fprintf(&b, `<g class="t%d"><rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#0A1F17"/>`,
 				i, x, y-fontSize, float64(n)*charWidth+charWidth*2, lineHeight)
-			fmt.Fprintf(&b, `<rect class="cur" x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#E8F0FA" fill-opacity=".8"/></g></g>`+"\n",
+			fmt.Fprintf(&b, `<rect class="cur" x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#E8F7EF" fill-opacity=".8"/></g></g>`+"\n",
 				x, y-fontSize+2, charWidth, fontSize+2)
 			continue
 		}

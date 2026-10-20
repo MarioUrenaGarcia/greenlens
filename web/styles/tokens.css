@@ -2,19 +2,19 @@
  * Copyright (C) 2026 Mario Ureña García */
 
 /* Dark palette, the default theme. Amber always means consumption and
- * turquoise always means efficiency; neither is used as decoration. */
+ * green always means efficiency; neither is used as decoration. */
 :root {
-  --bg-deep: #0f1b2d;
+  --bg-deep: #0a1f17;
   --bg-glow-load: rgba(242, 165, 65, 0.18);
-  --bg-glow-eff: rgba(53, 201, 176, 0.16);
-  --glass-1: rgba(214, 232, 255, 0.07);
-  --glass-2: rgba(214, 232, 255, 0.12);
-  --glass-3: rgba(214, 232, 255, 0.18);
-  --glass-border: rgba(226, 238, 255, 0.16);
+  --bg-glow-eff: rgba(52, 211, 153, 0.16);
+  --glass-1: rgba(214, 255, 234, 0.07);
+  --glass-2: rgba(214, 255, 234, 0.12);
+  --glass-3: rgba(214, 255, 234, 0.18);
+  --glass-border: rgba(220, 255, 236, 0.16);
   --glass-highlight: rgba(255, 255, 255, 0.1);
-  --ink: #e8f0fa;
-  --ink-muted: #9db2c9;
+  --ink: #e8f7ef;
+  --ink-muted: #9cc4af;
   --load: #f2a541;
-  --efficiency: #35c9b0;
+  --efficiency: #34d399;
   --critical: #ef5a5a;
 }

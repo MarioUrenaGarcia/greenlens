@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 775 436" width="775" height="436" role="img" aria-label="Terminal session with greenlens: help, a command suggestion and an error with its cause and fix">
 <style>
 text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:14px;white-space:pre}
-.o{fill:#E8F0FA}.c{fill:#E8F0FA}.p{fill:#35C9B0}.e{fill:#F2A541}.m{fill:#9DB2C9}
+.o{fill:#E8F7EF}.c{fill:#E8F7EF}.p{fill:#34D399}.e{fill:#F2A541}.m{fill:#9CC4AF}
 @keyframes cur{0%,49%{opacity:1}50%,100%{opacity:0}}.cur{animation:cur 1s steps(1) infinite}
 @keyframes s0{0%,3.759%{opacity:0}3.765%,96.235%{opacity:1}100%{opacity:0}}.s0{animation:s0 15935ms linear infinite}
 @keyframes t0{0%,3.765%{transform:translateX(0);animation-timing-function:steps(16,end)}9.288%,12.105%{transform:translateX(134.4px);opacity:1}12.112%,100%{transform:translateX(134.4px);opacity:0}}.t0{animation:t0 15935ms linear infinite}
@@ -31,16 +31,16 @@ text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mon
 @keyframes scroll{0%{transform:translateY(0)}15.093%{transform:translateY(-0.0px)}15.846%{transform:translateY(-20.0px)}28.899%{transform:translateY(-20.0px)}29.652%{transform:translateY(-40.0px)}37.245%{transform:translateY(-40.0px)}37.998%{transform:translateY(-60.0px)}38.218%{transform:translateY(-80.0px)}38.437%{transform:translateY(-100.0px)}38.657%{transform:translateY(-120.0px)}51.710%{transform:translateY(-120.0px)}52.463%{transform:translateY(-140.0px)}62.818%{transform:translateY(-140.0px)}63.571%{transform:translateY(-160.0px)}63.790%{transform:translateY(-180.0px)}64.010%{transform:translateY(-200.0px)}64.230%{transform:translateY(-220.0px)}96.235%{transform:translateY(-220.0px)}100%{transform:translateY(-220.0px)}}.scroll{animation:scroll 15935ms linear infinite}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
-<rect width="775" height="436" rx="12" fill="#0F1B2D"/>
-<rect x=".5" y=".5" width="774" height="435" rx="12" fill="none" stroke="#E2EEFF" stroke-opacity=".16"/>
-<rect width="775" height="34" rx="12" fill="#D6E8FF" fill-opacity=".07"/>
+<rect width="775" height="436" rx="12" fill="#0A1F17"/>
+<rect x=".5" y=".5" width="774" height="435" rx="12" fill="none" stroke="#DCFFEC" stroke-opacity=".16"/>
+<rect width="775" height="34" rx="12" fill="#D6FFEA" fill-opacity=".07"/>
 <circle cx="22" cy="17" r="6" fill="#EF5A5A" fill-opacity=".85"/>
 <circle cx="42" cy="17" r="6" fill="#F2A541" fill-opacity=".85"/>
-<circle cx="62" cy="17" r="6" fill="#35C9B0" fill-opacity=".85"/>
+<circle cx="62" cy="17" r="6" fill="#34D399" fill-opacity=".85"/>
 <text x="387.4" y="22" text-anchor="middle" class="m">greenlens</text>
 <clipPath id="screen"><rect x="0" y="48.0" width="775" height="368.0"/></clipPath>
 <g clip-path="url(#screen)"><g class="scroll">
-<g class="s0"><text x="22.0" y="68.0" class="p">$</text><text x="38.8" y="68.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens --help</text><g class="t0"><rect x="38.8" y="54.0" width="151.2" height="20.0" fill="#0F1B2D"/><rect class="cur" x="38.8" y="56.0" width="8.4" height="16.0" fill="#E8F0FA" fill-opacity=".8"/></g></g>
+<g class="s0"><text x="22.0" y="68.0" class="p">$</text><text x="38.8" y="68.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens --help</text><g class="t0"><rect x="38.8" y="54.0" width="151.2" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="56.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
 <text x="22.0" y="88.0" class="o s1" textLength="663.6" lengthAdjust="spacingAndGlyphs">GreenLens measures, attributes and reports the energy, emissions and cost of AI</text>
 <text x="22.0" y="108.0" class="o s2" textLength="268.8" lengthAdjust="spacingAndGlyphs">models that run on this machine.</text>
 <text x="22.0" y="148.0" class="o s4" textLength="50.4" lengthAdjust="spacingAndGlyphs">Usage:</text>
@@ -54,11 +54,11 @@ text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mon
 <text x="22.0" y="348.0" class="o s14" textLength="596.4" lengthAdjust="spacingAndGlyphs">      --lang code   Language for messages (code: en or es). Defaults to</text>
 <text x="22.0" y="368.0" class="o s15" textLength="310.8" lengthAdjust="spacingAndGlyphs">                    the system locale</text>
 <text x="22.0" y="408.0" class="o s17" textLength="588.0" lengthAdjust="spacingAndGlyphs">Run &#39;greenlens [command] --help&#39; for more information about a command.</text>
-<g class="s19"><text x="22.0" y="448.0" class="p">$</text><text x="38.8" y="448.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens verson</text><g class="t19"><rect x="38.8" y="434.0" width="151.2" height="20.0" fill="#0F1B2D"/><rect class="cur" x="38.8" y="436.0" width="8.4" height="16.0" fill="#E8F0FA" fill-opacity=".8"/></g></g>
+<g class="s19"><text x="22.0" y="448.0" class="p">$</text><text x="38.8" y="448.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens verson</text><g class="t19"><rect x="38.8" y="434.0" width="151.2" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="436.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
 <text x="22.0" y="468.0" class="e s20" textLength="319.2" lengthAdjust="spacingAndGlyphs">error GL0002: unknown command &#39;verson&#39;</text>
 <text x="22.0" y="488.0" class="m s21" textLength="411.6" lengthAdjust="spacingAndGlyphs">  cause: &#39;verson&#39; is not a command of &#39;greenlens&#39;</text>
 <text x="22.0" y="508.0" class="m s22" textLength="722.4" lengthAdjust="spacingAndGlyphs">  fix:   did you mean &#39;version&#39;? Run &#39;greenlens --help&#39; to list the available commands</text>
-<g class="s24"><text x="22.0" y="548.0" class="p">$</text><text x="38.8" y="548.0" class="c" textLength="201.6" lengthAdjust="spacingAndGlyphs">greenlens version --nope</text><g class="t24"><rect x="38.8" y="534.0" width="218.4" height="20.0" fill="#0F1B2D"/><rect class="cur" x="38.8" y="536.0" width="8.4" height="16.0" fill="#E8F0FA" fill-opacity=".8"/></g></g>
+<g class="s24"><text x="22.0" y="548.0" class="p">$</text><text x="38.8" y="548.0" class="c" textLength="201.6" lengthAdjust="spacingAndGlyphs">greenlens version --nope</text><g class="t24"><rect x="38.8" y="534.0" width="218.4" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="536.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
 <text x="22.0" y="568.0" class="e s25" textLength="294.0" lengthAdjust="spacingAndGlyphs">error GL0003: unknown flag &#39;--nope&#39;</text>
 <text x="22.0" y="588.0" class="m s26" textLength="520.8" lengthAdjust="spacingAndGlyphs">  cause: &#39;greenlens version&#39; does not accept the flag &#39;--nope&#39;</text>
 <text x="22.0" y="608.0" class="m s27" textLength="554.4" lengthAdjust="spacingAndGlyphs">  fix:   run &#39;greenlens version --help&#39; to list the accepted flags</text>

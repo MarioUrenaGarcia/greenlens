@@ -4,10 +4,10 @@
 
 <p align="center">
   <a href="https://github.com/MarioUrenaGarcia/greenlens/actions/workflows/ci.yml"><img alt="Estado de CI" src="https://github.com/MarioUrenaGarcia/greenlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="Licencia: AGPL-3.0-only" src="https://img.shields.io/badge/licencia-AGPL--3.0--only-35C9B0?style=flat-square"></a>
+  <a href="LICENSE"><img alt="Licencia: AGPL-3.0-only" src="https://img.shields.io/badge/licencia-AGPL--3.0--only-34D399?style=flat-square"></a>
   <img alt="Go 1.27" src="https://img.shields.io/badge/Go-1.27-F2A541?style=flat-square">
-  <img alt="Linux amd64 y arm64" src="https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-9DB2C9?style=flat-square">
-  <a href="https://mariourenagarcia.github.io/greenlens/es/"><img alt="Documentación en GitHub Pages" src="https://img.shields.io/badge/docs-GitHub%20Pages-0F1B2D?style=flat-square"></a>
+  <img alt="Linux amd64 y arm64" src="https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-9CC4AF?style=flat-square">
+  <a href="https://mariourenagarcia.github.io/greenlens/es/"><img alt="Documentación en GitHub Pages" src="https://img.shields.io/badge/docs-GitHub%20Pages-0A1F17?style=flat-square"></a>
 </p>
 
 <p align="center">
