@@ -28,12 +28,30 @@ Platform and wall measurements serve to see what the rest of the system uses.
 | 1 | powercap RAPL | package, cores, uncore, memory, psys | measured |
 | 2 | perf_event `power` | package, memory, psys | measured |
 | 3 | hwmon processor drivers | package, memory | measured |
+| 3 | hwmon GPU drivers: amdgpu, xe, i915 | GPU, or the package of an AMD APU | measured |
 | 4 | ACPI power meter, IPMI DCMI, battery | platform | platform |
 | 6 | Estimate model | package | estimated |
 
 powercap and perf_event read the same hardware counters; GreenLens uses one.
 `greenlens doctor` shows every channel found, whether it is used, and why
 not. `sources.disable` and `sources.force` change the choice.
+
+## GPUs
+
+A source is chosen for each card, identified by its PCI address, so a
+machine with cards of different vendors measures all of them.
+
+- **amdgpu** reports power in watts (`power1_average`, or `power1_input` when
+  the firmware has no average). On an APU, a processor with integrated
+  graphics, the sensor covers the CPU too, so GreenLens reports it as the
+  package and uses it only when RAPL and perf_event cannot be read.
+- **xe** reports the energy of the card, or of the GPU package where the
+  card counter is missing.
+- **i915** reports the energy of the card.
+
+Intel drivers register these sensors only for discrete cards, whose energy is
+not part of the processor package. A card in runtime suspend is not read,
+because reading would wake it; its power is zero until it resumes.
 
 ## From readings to energy
 

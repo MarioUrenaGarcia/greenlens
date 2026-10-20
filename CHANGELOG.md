@@ -12,6 +12,9 @@ All notable changes to GreenLens are recorded in this file. The format follows
   processor drivers, ACPI power meters, IPMI DCMI, laptop batteries and, when
   nothing can be read, a CPU model, choosing one source per domain so energy
   is never counted twice.
+- GPU energy from the hwmon sensors of amdgpu, xe and i915, chosen per card
+  by PCI address. The sensor of an AMD APU measures the package when RAPL
+  cannot be read.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

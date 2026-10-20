@@ -29,12 +29,32 @@ sistema.
 | 1 | powercap RAPL | paquete, núcleos, uncore, memoria, psys | medido |
 | 2 | perf_event `power` | paquete, memoria, psys | medido |
 | 3 | drivers de procesador de hwmon | paquete, memoria | medido |
+| 3 | drivers de GPU de hwmon: amdgpu, xe, i915 | GPU, o el paquete de una APU de AMD | medido |
 | 4 | medidor ACPI, IPMI DCMI, batería | plataforma | plataforma |
 | 6 | Modelo estimado | paquete | estimado |
 
 powercap y perf_event leen los mismos contadores de hardware; GreenLens usa
 uno. `greenlens doctor` muestra cada canal encontrado, si se usa y por qué no.
 `sources.disable` y `sources.force` cambian la elección.
+
+## GPU
+
+Se elige una fuente para cada tarjeta, identificada por su dirección PCI, así
+una máquina con tarjetas de distintos fabricantes las mide todas.
+
+- **amdgpu** reporta potencia en watts (`power1_average`, o `power1_input`
+  cuando el firmware no tiene promedio). En una APU, un procesador con
+  gráficos integrados, el sensor cubre también la CPU, así que GreenLens lo
+  reporta como el paquete y lo usa solo cuando no se pueden leer RAPL ni
+  perf_event.
+- **xe** reporta la energía de la tarjeta, o del paquete de la GPU donde falta
+  el contador de la tarjeta.
+- **i915** reporta la energía de la tarjeta.
+
+Los drivers de Intel registran estos sensores solo para tarjetas dedicadas,
+cuya energía no forma parte del paquete del procesador. Una tarjeta en
+suspensión no se lee, porque la lectura la despertaría; su potencia es cero
+hasta que se reactiva.
 
 ## De las lecturas a la energía
 

@@ -51,6 +51,7 @@ func Sources(o Options) []source.Source {
 		rapl.New(o.FS),
 		perfevent.New(o.FS, o.Perf),
 		hwmon.NewCPU(o.FS),
+		hwmon.NewGPU(o.FS),
 		hwmon.NewACPI(o.FS),
 		ipmi.New(o.HostRoot, o.IPMI),
 		battery.New(o.FS),

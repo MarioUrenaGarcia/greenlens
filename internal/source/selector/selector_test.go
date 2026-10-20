@@ -57,6 +57,8 @@ func ids(chs []source.Channel) []string {
 	return out
 }
 
+var gpus = []string{"hwmon_gpu:0000:03:00.0", "hwmon_gpu:0000:04:00.0", "hwmon_gpu:0000:05:00.0"}
+
 func TestSelectOnRecordedHosts(t *testing.T) {
 	tests := []struct {
 		host      string
@@ -70,10 +72,13 @@ func TestSelectOnRecordedHosts(t *testing.T) {
 		{"vm-no-sensors", []string{"estimate:cpu"}, true},
 		{"arm-ampere-altra", []string{"hwmon:package-0", "hwmon:package-0:dram"}, false},
 		{"server-acpi", []string{"acpi_power_meter:power_meter-0", "rapl:package-0"}, false},
+		{"workstation-gpus-new", append(slices.Clone(gpus), "rapl:package-0", "rapl:package-0:core", "rapl:package-0:uncore", "rapl:psys"), false},
+		{"workstation-gpus-old", append(slices.Clone(gpus), "rapl:package-0", "rapl:package-0:core", "rapl:package-0:uncore", "rapl:psys"), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.host, func(t *testing.T) {
 			sel := selector.Select(probe(t, tt.host, nil), selector.Options{})
+			slices.Sort(tt.want)
 			if got := ids(sel.Channels); !slices.Equal(got, tt.want) {
 				t.Fatalf("selected %v, want %v", got, tt.want)
 			}
@@ -162,5 +167,72 @@ func TestEverythingDisabledLeavesNothing(t *testing.T) {
 	}
 	if got := sel.Sources(); len(got) != 0 {
 		t.Fatalf("sources %v", got)
+	}
+}
+
+// fake is a source with fixed channels.
+type fake struct {
+	id       string
+	priority int
+	channels []source.Channel
+}
+
+func (f fake) ID() string                                     { return f.id }
+func (f fake) Priority() int                                  { return f.priority }
+func (f fake) Read(context.Context) ([]source.Reading, error) { return nil, nil }
+func (f fake) Close() error                                   { return nil }
+func (f fake) Probe(context.Context) (source.ProbeResult, error) {
+	return source.ProbeResult{Source: f.id, Channels: f.channels}, nil
+}
+
+func gpu(src, inst string) source.Channel {
+	return source.Channel{ID: src + ":" + inst, Source: src, Domain: source.DomainGPU, Instance: inst}
+}
+
+func candidates(t *testing.T, srcs ...fake) []selector.Candidate {
+	t.Helper()
+	var out []selector.Candidate
+	for _, s := range srcs {
+		res, err := s.Probe(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, selector.Candidate{Source: s, Result: res})
+	}
+	return out
+}
+
+func TestGPUsAreChosenPerDevice(t *testing.T) {
+	// The first source sees two cards, the second one of them and a third.
+	cands := candidates(t,
+		fake{id: "low", priority: 6, channels: []source.Channel{gpu("low", "0000:01:00.0"), gpu("low", "0000:02:00.0")}},
+		fake{id: "high", priority: 1, channels: []source.Channel{gpu("high", "0000:02:00.0"), gpu("high", "0000:03:00.0")}},
+	)
+	sel := selector.Select(cands, selector.Options{})
+	want := []string{"high:0000:02:00.0", "high:0000:03:00.0", "low:0000:01:00.0"}
+	if got := ids(sel.Channels); !slices.Equal(got, want) {
+		t.Fatalf("selected %v, want %v", got, want)
+	}
+	for _, d := range sel.Decisions {
+		if d.Channel.ID == "low:0000:02:00.0" && (d.Selected || d.Reason.Key != "selector.reason.duplicate") {
+			t.Errorf("decision %+v", d)
+		}
+	}
+	// Forcing a source applies to every card it sees and leaves the others.
+	sel = selector.Select(cands, selector.Options{Force: map[source.Domain]string{source.DomainGPU: "low"}})
+	want = []string{"high:0000:03:00.0", "low:0000:01:00.0", "low:0000:02:00.0"}
+	if got := ids(sel.Channels); !slices.Equal(got, want) {
+		t.Fatalf("forced: selected %v, want %v", got, want)
+	}
+}
+
+func TestAPUSensorDoesNotDisplacePowercap(t *testing.T) {
+	sel := selector.Select(probe(t, "amd-zen4-desktop", nil), selector.Options{Disable: []string{"rapl", "perf_event"}})
+	if !sel.Selected("hwmon_gpu:package-0") || sel.Estimated {
+		t.Fatalf("without RAPL the APU sensor measures the package: %v", ids(sel.Channels))
+	}
+	sel = selector.Select(probe(t, "amd-zen4-desktop", nil), selector.Options{})
+	if sel.Selected("hwmon_gpu:package-0") {
+		t.Fatalf("RAPL must win the package: %v", ids(sel.Channels))
 	}
 }

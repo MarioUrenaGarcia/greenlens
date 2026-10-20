@@ -42,4 +42,6 @@ var Hosts = []string{
 	"vm-no-sensors",
 	"arm-ampere-altra",
 	"server-acpi",
+	"workstation-gpus-new",
+	"workstation-gpus-old",
 }

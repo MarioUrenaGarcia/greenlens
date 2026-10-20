@@ -71,6 +71,25 @@ func (s Selection) Sources() []string {
 	return out
 }
 
+// slot is what a single source is chosen for: a domain, or one GPU.
+type slot struct {
+	domain   source.Domain
+	instance string
+}
+
+// slotOf returns the slot of a channel, and false for contained domains,
+// whose slot is that of the package.
+func slotOf(ch source.Channel) (slot, bool) {
+	switch {
+	case ch.Domain.Level() == source.LevelContained:
+		return slot{domain: source.DomainPackage}, false
+	case ch.Domain == source.DomainGPU:
+		return slot{domain: ch.Domain, instance: ch.Instance}, true
+	default:
+		return slot{domain: ch.Domain}, true
+	}
+}
+
 // Select applies the rules to the probed candidates. Candidates with the
 // same priority keep the order in which they are given.
 func Select(cands []Candidate, opt Options) Selection {
@@ -83,26 +102,39 @@ func Select(cands []Candidate, opt Options) Selection {
 	}
 
 	// winner holds the chosen source of each domain that has a value of its
-	// own. Contained domains follow the source of the package.
-	winner := map[source.Domain]string{}
-	usable := func(c Candidate) bool { return !slices.Contains(opt.Disable, c.Source.ID()) }
-	has := func(c Candidate, d source.Domain) bool {
-		return slices.ContainsFunc(c.Result.Channels, func(ch source.Channel) bool { return ch.Domain == d })
+	// own. GPUs are chosen one device at a time, because NVML, hwmon and the
+	// model cover different cards. Contained domains follow the source of
+	// the package.
+	winner := map[slot]string{}
+	var slots []slot
+	for _, c := range ordered {
+		for _, ch := range c.Result.Channels {
+			if k, own := slotOf(ch); own && !slices.Contains(slots, k) {
+				slots = append(slots, k)
+			}
+		}
 	}
-	for _, d := range []source.Domain{source.DomainPackage, source.DomainDRAM, source.DomainGPU, source.DomainPSys, source.DomainPlatform, source.DomainWall} {
-		if forced, ok := opt.Force[d]; ok {
+	usable := func(c Candidate) bool { return !slices.Contains(opt.Disable, c.Source.ID()) }
+	has := func(c Candidate, k slot) bool {
+		return slices.ContainsFunc(c.Result.Channels, func(ch source.Channel) bool {
+			got, own := slotOf(ch)
+			return own && got == k
+		})
+	}
+	for _, k := range slots {
+		if forced, ok := opt.Force[k.domain]; ok {
 			for _, c := range ordered {
-				if c.Source.ID() == forced && usable(c) && has(c, d) {
-					winner[d] = forced
+				if c.Source.ID() == forced && usable(c) && has(c, k) {
+					winner[k] = forced
 				}
 			}
-			if _, ok := winner[d]; ok {
+			if _, ok := winner[k]; ok {
 				continue
 			}
 		}
 		for _, c := range ordered {
-			if usable(c) && has(c, d) {
-				winner[d] = c.Source.ID()
+			if usable(c) && has(c, k) {
+				winner[k] = c.Source.ID()
 				break
 			}
 		}
@@ -111,10 +143,8 @@ func Select(cands []Candidate, opt Options) Selection {
 	for _, c := range ordered {
 		for _, ch := range c.Result.Channels {
 			dec := Decision{Channel: ch}
-			owner := winner[ch.Domain]
-			if ch.Domain.Level() == source.LevelContained {
-				owner = winner[source.DomainPackage]
-			}
+			k, _ := slotOf(ch)
+			owner := winner[k]
 			switch {
 			case !usable(c):
 				dec.Reason = Reason{Key: "selector.reason.disabled"}
@@ -133,7 +163,7 @@ func Select(cands []Candidate, opt Options) Selection {
 		}
 	}
 
-	if winner[source.DomainPackage] == estimate.ID {
+	if winner[slot{domain: source.DomainPackage}] == estimate.ID {
 		sel.Estimated = true
 		sel.Problems = append(sel.Problems, source.Problem{Code: help.GL1007, Channel: estimate.ChannelID})
 	}

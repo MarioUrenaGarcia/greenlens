@@ -238,7 +238,7 @@ func (c Config) SelectorOptions() selector.Options {
 
 // SourceIDs lists the source names accepted in sources.disable and
 // sources.force.
-var SourceIDs = []string{"rapl", "perf_event", "hwmon", "acpi_power_meter", "ipmi", "battery", "estimate"}
+var SourceIDs = []string{"rapl", "perf_event", "hwmon", "hwmon_gpu", "acpi_power_meter", "ipmi", "battery", "estimate"}
 
 // ForcibleDomains lists the domains accepted as keys of sources.force.
 var ForcibleDomains = []source.Domain{source.DomainPackage, source.DomainDRAM, source.DomainPSys, source.DomainPlatform}

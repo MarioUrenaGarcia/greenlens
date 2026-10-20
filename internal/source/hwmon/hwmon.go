@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Mario Ureña García
 
-// Package hwmon reads processor and platform power sensors exposed through
-// /sys/class/hwmon. Attribute names and labels vary by driver, so each
-// supported driver has an entry in a table that maps its sensors to
+// Package hwmon reads processor, GPU and platform power sensors exposed
+// through /sys/class/hwmon. Attribute names and labels vary by driver, so
+// each supported driver has an entry in a table that maps its sensors to
 // domains; the entries follow the driver sources in the Linux kernel.
 package hwmon
 
@@ -25,14 +25,20 @@ import (
 // Source IDs.
 const (
 	CPUID  = "hwmon"
+	GPUID  = "hwmon_gpu"
 	ACPIID = "acpi_power_meter"
 )
 
 const hwmonDir = "sys/class/hwmon"
 
-// gpuDrivers have their own sources; their sensors are not CPU or platform
-// sensors and must not be reported as unknown.
-var gpuDrivers = map[string]bool{"amdgpu": true, "radeon": true, "nouveau": true, "i915": true, "xe": true}
+// graphicsDrivers are GPU drivers; their sensors are not CPU or platform
+// sensors and must not be reported as unknown by the CPU source. The i915
+// driver also registers one device per GT, named "i915_gtN".
+var graphicsDrivers = map[string]bool{"amdgpu": true, "radeon": true, "nouveau": true, "i915": true, "xe": true}
+
+func isGraphics(name string) bool {
+	return graphicsDrivers[name] || strings.HasPrefix(name, "i915_gt")
+}
 
 var sensorFile = regexp.MustCompile(`^(power|energy)(\d+)_(input|average)$`)
 
@@ -46,6 +52,14 @@ type channel struct {
 	ch    source.Channel
 	dir   string
 	parts []part
+	// pm is the runtime power state of the device, set for GPUs. A
+	// suspended GPU is not read: amdgpu refuses the read and xe and i915
+	// would wake the card on every sample.
+	pm string
+	// last is the most recent counter value, repeated while the device is
+	// suspended so the interval adds no energy.
+	last    float64
+	hasLast bool
 }
 
 // driver maps the sensors of one hwmon device to channels. index counts the
@@ -57,6 +71,14 @@ var cpuDrivers = map[string]driver{
 	"amd_energy":  amdEnergy,
 	"smpro_hwmon": smpro,
 	"apm_xgene":   xgene,
+}
+
+// gpuDrivers measure graphics cards. An APU sensor that includes the CPU
+// is reported as a package.
+var gpuDrivers = map[string]driver{
+	"amdgpu": amdgpu,
+	"xe":     xe,
+	"i915":   i915,
 }
 
 // platformDrivers measure the whole system.
@@ -76,6 +98,13 @@ type Source struct {
 // NewCPU returns the source for processor sensors.
 func NewCPU(fsys fs.FS) *Source {
 	return &Source{id: CPUID, priority: 3, drivers: cpuDrivers, fsys: fsys}
+}
+
+// NewGPU returns the source for GPU sensors. Its priority is that of the
+// CPU sensors: GPUs are chosen one device at a time, and an APU sensor must
+// not displace RAPL or perf_event for the package.
+func NewGPU(fsys fs.FS) *Source {
+	return &Source{id: GPUID, priority: 3, drivers: gpuDrivers, fsys: fsys}
 }
 
 // NewACPI returns the source for ACPI power meters.
@@ -108,7 +137,7 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 		if !known {
 			// Only the CPU source reports unknown drivers, so each one
 			// appears once in diagnostics.
-			if s.id == CPUID && !gpuDrivers[name] && !knownElsewhere(name) && hasPowerSensors(s.fsys, dir) {
+			if s.id == CPUID && !isGraphics(name) && !knownElsewhere(name) && hasPowerSensors(s.fsys, dir) {
 				res.Problems = append(res.Problems, source.Problem{Code: help.GL1009, Args: []any{"name", name}})
 			}
 			continue
@@ -119,6 +148,13 @@ func (s *Source) Probe(_ context.Context) (source.ProbeResult, error) {
 			c.dir = dir
 			c.ch.Source = s.id
 			c.ch.ID = s.id + ":" + c.ch.ID
+			// Reading a suspended GPU would fail or wake it; its files are
+			// checked on the first read after it resumes.
+			if suspended(s.fsys, c.pm) {
+				s.channels = append(s.channels, c)
+				res.Channels = append(res.Channels, c.ch)
+				continue
+			}
 			if p := unreadable(s.fsys, dir, c.parts); p != "" {
 				res.Problems = append(res.Problems, source.Problem{
 					Code: help.GL1005, Args: []any{"path", "/" + p}, Channel: c.ch.ID,
@@ -136,6 +172,31 @@ func knownElsewhere(name string) bool {
 	_, cpu := cpuDrivers[name]
 	_, platform := platformDrivers[name]
 	return cpu || platform
+}
+
+// suspended reports whether a device is in runtime suspend. Devices
+// without runtime power management have no such state.
+func suspended(fsys fs.FS, pm string) bool {
+	if pm == "" {
+		return false
+	}
+	st, err := hostfs.String(fsys, pm)
+	return err == nil && st == "suspended"
+}
+
+// pciSlot returns the PCI address of the device behind a hwmon directory,
+// such as "0000:03:00.0", or "" when it is not a PCI device.
+func pciSlot(fsys fs.FS, dir string) string {
+	b, err := fs.ReadFile(fsys, path.Join(dir, "device", "uevent"))
+	if err != nil {
+		return ""
+	}
+	for line := range strings.Lines(string(b)) {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "PCI_SLOT_NAME="); ok {
+			return strings.ToLower(v)
+		}
+	}
+	return ""
 }
 
 // deviceName reads the chip name. Old drivers put it on the parent device.
@@ -287,6 +348,88 @@ func acpiPowerMeter(fsys fs.FS, dir string, index int) []channel {
 	return []channel{newChannel("power_meter-"+inst, source.DomainPlatform, inst, "ACPI power meter", true, part{file: "power1_average", power: true})}
 }
 
+// amdgpu follows drivers/gpu/drm/amd/pm/amdgpu_pm.c: power1_average and
+// power1_input are in microwatts, the first averaged by the power
+// management firmware, and power1_label names the limit they track, such as
+// "PPT". The driver has no energy counter. On APUs both include the CPU, so
+// the sensor measures the package rather than the GPU; APUs are recognized
+// by the northbridge voltage, in1 labeled "vddnb", which the driver shows
+// only on them. Multi-die APUs hide vddnb and are reported as GPUs.
+func amdgpu(fsys fs.FS, dir string, _ int) []channel {
+	file := ""
+	for _, f := range []string{"power1_average", "power1_input"} {
+		if hostfs.Exists(fsys, path.Join(dir, f)) {
+			file = f
+			break
+		}
+	}
+	slot := pciSlot(fsys, dir)
+	if file == "" || slot == "" {
+		return nil
+	}
+	label := "amdgpu " + file
+	if l, err := hostfs.String(fsys, path.Join(dir, "power1_label")); err == nil && l != "" {
+		label = "amdgpu " + l
+	}
+	p := part{file: file, power: true}
+	var c channel
+	if l, err := hostfs.String(fsys, path.Join(dir, "in1_label")); err == nil && l == "vddnb" {
+		c = newChannel("package-0", source.DomainPackage, "0", label+" (APU: CPU and GPU)", true, p)
+	} else {
+		c = newChannel(slot, source.DomainGPU, slot, label, true, p)
+	}
+	c.pm = path.Join(dir, "device", "power", "runtime_status")
+	return []channel{c}
+}
+
+// xe follows drivers/gpu/drm/xe/xe_hwmon.c. Since Linux 6.10 energy1_input
+// is the card and energy2_input the GPU package, in microjoules, labeled
+// "card" and "pkg"; either may be missing on a given platform. The card
+// includes the package, so only one is used. Linux 6.8 and 6.9 have a single
+// unlabeled energy1_input for the package. The driver extends the hardware
+// counter to 63 bits and registers hwmon only for discrete cards, whose
+// energy is not part of the processor package.
+func xe(fsys fs.FS, dir string, _ int) []channel {
+	slot := pciSlot(fsys, dir)
+	if slot == "" {
+		return nil
+	}
+	file, label := "", ""
+	byLabel := map[string]int{}
+	for i, l := range labels(fsys, dir, "energy") {
+		byLabel[l] = i
+	}
+	for _, want := range []string{"card", "pkg"} {
+		if n, ok := byLabel[want]; ok {
+			file, label = fmt.Sprintf("energy%d_input", n), "xe "+want
+			break
+		}
+	}
+	if file == "" && len(byLabel) == 0 {
+		file, label = "energy1_input", "xe energy1"
+	}
+	if file == "" || !hostfs.Exists(fsys, path.Join(dir, file)) {
+		return nil
+	}
+	c := newChannel(slot, source.DomainGPU, slot, label, false, part{file: file})
+	c.pm = path.Join(dir, "device", "power", "runtime_status")
+	return []channel{c}
+}
+
+// i915 follows drivers/gpu/drm/i915/i915_hwmon.c: the device-level hwmon,
+// named "i915", has energy1_input in microjoules for the whole card. The
+// per-GT devices, named "i915_gtN", are part of it. The driver extends the
+// counter to 63 bits and registers hwmon only for discrete cards.
+func i915(fsys fs.FS, dir string, _ int) []channel {
+	slot := pciSlot(fsys, dir)
+	if slot == "" || !hostfs.Exists(fsys, path.Join(dir, "energy1_input")) {
+		return nil
+	}
+	c := newChannel(slot, source.DomainGPU, slot, "i915 card", false, part{file: "energy1_input"})
+	c.pm = path.Join(dir, "device", "power", "runtime_status")
+	return []channel{c}
+}
+
 func sorted(p []part) []part {
 	for i := 1; i < len(p); i++ {
 		for j := i; j > 0 && p[j].file < p[j-1].file; j-- {
@@ -300,14 +443,19 @@ func sorted(p []part) []part {
 func (s *Source) Read(_ context.Context) ([]source.Reading, error) {
 	out := make([]source.Reading, 0, len(s.channels))
 	var errs []error
-	for _, c := range s.channels {
+	for i := range s.channels {
+		c := &s.channels[i]
+		if suspended(s.fsys, c.pm) {
+			if r, ok := c.idle(); ok {
+				out = append(out, r)
+			}
+			continue
+		}
 		r := source.Reading{Channel: c.ch.ID}
-		ok := true
+		var err error
 		for _, p := range c.parts {
-			v, err := hostfs.Int64(s.fsys, path.Join(c.dir, p.file))
-			if err != nil {
-				errs = append(errs, fmt.Errorf("%s: %w", c.ch.ID, err))
-				ok = false
+			var v int64
+			if v, err = hostfs.Int64(s.fsys, path.Join(c.dir, p.file)); err != nil {
 				break
 			}
 			if p.power {
@@ -316,9 +464,27 @@ func (s *Source) Read(_ context.Context) ([]source.Reading, error) {
 				r.EnergyJ += float64(v) / 1e6
 			}
 		}
-		if ok {
+		switch {
+		case err == nil:
+			c.last, c.hasLast = r.EnergyJ, true
 			out = append(out, r)
+		case suspended(s.fsys, c.pm):
+			// The device suspended between the check and the read.
+			if r, ok := c.idle(); ok {
+				out = append(out, r)
+			}
+		default:
+			errs = append(errs, fmt.Errorf("%s: %w", c.ch.ID, err))
 		}
 	}
 	return out, errors.Join(errs...)
+}
+
+// idle is the reading of a suspended device: no power, and a counter that
+// does not move. A counter never read has no value yet.
+func (c *channel) idle() (source.Reading, bool) {
+	if c.ch.Kind == source.KindPower {
+		return source.Reading{Channel: c.ch.ID}, true
+	}
+	return source.Reading{Channel: c.ch.ID, EnergyJ: c.last}, c.hasLast
 }
