@@ -138,7 +138,10 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 		}
 		gpus = append(gpus, g)
 	}
-	a.acc.Add(usage.Sample{Node: node, Ticks: ticks, GPUs: gpus, Quality: quality})
+	got := a.acc.Add(usage.Sample{Node: node, Ticks: ticks, GPUs: gpus, Quality: quality})
+	if a.meter != nil {
+		a.meter.Tick(s.Time, s.Interval, got)
+	}
 }
 
 // cutUsage closes a usage interval and hands it to the worker, which reads
@@ -158,13 +161,15 @@ func (a *Agent) usageWorker(ctx context.Context) {
 	defer close(a.workerDone)
 	for c := range a.cuts {
 		a.mu.RLock()
-		maxModels := a.cfg.Attribution.MaxModelsPerBackend
+		maxModels, maxConsumers := a.cfg.Attribution.MaxModelsPerBackend, a.cfg.Attribution.MaxConsumers
 		a.mu.RUnlock()
 		a.bmu.Lock()
 		bs := slices.Clone(a.bs)
 		a.bmu.Unlock()
 		readings := a.reader.Read(ctx, bs)
+		a.withProxy(readings)
 		a.split.SetMaxModels(maxModels)
+		a.split.SetMaxConsumers(maxConsumers)
 		rows := a.split.Split(c, readings)
 		info := map[string]store.BackendInfo{}
 		for _, b := range bs {

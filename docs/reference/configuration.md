@@ -35,6 +35,7 @@ Every key of the configuration file, the environment variable that overrides it 
 |---|---|---|---|---|
 | `attribution.idle_policy` | `GREENLENS_ATTRIBUTION_IDLE_POLICY` | string | `dynamic` | How idle energy is attributed: dynamic, proportional, full or wall. |
 | `attribution.max_models_per_backend` | `GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND` | integer | `50` | Most models tracked per backend; the energy of the others is reported together as 'other'. |
+| `attribution.max_consumers` | `GREENLENS_ATTRIBUTION_MAX_CONSUMERS` | integer | `200` | Most consumers tracked by the proxy; the others are reported together as 'other'. |
 | `attribution.regression_min_r2` | `GREENLENS_ATTRIBUTION_REGRESSION_MIN_R2` | number | `0.7` | Lowest R2 at which the energy per prompt token and per generated token, fitted over the last 24 hours, is reported. |
 
 ## backends
@@ -53,6 +54,17 @@ Every key of the configuration file, the environment variable that overrides it 
 |---|---|---|---|---|
 | `discovery.enabled` | `GREENLENS_DISCOVERY_ENABLED` | bool | `true` | Look for known inference servers among the running processes. |
 | `discovery.interval` | `GREENLENS_DISCOVERY_INTERVAL` | duration | `10s` | How often processes and listening ports are scanned, from 1s to 10m. |
+
+## proxy
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `proxy.enabled` | `GREENLENS_PROXY_ENABLED` | bool | `false` | Run the proxy. |
+| `proxy.listen` | `GREENLENS_PROXY_LISTEN` | string | `127.0.0.1:11435` | Address and port the proxy listens on. |
+| `proxy.upstream` | `GREENLENS_PROXY_UPSTREAM` | string | `http://127.0.0.1:11434` | Base URL of the server the proxy forwards to. |
+| `proxy.per_request_energy_header` | `GREENLENS_PROXY_PER_REQUEST_ENERGY_HEADER` | bool | `false` | Add X-GreenLens-Energy-Joules to each response, as a trailer for streamed ones. |
+| `proxy.consumer_header` | `GREENLENS_PROXY_CONSUMER_HEADER` | string | empty | Request header that tells consumers apart, such as Authorization; its value is kept only as an HMAC. |
+| `proxy.consumer_aliases_file` | `GREENLENS_PROXY_CONSUMER_ALIASES_FILE` | string | empty | YAML file mapping consumer names to the SHA-256 of header values, written as sha256:&lt;hex&gt;. |
 
 ## indicators
 

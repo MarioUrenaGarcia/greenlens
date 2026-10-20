@@ -347,6 +347,9 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if code, out, _ := runWith(t, hooks{}, map[string]string{"GREENLENS_LANG": "es"}, "report", "--config", cfgPath, "--group", "backend"); code != 0 || !strings.Contains(out, "no se atribuyó energía") {
 		t.Fatalf("report by backend: %d %s", code, out)
 	}
+	if code, out, _ := runWith(t, hooks{}, nil, "proxy", "--config", cfgPath); code != 0 || !strings.Contains(out, "proxy.enabled") {
+		t.Fatalf("proxy off: %d %s", code, out)
+	}
 	for _, args := range [][]string{{"--group", "team"}, {"--group", "model", "--by", "day"}} {
 		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"report", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
 			t.Fatalf("%v: %d %s", args, code, errOut)

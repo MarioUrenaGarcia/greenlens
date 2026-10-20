@@ -80,6 +80,34 @@ func modelID(ctx context.Context, db execQuerier, backend int64, name string, no
 	return sql.NullInt64{Int64: id, Valid: true}, nil
 }
 
+func consumerID(ctx context.Context, db execQuerier, name, keyHMAC string, now time.Time) (sql.NullInt64, error) {
+	if name == "" {
+		return sql.NullInt64{}, nil
+	}
+	var h sql.NullString
+	if keyHMAC != "" {
+		h = sql.NullString{String: keyHMAC, Valid: true}
+	}
+	var id int64
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO consumers (alias, key_hmac, created_at) VALUES (?, ?, ?)
+		ON CONFLICT(alias) DO UPDATE SET key_hmac = coalesce(consumers.key_hmac, excluded.key_hmac)
+		RETURNING id`, name, h, now.UnixMilli()).Scan(&id)
+	if err != nil {
+		return sql.NullInt64{}, fmt.Errorf("record consumer: %w", err)
+	}
+	return sql.NullInt64{Int64: id, Valid: true}, nil
+}
+
+// EnsureConsumer records a consumer with the HMAC of its key, when it has
+// no alias.
+func (s *Store) EnsureConsumer(ctx context.Context, name, keyHMAC string, now time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := consumerID(ctx, s.db, name, keyHMAC, now)
+	return err
+}
+
 func nullable(v *int64) sql.NullInt64 {
 	if v == nil {
 		return sql.NullInt64{}
@@ -119,12 +147,17 @@ func (s *Store) InsertUsage(ctx context.Context, rows []usage.Row, info map[stri
 			_ = tx.Rollback()
 			return err
 		}
+		consumer, err := consumerID(ctx, tx, r.Consumer, "", now)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO usage_intervals (ts_ms, interval_ms, backend_id, model_id, consumer_id,
 				cpu_energy_j, dram_energy_j, gpu_energy_j, platform_energy_j,
 				prompt_tokens, generated_tokens, requests, method, quality)
-			VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			r.Start.UnixMilli(), r.Interval.Milliseconds(), id, model,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			r.Start.UnixMilli(), r.Interval.Milliseconds(), id, model, consumer,
 			r.CPUJ, r.DRAMJ, r.GPUJ, r.PlatformJ,
 			nullable(r.PromptTokens), nullable(r.GeneratedTokens), nullable(r.Requests), r.Method, string(r.Quality)); err != nil {
 			_ = tx.Rollback()
@@ -215,6 +248,7 @@ type UsageEnergy struct {
 	Backend         string  `json:"backend"`
 	Kind            string  `json:"kind"`
 	Model           string  `json:"model,omitempty"`
+	Consumer        string  `json:"consumer,omitempty"`
 	EnergyJ         float64 `json:"energy_j"`
 	PromptTokens    int64   `json:"prompt_tokens"`
 	GeneratedTokens int64   `json:"generated_tokens"`
@@ -225,8 +259,9 @@ type UsageEnergy struct {
 
 // Usage groupings.
 const (
-	ByBackend = "backend"
-	ByModel   = "model"
+	ByBackend  = "backend"
+	ByModel    = "model"
+	ByConsumer = "consumer"
 )
 
 // Usage sums the usage in [from, to) by backend or by model, from the
@@ -239,7 +274,7 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 	case !from.Before(now.Add(-r.Rollup1m)):
 		res = Resolution1m
 	}
-	raw := `SELECT backend_id, model_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+	raw := `SELECT backend_id, model_id, consumer_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
 		FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`
 	q := raw
 	args := []any{from.UnixMilli(), to.UnixMilli()}
@@ -252,20 +287,24 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 		if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, mark).Scan(&done); err != nil {
 			return nil, res, err
 		}
-		q = `SELECT backend_id, model_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+		q = `SELECT backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
 			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ? UNION ALL ` + raw
 		args = []any{res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli()}
 	}
-	group, model := `b.id`, `''`
-	if by == ByModel {
+	group, model, consumer := `b.id`, `''`, `''`
+	switch by {
+	case ByModel:
 		group, model = `b.id, u.model_id`, `coalesce(m.name, '')`
+	case ByConsumer:
+		group, consumer = `b.id, u.consumer_id`, `coalesce(c.alias, '')`
 	}
 	// Only the constant fragments above are formatted into the query;
 	// every value goes through placeholders.
 	//nolint:gosec // constant fragments, see above
-	query := `SELECT b.name, b.kind, ` + model + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
+	query := `SELECT b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
 			count(u.p) > 0 OR count(u.g) > 0
 		FROM (` + q + `) AS u JOIN backends b ON b.id = u.backend_id LEFT JOIN models m ON m.id = u.model_id
+			LEFT JOIN consumers c ON c.id = u.consumer_id
 		GROUP BY ` + group + ` ORDER BY sum(u.e) DESC, b.name`
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -275,7 +314,7 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 	var out []UsageEnergy
 	for rows.Next() {
 		var u UsageEnergy
-		if err := rows.Scan(&u.Backend, &u.Kind, &u.Model, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
+		if err := rows.Scan(&u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
 			return nil, res, err
 		}
 		out = append(out, u)

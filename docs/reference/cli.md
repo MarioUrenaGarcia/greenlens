@@ -195,6 +195,28 @@ greenlens measure --pid 4242 --duration 5m
 greenlens measure --unit ollama.service --duration 10m
 ```
 
+## greenlens proxy
+
+Show the address, upstream and requests of the reverse proxy the agent runs for servers that do not count tokens, such as Ollama. The proxy forwards requests unchanged and reads only token counts; enable it under proxy in the configuration.
+
+**Usage**
+
+```text
+greenlens proxy [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+**Examples**
+
+```bash
+greenlens proxy
+greenlens report --from 24h --group consumer
+```
+
 ## greenlens report
 
 Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. With --group, report the energy attributed to each backend or model instead, with its tokens. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d.
@@ -211,7 +233,7 @@ greenlens report [flags]
 |---|---|---|
 | `--by` | Group by none, hour or day | `none` |
 | `--from` | Start of the period | `24h` |
-| `--group` | Report by backend or model instead of by domain |  |
+| `--group` | Report by backend, model or consumer instead of by domain |  |
 | `--to` | End of the period | `now` |
 
 **Examples**

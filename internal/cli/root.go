@@ -51,6 +51,7 @@ func newRoot(a *app) *cobra.Command {
 		newConfigCmd(a),
 		newDoctorCmd(a),
 		newMeasureCmd(a),
+		newProxyCmd(a),
 		newReportCmd(a),
 		newSetupPermissionsCmd(a),
 		newStatusCmd(a),

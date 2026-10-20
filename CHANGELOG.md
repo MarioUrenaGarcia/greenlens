@@ -25,6 +25,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
 - The energy of a prompt token and of a generated token of each model,
   fitted by least squares over the last day with 95% confidence intervals
   and reported when R2 reaches `attribution.regression_min_r2`.
+- A token-counting reverse proxy, run by the agent, for Ollama and other
+  OpenAI-compatible servers: it forwards requests unchanged, reads only the
+  token counts of the responses, can return the energy of each request in
+  `X-GreenLens-Energy-Joules`, and attributes energy to consumers identified
+  by an HMAC of a request header. `greenlens proxy` shows its state.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

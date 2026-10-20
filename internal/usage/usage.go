@@ -11,6 +11,7 @@ package usage
 import (
 	"math"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
@@ -122,8 +123,9 @@ func NewAccountant(policy attribution.Policy, start time.Time) *Accountant {
 // SetPolicy changes the idle policy from the next sample.
 func (a *Accountant) SetPolicy(p attribution.Policy) { a.policy = p }
 
-// Add accounts one sample.
-func (a *Accountant) Add(s Sample) {
+// Add accounts one sample and returns the energy each backend got in it.
+func (a *Accountant) Add(s Sample) map[string]float64 {
+	got := map[string]float64{}
 	a.quality = worse(a.quality, s.Quality)
 	use := make([]attribution.Usage, 0, len(s.Ticks))
 	for name, t := range s.Ticks {
@@ -137,6 +139,11 @@ func (a *Accountant) Add(s Sample) {
 		e.CPUJ += r.CPUJ
 		e.DRAMJ += r.DRAMJ
 		e.PlatformJ += r.PlatformJ
+		if r.PlatformJ > 0 {
+			got[r.ID] += r.PlatformJ
+		} else {
+			got[r.ID] += r.CPUJ + r.DRAMJ
+		}
 		e.Method = weaker(e.Method, MethodCPUShare)
 		q := s.Quality
 		if r.PlatformJ > 0 {
@@ -153,11 +160,15 @@ func (a *Accountant) Add(s Sample) {
 			}
 			e := a.energy[name]
 			e.GPUJ += j
+			if e.PlatformJ == 0 {
+				got[name] += j
+			}
 			e.Method = weaker(e.Method, method)
 			e.Quality = worse(e.Quality, g.Quality)
 			a.energy[name] = e
 		}
 	}
+	return got
 }
 
 // Cut returns the energy since the previous cut and starts a new interval
@@ -178,6 +189,9 @@ type Row struct {
 	Interval time.Duration
 	Backend  string
 	Model    string
+	// Consumer is set for rows counted by the proxy with a consumer
+	// header.
+	Consumer string
 	Energy
 	// Tokens are nil when the backend does not count them.
 	PromptTokens    *int64
@@ -192,18 +206,35 @@ const Other = "other"
 // the counters of the previous interval, so it must see every interval in
 // order. It is not safe for concurrent use.
 type Splitter struct {
-	maxModels int
-	prev      map[string]map[string]connector.Counters
-	models    map[string][]string
+	maxModels    int
+	maxConsumers int
+	prev         map[string]map[string]connector.Counters
+	models       map[string][]string
+	consumers    []string
 }
 
 // NewSplitter tracks at most maxModels models per backend.
 func NewSplitter(maxModels int) *Splitter {
-	return &Splitter{maxModels: maxModels, prev: map[string]map[string]connector.Counters{}, models: map[string][]string{}}
+	return &Splitter{maxModels: maxModels, maxConsumers: maxModels, prev: map[string]map[string]connector.Counters{}, models: map[string][]string{}}
 }
 
 // SetMaxModels changes the limit for models not seen yet.
 func (s *Splitter) SetMaxModels(n int) { s.maxModels = n }
+
+// SetMaxConsumers changes the limit for consumers not seen yet.
+func (s *Splitter) SetMaxConsumers(n int) { s.maxConsumers = n }
+
+// consumer maps a consumer to the name it is tracked under.
+func (s *Splitter) consumer(c string) string {
+	if c == "" || slices.Contains(s.consumers, c) {
+		return c
+	}
+	if len(s.consumers) >= s.maxConsumers {
+		return Other
+	}
+	s.consumers = append(s.consumers, c)
+	return c
+}
 
 // name maps a model to the name it is tracked under.
 func (s *Splitter) name(backend, model string) string {
@@ -262,36 +293,34 @@ func (s *Splitter) backend(c Cut, b string, e Energy, rd backends.Reading) []Row
 	if counted {
 		cur := map[string]connector.Counters{}
 		for _, m := range rd.Snapshot.Models {
-			n := s.name(b, m.Model)
-			k := cur[n]
-			k.Model = n
+			n, c := s.name(b, m.Model), s.consumer(m.Consumer)
+			id := n + "\x00" + c
+			k := cur[id]
+			k.Model, k.Consumer = n, c
 			k.PromptTokens += m.PromptTokens
 			k.GeneratedTokens += m.GeneratedTokens
 			k.Requests += m.Requests
-			cur[n] = k
+			cur[id] = k
 		}
 		prev, seen := s.prev[b]
 		s.prev[b] = cur
-		if !seen {
+		if !seen && !rd.Snapshot.FromZero {
 			// The first reading is the starting point of the counters.
 			counted = false
 			cur = nil
 		}
-		for n, k := range cur {
-			p := prev[n]
-			d := connector.Counters{Model: n, PromptTokens: diff(k.PromptTokens, p.PromptTokens), GeneratedTokens: diff(k.GeneratedTokens, p.GeneratedTokens), Requests: diff(k.Requests, p.Requests)}
+		for id, k := range cur {
+			p := prev[id]
+			d := connector.Counters{Model: k.Model, Consumer: k.Consumer, PromptTokens: diff(k.PromptTokens, p.PromptTokens), GeneratedTokens: diff(k.GeneratedTokens, p.GeneratedTokens), Requests: diff(k.Requests, p.Requests)}
 			if d.PromptTokens+d.GeneratedTokens+d.Requests > 0 {
 				deltas = append(deltas, d)
 			}
 		}
 		slices.SortFunc(deltas, func(x, y connector.Counters) int {
-			if x.Model < y.Model {
-				return -1
+			if c := strings.Compare(x.Model, y.Model); c != 0 {
+				return c
 			}
-			if x.Model > y.Model {
-				return 1
-			}
-			return 0
+			return strings.Compare(x.Consumer, y.Consumer)
 		})
 	}
 
@@ -325,7 +354,7 @@ func (s *Splitter) backend(c Cut, b string, e Energy, rd backends.Reading) []Row
 	out := make([]Row, 0, len(deltas))
 	for _, d := range deltas {
 		r := base
-		r.Model = d.Model
+		r.Model, r.Consumer = d.Model, d.Consumer
 		r.Energy = e.scaled(weight(d) / total)
 		if len(deltas) > 1 && e.TotalJ() > 0 {
 			r.Method = weaker(e.Method, MethodTokenWeighted)

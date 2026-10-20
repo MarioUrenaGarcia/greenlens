@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"net"
 	"net/url"
 	"regexp"
 
@@ -61,6 +62,7 @@ type Config struct {
 	Attribution Attribution `yaml:"attribution"`
 	Backends    []Backend   `yaml:"backends"`
 	Discovery   Discovery   `yaml:"discovery"`
+	Proxy       Proxy       `yaml:"proxy"`
 	Indicators  Indicators  `yaml:"indicators"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
@@ -107,7 +109,21 @@ type Estimate struct {
 type Attribution struct {
 	IdlePolicy          string  `yaml:"idle_policy"`
 	MaxModelsPerBackend int     `yaml:"max_models_per_backend"`
+	MaxConsumers        int     `yaml:"max_consumers"`
 	RegressionMinR2     float64 `yaml:"regression_min_r2"`
+}
+
+// Proxy configures the token-counting proxy run by the agent.
+type Proxy struct {
+	Enabled  bool   `yaml:"enabled"`
+	Listen   string `yaml:"listen"`
+	Upstream string `yaml:"upstream"`
+	// PerRequestEnergyHeader adds X-GreenLens-Energy-Joules to responses.
+	PerRequestEnergyHeader bool `yaml:"per_request_energy_header"`
+	// ConsumerHeader names the request header that identifies a consumer,
+	// such as Authorization; its value is kept only as an HMAC.
+	ConsumerHeader      string `yaml:"consumer_header"`
+	ConsumerAliasesFile string `yaml:"consumer_aliases_file"`
 }
 
 // Backend is an inference server declared in the configuration. Its name
@@ -161,7 +177,8 @@ func Defaults() Config {
 	return Config{
 		Agent:       Agent{SampleInterval: Duration(time.Second), HostRoot: "/"},
 		Sources:     Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1}},
-		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50, RegressionMinR2: 0.7},
+		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50, MaxConsumers: 200, RegressionMinR2: 0.7},
+		Proxy:       Proxy{Listen: "127.0.0.1:11435", Upstream: "http://127.0.0.1:11434"},
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}},
 		Retention: Retention{
@@ -181,6 +198,9 @@ const (
 )
 
 var backendName = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,62}$`)
+
+// headerName follows the token rule of RFC 9110.
+var headerName = regexp.MustCompile("^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$")
 
 func kindList() string {
 	var out []string
@@ -371,6 +391,23 @@ func (c Config) Validate() error {
 	}
 	if m := c.Attribution.MaxModelsPerBackend; m < 1 || m > MaxModels {
 		bad("attribution.max_models_per_backend", fmt.Sprintf("must be between 1 and %d", MaxModels))
+	}
+	if m := c.Attribution.MaxConsumers; m < 1 || m > MaxModels {
+		bad("attribution.max_consumers", fmt.Sprintf("must be between 1 and %d", MaxModels))
+	}
+	if p := c.Proxy; p.Enabled {
+		if _, port, err := net.SplitHostPort(p.Listen); err != nil || port == "" || port == "0" {
+			bad("proxy.listen", "must be an address and port, such as 127.0.0.1:11435")
+		}
+		if err := checkEndpoint(p.Upstream); err != nil {
+			bad("proxy.upstream", err.Error())
+		}
+	}
+	if h := c.Proxy.ConsumerHeader; h != "" && !headerName.MatchString(h) {
+		bad("proxy.consumer_header", "must be the name of an HTTP header")
+	}
+	if f := c.Proxy.ConsumerAliasesFile; f != "" && !filepath.IsAbs(f) {
+		bad("proxy.consumer_aliases_file", "must be an absolute path")
 	}
 	if r := c.Attribution.RegressionMinR2; r < 0 || r > 1 {
 		bad("attribution.regression_min_r2", "must be between 0 and 1")

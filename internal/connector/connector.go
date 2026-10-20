@@ -34,6 +34,8 @@ type Counters struct {
 	PromptTokens    float64 `json:"prompt_tokens"`
 	GeneratedTokens float64 `json:"generated_tokens"`
 	Requests        float64 `json:"requests"`
+	// Consumer is set on counters of the proxy that identify consumers.
+	Consumer string `json:"consumer,omitempty"`
 }
 
 // Snapshot is the state of a backend at one moment.
@@ -47,6 +49,9 @@ type Snapshot struct {
 	// TokenCounters is false for engines that do not count tokens, such
 	// as Ollama, whose tokens come from the proxy.
 	TokenCounters bool `json:"token_counters"`
+	// FromZero is true for counters that started at zero when the agent
+	// did, as those of the proxy, so their first reading is all new.
+	FromZero bool `json:"-"`
 }
 
 // ErrNoMetrics means the backend answers but does not expose metrics, such

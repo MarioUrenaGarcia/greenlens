@@ -71,8 +71,9 @@ backends, models and the commands, processes and systemd units you choose:
 - every message is available in English and Spanish, and every error has a
   code, a cause and a fix.
 
-The token-counting proxy, benchmarks and the graphical interface belong to
-the design shown below.
+A proxy counts the tokens of Ollama and other OpenAI-compatible servers and
+can return the energy of each request. Benchmarks and the graphical
+interface belong to the design shown below.
 
 <p align="center">
   <img src="site/static/images/terminal-en.svg" alt="Terminal session with greenlens: help, a command suggestion and an error with its cause and fix" width="820">

@@ -88,7 +88,7 @@ func newReportCmd(a *app) *cobra.Command {
 			if !ok {
 				return help.New(help.GL0005, "flag", "--by", "value", by, "command", cmd.CommandPath())
 			}
-			if group != "" && (group != store.ByBackend && group != store.ByModel || by != "none") {
+			if group != "" && (group != store.ByBackend && group != store.ByModel && group != store.ByConsumer || by != "none") {
 				return help.New(help.GL0005, "flag", "--group", "value", group, "command", cmd.CommandPath())
 			}
 			cfg, _, err := a.config()
@@ -222,6 +222,7 @@ type BackendReportRow struct {
 	Backend         string            `json:"backend"`
 	Kind            string            `json:"kind"`
 	Model           string            `json:"model,omitempty"`
+	Consumer        string            `json:"consumer,omitempty"`
 	EnergyJ         float64           `json:"energy_j"`
 	PromptTokens    int64             `json:"prompt_tokens"`
 	GeneratedTokens int64             `json:"generated_tokens"`
@@ -251,7 +252,7 @@ func backendReport(u api.BackendUsage, f indicators.Factors) BackendReport {
 		rep.Currency = f.Currency
 	}
 	for _, r := range u.Rows {
-		row := BackendReportRow{Backend: r.Backend, Kind: r.Kind, Model: r.Model, EnergyJ: r.EnergyJ,
+		row := BackendReportRow{Backend: r.Backend, Kind: r.Kind, Model: r.Model, Consumer: r.Consumer, EnergyJ: r.EnergyJ,
 			PromptTokens: r.PromptTokens, GeneratedTokens: r.GeneratedTokens, Requests: r.Requests, TokensCounted: r.Counted,
 			Indicators: f.Compute(r.EnergyJ)}
 		if r.GeneratedTokens > 0 {
@@ -265,8 +266,11 @@ func backendReport(u api.BackendUsage, f indicators.Factors) BackendReport {
 func (a *app) writeBackendReport(cmd *cobra.Command, rep BackendReport) error {
 	l := a.l
 	header := []string{l.T("cli.col.backend")}
-	if rep.GroupBy == store.ByModel {
+	switch rep.GroupBy {
+	case store.ByModel:
 		header = append(header, l.T("cli.col.model"))
+	case store.ByConsumer:
+		header = append(header, l.T("cli.col.consumer"))
 	}
 	header = append(header, l.T("cli.col.energy"), "kWh", "CO2e")
 	if rep.Currency != "" {
@@ -276,12 +280,15 @@ func (a *app) writeBackendReport(cmd *cobra.Command, rep BackendReport) error {
 	g := output.Grid{Header: header}
 	for _, r := range rep.Rows {
 		row := []string{r.Backend}
-		if rep.GroupBy == store.ByModel {
-			model := r.Model
-			if model == "" {
-				model = "-"
+		if rep.GroupBy == store.ByModel || rep.GroupBy == store.ByConsumer {
+			v := r.Model
+			if rep.GroupBy == store.ByConsumer {
+				v = r.Consumer
 			}
-			row = append(row, model)
+			if v == "" {
+				v = "-"
+			}
+			row = append(row, v)
 		}
 		row = append(row, units.Energy(r.EnergyJ, a.raw), strconv.FormatFloat(r.Indicators.KWh, 'f', 4, 64), units.CO2e(r.Indicators.CO2eG, a.raw))
 		if rep.Currency != "" {

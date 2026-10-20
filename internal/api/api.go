@@ -120,6 +120,7 @@ type Status struct {
 	Self          Self         `json:"self"`
 	IdlePolicy    string       `json:"idle_policy"`
 	Backends      []Backend    `json:"backends,omitempty"`
+	Proxy         *Proxy       `json:"proxy,omitempty"`
 }
 
 // Usage is the document of PathUsage.
@@ -187,6 +188,16 @@ type Backend struct {
 	DRAMJ   float64 `json:"dram_energy_j"`
 	GPUJ    float64 `json:"gpu_energy_j"`
 	Models  []Model `json:"models,omitempty"`
+}
+
+// Proxy is the state of the token-counting proxy.
+type Proxy struct {
+	Listen         string `json:"listen"`
+	Upstream       string `json:"upstream"`
+	Backend        string `json:"backend"`
+	Requests       uint64 `json:"requests"`
+	EnergyHeader   bool   `json:"energy_header"`
+	ConsumerHeader string `json:"consumer_header,omitempty"`
 }
 
 // Backends lists the backends of the node.

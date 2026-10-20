@@ -195,6 +195,28 @@ greenlens measure --pid 4242 --duration 5m
 greenlens measure --unit ollama.service --duration 10m
 ```
 
+## greenlens proxy
+
+Muestra la dirección, el destino y las peticiones del proxy inverso que el agente ejecuta para servidores que no cuentan tokens, como Ollama. El proxy reenvía las peticiones sin cambios y solo lee los conteos de tokens; actívalo en proxy de la configuración.
+
+**Uso**
+
+```text
+greenlens proxy [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens proxy
+greenlens report --from 24h --group consumer
+```
+
 ## greenlens report
 
 Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d.
@@ -211,7 +233,7 @@ greenlens report [opciones]
 |---|---|---|
 | `--by` | Agrupa por none, hour o day | `none` |
 | `--from` | Inicio del periodo | `24h` |
-| `--group` | Reporta por backend o model en lugar de por dominio |  |
+| `--group` | Reporta por backend, model o consumer en lugar de por dominio |  |
 | `--to` | Fin del periodo | `now` |
 
 **Ejemplos**

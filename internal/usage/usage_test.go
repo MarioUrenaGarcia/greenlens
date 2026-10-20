@@ -125,6 +125,16 @@ func TestSplitWithoutTokens(t *testing.T) {
 	}
 }
 
+func TestCountersFromZero(t *testing.T) {
+	s := NewSplitter(50)
+	rd := reading(connector.Counters{Model: "m", Consumer: "team-a", GeneratedTokens: 7})
+	rd.Snapshot.FromZero = true
+	rows := s.Split(cut(t0, map[string]Energy{"ollama": {CPUJ: 3, Method: MethodCPUShare}}), map[string]backends.Reading{"ollama": rd})
+	if len(rows) != 1 || rows[0].Consumer != "team-a" || *rows[0].GeneratedTokens != 7 {
+		t.Fatalf("%+v", rows)
+	}
+}
+
 func TestModelLimit(t *testing.T) {
 	s := NewSplitter(2)
 	prev := reading(connector.Counters{Model: "a"}, connector.Counters{Model: "b"}, connector.Counters{Model: "c"}, connector.Counters{Model: "d"})

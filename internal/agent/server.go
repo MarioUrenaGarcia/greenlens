@@ -109,7 +109,7 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 	}
 	switch by := q.Get("group_by"); by {
 	case "":
-	case store.ByBackend, store.ByModel:
+	case store.ByBackend, store.ByModel, store.ByConsumer:
 		rows, res, err := a.st.Usage(r.Context(), from, to, by, time.Now(), a.retention())
 		if err != nil {
 			a.log.Error("usage query failed", "error", err)
@@ -122,7 +122,7 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, api.BackendUsage{SchemaVersion: api.SchemaVersion, From: from, To: to, GroupBy: by, Resolution: res, Rows: rows})
 		return
 	default:
-		writeError(w, http.StatusBadRequest, "group_by must be backend or model")
+		writeError(w, http.StatusBadRequest, "group_by must be backend, model or consumer")
 		return
 	}
 	var bucket time.Duration
@@ -192,6 +192,7 @@ func validCalibration(c calibrate.Result) error {
 // Status assembles the status document.
 func (a *Agent) Status() api.Status {
 	bs := a.Backends().Backends
+	px := a.proxyStatus()
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	st := api.Status{
@@ -204,6 +205,7 @@ func (a *Agent) Status() api.Status {
 		Estimated:     a.sel.Estimated,
 		IdlePolicy:    a.cfg.Attribution.IdlePolicy,
 		Backends:      bs,
+		Proxy:         px,
 		Self:          api.Self{EnergyJ: a.selfJ, CPUSeconds: float64(a.selfTicks) / 100, RSSBytes: rss()},
 	}
 	quality := map[source.Domain]source.Quality{}

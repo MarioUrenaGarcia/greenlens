@@ -35,6 +35,7 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 |---|---|---|---|---|
 | `attribution.idle_policy` | `GREENLENS_ATTRIBUTION_IDLE_POLICY` | string | `dynamic` | Cómo se atribuye la energía de reposo: dynamic, proportional, full o wall. |
 | `attribution.max_models_per_backend` | `GREENLENS_ATTRIBUTION_MAX_MODELS_PER_BACKEND` | integer | `50` | Máximo de modelos por backend; la energía de los demás se reporta junta como 'other'. |
+| `attribution.max_consumers` | `GREENLENS_ATTRIBUTION_MAX_CONSUMERS` | integer | `200` | Máximo de consumidores que sigue el proxy; los demás se reportan juntos como 'other'. |
 | `attribution.regression_min_r2` | `GREENLENS_ATTRIBUTION_REGRESSION_MIN_R2` | number | `0.7` | R2 mínimo con el que se reporta la energía por token de prompt y por token generado, ajustada sobre las últimas 24 horas. |
 
 ## backends
@@ -53,6 +54,17 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 |---|---|---|---|---|
 | `discovery.enabled` | `GREENLENS_DISCOVERY_ENABLED` | bool | `true` | Busca servidores de inferencia conocidos entre los procesos en ejecución. |
 | `discovery.interval` | `GREENLENS_DISCOVERY_INTERVAL` | duration | `10s` | Cada cuánto se revisan los procesos y los puertos en escucha, de 1s a 10m. |
+
+## proxy
+
+| Clave | Variable de entorno | Tipo | Por defecto | Descripción |
+|---|---|---|---|---|
+| `proxy.enabled` | `GREENLENS_PROXY_ENABLED` | bool | `false` | Ejecuta el proxy. |
+| `proxy.listen` | `GREENLENS_PROXY_LISTEN` | string | `127.0.0.1:11435` | Dirección y puerto en que escucha el proxy. |
+| `proxy.upstream` | `GREENLENS_PROXY_UPSTREAM` | string | `http://127.0.0.1:11434` | URL base del servidor al que el proxy reenvía. |
+| `proxy.per_request_energy_header` | `GREENLENS_PROXY_PER_REQUEST_ENERGY_HEADER` | bool | `false` | Agrega X-GreenLens-Energy-Joules a cada respuesta, como trailer en las transmitidas por partes. |
+| `proxy.consumer_header` | `GREENLENS_PROXY_CONSUMER_HEADER` | string | empty | Cabecera de la petición que distingue a los consumidores, como Authorization; su valor solo se guarda como HMAC. |
+| `proxy.consumer_aliases_file` | `GREENLENS_PROXY_CONSUMER_ALIASES_FILE` | string | empty | Archivo YAML que asocia nombres de consumidores con el SHA-256 de valores de la cabecera, escritos como sha256:&lt;hex&gt;. |
 
 ## indicators
 

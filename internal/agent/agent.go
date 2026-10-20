@@ -35,6 +35,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/procfs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/proctrack"
+	"github.com/MarioUrenaGarcia/greenlens/internal/proxy"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sampler"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sandbox"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -95,6 +96,10 @@ type Agent struct {
 	// the splitter only by the usage worker.
 	tracker    *proctrack.Tracker
 	drm        *drmfdinfo.Reader
+	meter      *proxy.Meter
+	proxy      *proxy.Proxy
+	proxySrv   *http.Server
+	consumers  *proxy.Consumers
 	acc        *usage.Accountant
 	split      *usage.Splitter
 	reader     *backends.Reader
@@ -285,6 +290,9 @@ func (a *Agent) confine() {
 	}
 	root := a.cfg.Agent.HostRoot
 	ro := []string{filepath.Join(root, "sys"), filepath.Join(root, "proc")}
+	if f := a.cfg.Proxy.ConsumerAliasesFile; f != "" {
+		ro = append(ro, filepath.Dir(f))
+	}
 	if root != "/" {
 		ro = append(ro, "/proc")
 	}
@@ -306,6 +314,11 @@ func (a *Agent) confine() {
 func (a *Agent) serve(ctx context.Context) error {
 	l, err := a.listen(ctx)
 	if err != nil {
+		_ = a.close()
+		return err
+	}
+	if err := a.startProxy(ctx); err != nil {
+		_ = l.Close()
 		_ = a.close()
 		return err
 	}
@@ -361,6 +374,11 @@ func (a *Agent) serve(ctx context.Context) error {
 	}
 	if serr := srv.Shutdown(shutdown); serr != nil {
 		a.log.Warn("closing the API", "error", serr)
+	}
+	if a.proxySrv != nil {
+		if perr := a.proxySrv.Shutdown(shutdown); perr != nil {
+			a.log.Warn("closing the proxy", "error", perr)
+		}
 	}
 	if rerr := a.st.Rollup(shutdown, time.Now().Add(time.Minute)); rerr != nil {
 		a.log.Warn("final rollup", "error", rerr)
@@ -559,6 +577,23 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 	if err != nil {
 		a.log.Error("configuration not reloaded", "error", err)
 		return old.Agent.SampleInterval.D()
+	}
+	if cfg.Proxy != old.Proxy {
+		if a.consumers != nil && cfg.Proxy.ConsumerAliasesFile == old.Proxy.ConsumerAliasesFile && cfg.Proxy.ConsumerAliasesFile != "" {
+			// Only the aliases file can change without a restart, and it
+			// is read below in any case.
+			cfg.Proxy = old.Proxy
+		} else {
+			a.log.Warn("proxy settings change only after a restart")
+			cfg.Proxy = old.Proxy
+		}
+	}
+	if a.consumers != nil && cfg.Proxy.ConsumerAliasesFile != "" {
+		if aliases, err := proxy.LoadAliases(cfg.Proxy.ConsumerAliasesFile); err != nil {
+			a.log.Error("consumer aliases not reloaded", "error", err)
+		} else {
+			a.consumers.SetAliases(aliases)
+		}
 	}
 	if cfg.Agent.DataDir != old.Agent.DataDir || cfg.Agent.Socket != old.Agent.Socket || cfg.Agent.HostRoot != old.Agent.HostRoot {
 		a.log.Warn("agent.data_dir, agent.socket and agent.host_root change only after a restart")

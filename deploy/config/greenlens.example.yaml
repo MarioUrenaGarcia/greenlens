@@ -47,6 +47,9 @@ attribution:
   # Most models tracked per backend; the energy of the others is reported
   # together as "other".
   max_models_per_backend: 50
+  # Most consumers tracked by the proxy; the others are reported together
+  # as "other".
+  max_consumers: 200
   # Lowest R2 at which the energy of a prompt token and of a generated
   # token, fitted over the last 24 hours, is reported.
   regression_min_r2: 0.7
@@ -68,6 +71,23 @@ discovery:
   enabled: true
   # How often processes and listening ports are scanned, from 1s to 10m.
   interval: 10s
+
+# A reverse proxy for servers that do not count tokens, such as Ollama and
+# other OpenAI-compatible servers: it forwards requests unchanged, reads only
+# the token counts of the responses and never stores or logs their content.
+proxy:
+  enabled: false
+  listen: 127.0.0.1:11435
+  upstream: http://127.0.0.1:11434
+  # Add X-GreenLens-Energy-Joules to each response, as a trailer for
+  # streamed ones.
+  per_request_energy_header: false
+  # Request header that tells consumers apart, such as Authorization. Its
+  # value is kept only as an HMAC with a salt local to this machine.
+  consumer_header: ""
+  # YAML file mapping names to the SHA-256 of header values, such as
+  # "team-a: sha256:<hex>", to report consumers by name.
+  consumer_aliases_file: ""
 
 indicators:
   # Grid emission factor in gCO2e/kWh. Empty: FESEN 2024, 444 gCO2e/kWh.

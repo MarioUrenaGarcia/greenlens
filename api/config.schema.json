@@ -39,6 +39,10 @@
           ],
           "type": "string"
         },
+        "max_consumers": {
+          "description": "Most consumers tracked by the proxy; the others are reported together as 'other'.",
+          "type": "integer"
+        },
         "max_models_per_backend": {
           "description": "Most models tracked per backend; the energy of the others is reported together as 'other'.",
           "type": "integer"
@@ -169,6 +173,36 @@
             "warn",
             "error"
           ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "proxy": {
+      "additionalProperties": false,
+      "properties": {
+        "consumer_aliases_file": {
+          "description": "YAML file mapping consumer names to the SHA-256 of header values, written as sha256:\u003chex\u003e.",
+          "type": "string"
+        },
+        "consumer_header": {
+          "description": "Request header that tells consumers apart, such as Authorization; its value is kept only as an HMAC.",
+          "type": "string"
+        },
+        "enabled": {
+          "description": "Run the proxy.",
+          "type": "boolean"
+        },
+        "listen": {
+          "description": "Address and port the proxy listens on.",
+          "type": "string"
+        },
+        "per_request_energy_header": {
+          "description": "Add X-GreenLens-Energy-Joules to each response, as a trailer for streamed ones.",
+          "type": "boolean"
+        },
+        "upstream": {
+          "description": "Base URL of the server the proxy forwards to.",
           "type": "string"
         }
       },
