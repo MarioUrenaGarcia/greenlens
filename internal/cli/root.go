@@ -15,7 +15,7 @@ func newRoot(l *i18n.Localizer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "greenlens",
 		Short:         l.T("cli.root.short"),
-		Long:          l.T("cli.root.long"),
+		Long:          wrap(l.T("cli.root.long"), helpWidth),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		// Without Args, cobra reports unknown commands with its own English
@@ -48,7 +48,7 @@ func newHelpCmd(l *i18n.Localizer) *cobra.Command {
 	return &cobra.Command{
 		Use:   "help [" + l.T("cli.usage.command_placeholder") + "]",
 		Short: l.T("cli.help_cmd.short"),
-		Long:  l.T("cli.help_cmd.long"),
+		Long:  wrap(l.T("cli.help_cmd.long"), helpWidth),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root := cmd.Root()
 			target, rest, err := root.Find(args)
@@ -87,8 +87,8 @@ func usageTemplate(l *i18n.Localizer) string {
 	b.WriteString("{{if .HasExample}}\n\n" + l.T("cli.usage.examples") + "\n{{.Example}}{{end}}")
 	b.WriteString("{{if .HasAvailableSubCommands}}\n\n" + l.T("cli.usage.commands"))
 	b.WriteString("{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name \"help\"))}}\n  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}")
-	b.WriteString("{{if .HasAvailableLocalFlags}}\n\n" + l.T("cli.usage.flags") + "\n{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}")
-	b.WriteString("{{if .HasAvailableInheritedFlags}}\n\n" + l.T("cli.usage.global_flags") + "\n{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}")
+	b.WriteString("{{if .HasAvailableLocalFlags}}\n\n" + l.T("cli.usage.flags") + "\n{{.LocalFlags.FlagUsagesWrapped 80 | trimTrailingWhitespaces}}{{end}}")
+	b.WriteString("{{if .HasAvailableInheritedFlags}}\n\n" + l.T("cli.usage.global_flags") + "\n{{.InheritedFlags.FlagUsagesWrapped 80 | trimTrailingWhitespaces}}{{end}}")
 	b.WriteString("{{if .HasAvailableSubCommands}}\n\n" + l.T("cli.usage.more", "command", "{{.CommandPath}}") + "{{end}}\n")
 	return b.String()
 }

@@ -18,7 +18,7 @@ func newVersionCmd(l *i18n.Localizer) *cobra.Command {
 	return &cobra.Command{
 		Use:     "version",
 		Short:   l.T("cli.version.short"),
-		Long:    l.T("cli.version.long"),
+		Long:    wrap(l.T("cli.version.long"), helpWidth),
 		Example: "  greenlens version\n  greenlens version --lang es",
 		Args:    noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
