@@ -88,8 +88,8 @@ cambiar. La interfaz gráfica forma parte del diseño que se muestra abajo.
 
 - **Local primero.** Cada valor se calcula y se guarda en tu equipo.
 - **Sin telemetría.** Sin conexiones salientes por defecto.
-- **Privado.** El contenido de prompts y respuestas nunca se lee, registra ni
-  guarda.
+- **Privado.** Los prompts y las respuestas nunca se guardan ni se registran;
+  el proxy opcional solo lee sus conteos de tokens.
 - **Mínimo privilegio.** El agente corre sin root y limita su propio acceso a
   archivos con Landlock.
 - **Honesto.** Cada número viene con su unidad, método y calidad.

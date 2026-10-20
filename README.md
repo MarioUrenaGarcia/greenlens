@@ -88,8 +88,8 @@ graphical interface belongs to the design shown below.
 
 - **Local first.** Every value is computed and stored on your machine.
 - **No telemetry.** No outbound connections by default.
-- **Private.** The content of prompts and responses is never read, logged or
-  stored.
+- **Private.** Prompts and responses are never stored or logged; the optional
+  proxy reads only their token counts.
 - **Least privilege.** The agent runs without root and confines its own file
   access with Landlock.
 - **Honest.** Every number comes with its unit, method and quality.

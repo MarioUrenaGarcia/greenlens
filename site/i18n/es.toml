@@ -7,7 +7,7 @@ other = "Saltar al contenido"
 [language]
 other = "Idioma"
 [status]
-other = "Desarrollo temprano. La versión actual ofrece la base de la línea de comandos; la medición de energía está en construcción."
+other = "GreenLens mide la energía de CPU, memoria y GPU, la atribuye a backends de inferencia, modelos, consumidores y procesos, y hace benchmarks de modelos, desde la línea de comandos y una API local."
 [cta_start]
 other = "Empezar"
 [cta_repo]
@@ -25,7 +25,7 @@ other = "Reparte la energía del nodo entre backends de inferencia, modelos y eq
 [f_report_title]
 other = "Reporta"
 [f_report_body]
-other = "Convierte la energía en kWh, gCO2e, costo y la Software Carbon Intensity (ISO/IEC 21031:2024) por cada mil tokens."
+other = "Convierte la energía en kWh, gCO2e y costo por backend, modelo y token generado, y proyecta el ahorro de cambiar de modelo."
 [principles_title]
 other = "Principios de diseño"
 [p_local]
@@ -33,7 +33,7 @@ other = "Local primero: cada valor se calcula y se guarda en tu equipo."
 [p_telemetry]
 other = "Sin telemetría ni conexiones salientes por defecto."
 [p_privacy]
-other = "El contenido de prompts y respuestas nunca se lee, registra ni guarda."
+other = "Los prompts y las respuestas nunca se guardan ni se registran; el proxy solo lee sus conteos de tokens."
 [p_root]
 other = "El agente corre sin root y limita su propio acceso a archivos con Landlock."
 [p_honest]

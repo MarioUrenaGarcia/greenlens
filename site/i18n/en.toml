@@ -7,7 +7,7 @@ other = "Skip to content"
 [language]
 other = "Language"
 [status]
-other = "Early development. The current release provides the command line foundation; energy measurement is being built."
+other = "GreenLens measures the energy of CPUs, memory and GPUs, attributes it to inference backends, models, consumers and processes, and benchmarks models, from the command line and a local API."
 [cta_start]
 other = "Get started"
 [cta_repo]
@@ -25,7 +25,7 @@ other = "Splits the energy of the node between inference backends, models and te
 [f_report_title]
 other = "Report"
 [f_report_body]
-other = "Turns energy into kWh, gCO2e, cost and the Software Carbon Intensity (ISO/IEC 21031:2024) per thousand tokens."
+other = "Turns energy into kWh, gCO2e and cost per backend, model and generated token, and projects the savings of switching models."
 [principles_title]
 other = "Design principles"
 [p_local]
@@ -33,7 +33,7 @@ other = "Local first: every value is computed and stored on your machine."
 [p_telemetry]
 other = "No telemetry and no outbound connections by default."
 [p_privacy]
-other = "The content of prompts and responses is never read, logged or stored."
+other = "Prompts and responses are never stored or logged; the proxy reads only their token counts."
 [p_root]
 other = "The agent runs without root and confines its own file access with Landlock."
 [p_honest]
