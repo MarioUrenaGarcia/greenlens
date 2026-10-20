@@ -1,0 +1,7 @@
+# systemd-sysusers configuration: the service account of the agent, the
+# group that may query its socket, and the group that may read the energy
+# sensors.
+g greenlens -
+g greenlens-power -
+u greenlens -:greenlens "GreenLens agent" - -
+m greenlens greenlens-power

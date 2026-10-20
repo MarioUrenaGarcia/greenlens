@@ -1,0 +1,51 @@
+[Unit]
+Description=GreenLens energy observability agent
+Documentation=https://mariourenagarcia.github.io/greenlens/
+After=local-fs.target
+
+[Service]
+User=greenlens
+Group=greenlens
+SupplementaryGroups=greenlens-power
+ExecStart=/usr/bin/greenlens agent --config /etc/greenlens/greenlens.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+RuntimeDirectory=greenlens
+RuntimeDirectoryMode=0750
+StateDirectory=greenlens
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+# Energy is read through /sys; the IPMI and GPU drop-ins open the devices
+# they need.
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+RemoveIPC=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# GreenLens makes no outbound connections by default. Backends, meters or a
+# fleet hub on the internal network need the network drop-in.
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+Restart=on-failure
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
