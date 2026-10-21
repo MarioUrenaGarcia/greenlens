@@ -1,59 +1,226 @@
 {{ define "main" }}
 {{- $lang := site.Language.Lang }}
 <section class="hero">
-  <img class="hero-art" src="{{ printf "images/banner-%s.svg" $lang | relURL }}" alt="{{ site.Title }}: {{ .Description }}" width="1200" height="420">
-  <p class="status glass">{{ i18n "status" }}</p>
+  <h1>{{ i18n "hero_title" }}</h1>
+  <p class="lede">{{ i18n "hero_lede" }}</p>
   <p class="cta">
     {{- with site.GetPage "/docs/tutorials/first-steps" }}
     <a class="button primary" href="{{ .RelPermalink }}">{{ i18n "cta_start" }}</a>
     {{- end }}
     <a class="button" href="{{ site.Params.repo }}">{{ i18n "cta_repo" }}</a>
   </p>
+
+  <figure class="meter glass" aria-labelledby="meter-note">
+    <div class="meter-plot">
+      <div class="meter-head">
+        <div>
+          <p class="meter-label">{{ i18n "meter_node" }} <span class="q q-measured">{{ i18n "q_measured" }}</span></p>
+          <p class="meter-watts"><span data-meter="node">212.4</span><small>W</small></p>
+        </div>
+        <p class="meter-label">{{ i18n "meter_window" }}</p>
+      </div>
+      <canvas class="meter-canvas" aria-hidden="true"></canvas>
+      <p class="meter-axis" aria-hidden="true"><span>-90 s</span><span>-60 s</span><span>-30 s</span><span>{{ i18n "meter_now" }}</span></p>
+      <figcaption class="note" id="meter-note">{{ i18n "meter_note" }}</figcaption>
+    </div>
+    <div class="meter-side">
+      <h2 class="meter-label">{{ i18n "meter_split" }}</h2>
+      <ul class="meter-rows">
+        {{- range slice
+          (dict "key" "vllm" "name" "vLLM" "model" "mistral-7b" "w" "78.2")
+          (dict "key" "ollama" "name" "Ollama" "model" "llama3.2:3b" "w" "55.9")
+          (dict "key" "llama" "name" "llama.cpp" "model" "qwen2.5:7b" "w" "39.8")
+          (dict "key" "idle" "name" (i18n "meter_idle") "model" "" "w" "38.5") }}
+        <li class="meter-row">
+          <span class="swatch swatch-{{ .key }}"></span>
+          <span>{{ .name }}</span>
+          <span class="mono"><span data-meter="{{ .key }}">{{ .w }}</span> W</span>
+          <span class="meter-sub">{{ with .model }}{{ . }}, {{ i18n "q_attributed" }}{{ else }}{{ i18n "q_measured" }}{{ end }}</span>
+        </li>
+        {{- end }}
+      </ul>
+      <dl class="meter-totals">
+        <div><dt>{{ i18n "meter_energy" }}</dt><dd class="mono"><span data-meter="kj">19.10</span> kJ</dd></div>
+        <div><dt>{{ i18n "meter_emissions" }} <span class="q q-estimated">{{ i18n "q_estimated" }}</span></dt><dd class="mono"><span data-meter="g">2.356</span> gCO2e</dd></div>
+        <div><dt>{{ i18n "meter_factor" }}</dt><dd class="mono">444 gCO2e/kWh</dd></div>
+      </dl>
+    </div>
+  </figure>
 </section>
 
 <section class="block">
-  <h2>{{ i18n "features_title" }}</h2>
-  <div class="cards">
-    {{- range slice "measure" "attribute" "report" }}
-    <article class="card glass">
-      <img src="{{ printf "images/icons/%s.svg" . | relURL }}" alt="" width="48" height="48">
-      <h3>{{ i18n (printf "f_%s_title" .) }}</h3>
-      <p>{{ i18n (printf "f_%s_body" .) }}</p>
-    </article>
-    {{- end }}
+  <div class="intro">
+    <h2>{{ i18n "flow_title" }}</h2>
+    <p>{{ i18n "flow_body" }}</p>
   </div>
+  <ol class="flow">
+    {{- range slice
+      (dict "key" "measure" "chips" (slice "RAPL" "perf_event" "hwmon" "NVML" "amdgpu" "xe" "i915"))
+      (dict "key" "attribute" "chips" (slice "Ollama" "llama.cpp" "vLLM" "TGI" "SGLang" "LocalAI"))
+      (dict "key" "report" "chips" (slice "CLI" "TUI" "GUI" "Prometheus" "OpenTelemetry" "CSV" "JSON")) }}
+    <li>
+      <h3>{{ i18n (printf "f_%s_title" .key) }}</h3>
+      <p>{{ i18n (printf "f_%s_body" .key) }}</p>
+      <ul class="chips">{{ range .chips }}<li>{{ . }}</li>{{ end }}</ul>
+    </li>
+    {{- end }}
+  </ol>
+  <img class="wide" src="{{ printf "images/architecture-%s.svg" $lang | relURL }}" alt="{{ i18n "arch_title" }}" width="1200" height="600" loading="lazy">
 </section>
 
 <section class="block">
-  <h2>{{ i18n "arch_title" }}</h2>
-  <img class="wide" src="{{ printf "images/architecture-%s.svg" $lang | relURL }}" alt="{{ i18n "arch_title" }}" width="1200" height="600" loading="lazy">
+  <div class="intro">
+    <h2>{{ i18n "quality_title" }}</h2>
+    <p>{{ i18n "quality_body" }}</p>
+  </div>
+  <div class="table-wrap glass">
+    <table class="quality">
+      <thead><tr><th>{{ i18n "quality_value" }}</th><th>{{ i18n "quality_example" }}</th><th>{{ i18n "quality_level" }}</th></tr></thead>
+      <tbody>
+        {{- range slice
+          (dict "key" "cpu" "value" "1284.6 J" "q" "measured")
+          (dict "key" "model" "value" "412.3 J" "q" "attributed")
+          (dict "key" "tokens" "value" "96.1 J" "q" "attributed")
+          (dict "key" "co2" "value" "0.05 gCO2e" "q" "estimated") }}
+        <tr>
+          <td>{{ i18n (printf "row_%s" .key) }}<span class="how">{{ i18n (printf "row_%s_how" .key) }}</span></td>
+          <td class="mono">{{ .value }}</td>
+          <td><span class="q q-{{ .q }}">{{ i18n (printf "q_%s" .q) }}</span></td>
+        </tr>
+        {{- end }}
+      </tbody>
+    </table>
+  </div>
+  <p class="note">{{ i18n "quality_note" }}</p>
+</section>
+
+<section class="block">
+  <div class="intro">
+    <h2>{{ i18n "demo_title" }}</h2>
+    <p>{{ i18n "demo_body" }}</p>
+  </div>
+  <img class="wide terminal" src="{{ printf "images/terminal-%s.svg" $lang | relURL }}" alt="{{ i18n "demo_alt" }}" loading="lazy">
 </section>
 
 <section class="block split">
   <div>
     <h2>{{ i18n "principles_title" }}</h2>
     <ul class="principles">
-      {{- range slice "local" "telemetry" "privacy" "root" "honest" "core" }}
-      <li>{{ i18n (printf "p_%s" .) }}</li>
+      {{- range slice "local" "telemetry" "privacy" "root" "honest" }}
+      <li><b>{{ i18n (printf "p_%s_title" .) }}</b><span>{{ i18n (printf "p_%s" .) }}</span></li>
       {{- end }}
     </ul>
   </div>
   <div>
     <h2>{{ i18n "quick_title" }}</h2>
-    <pre class="glass"><code>git clone {{ site.Params.repo }}.git
+    <pre><code>git clone {{ site.Params.repo }}.git
 cd greenlens
 make build
-bin/greenlens --help</code></pre>
+bin/greenlens doctor
+bin/greenlens agent</code></pre>
+    <p class="note">{{ i18n "quick_req" }}</p>
   </div>
-</section>
-
-<section class="block">
-  <h2>{{ i18n "demo_title" }}</h2>
-  <img class="wide terminal" src="{{ printf "images/terminal-%s.svg" $lang | relURL }}" alt="{{ i18n "demo_title" }}" loading="lazy">
 </section>
 
 <section class="block">
   <h2>{{ i18n "license_title" }}</h2>
   <p class="lead">{{ i18n "license_body" }}</p>
 </section>
+
+<script>
+// Example power trace: one sample per second, split by backend. The values
+// are simulated in the browser; the agent reads real ones from the sensors.
+(function () {
+  var canvas = document.querySelector(".meter-canvas");
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext("2d");
+  var N = 90, YMAX = 280, FACTOR = 444, phase = 0;
+  var series = [
+    { key: "idle", color: "--meter-idle", base: 38, amp: 1.5 },
+    { key: "llama", color: "--meter-llama", base: 34, amp: 14 },
+    { key: "ollama", color: "--meter-ollama", base: 52, amp: 30 },
+    { key: "vllm", color: "--meter-vllm", base: 74, amp: 45 }
+  ];
+  var data = series.map(function () { return []; });
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function sample() {
+    phase += 1;
+    series.forEach(function (s, i) {
+      var v;
+      if (s.key === "idle") {
+        v = s.base + Math.sin(phase / 9) * s.amp + Math.random();
+      } else {
+        var busy = Math.sin(phase / (7 + i * 3) + i * 1.7) > -0.2 ? 1 : 0.15;
+        v = Math.max(0, busy * (s.base + Math.sin(phase / (3 + i)) * s.amp * 0.4 + (Math.random() - 0.5) * s.amp * 0.5));
+      }
+      data[i].push(v);
+      if (data[i].length > N) data[i].shift();
+    });
+  }
+  function draw() {
+    var dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = css("--glass-border");
+    ctx.fillStyle = css("--ink-muted");
+    ctx.lineWidth = 1;
+    ctx.font = "11px " + css("--font");
+    [100, 200].forEach(function (y) {
+      var py = h - (y / YMAX) * h;
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke();
+      ctx.fillText(y + " W", 4, py - 4);
+    });
+    function x(i) { return (i / (N - 1)) * w; }
+    function y(v) { return h - (v / YMAX) * h; }
+    var top = new Array(N).fill(0);
+    series.forEach(function (s, si) {
+      var bottom = top.slice(), i;
+      for (i = 0; i < N; i++) top[i] += data[si][i];
+      ctx.beginPath();
+      for (i = 0; i < N; i++) ctx[i ? "lineTo" : "moveTo"](x(i), y(top[i]));
+      for (i = N - 1; i >= 0; i--) ctx.lineTo(x(i), y(bottom[i]));
+      ctx.closePath();
+      ctx.fillStyle = css(s.color);
+      ctx.fill();
+    });
+    ctx.beginPath();
+    for (var i = 0; i < N; i++) ctx[i ? "lineTo" : "moveTo"](x(i), y(top[i]));
+    ctx.strokeStyle = css("--ink");
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(w - 4, y(top[N - 1]), 4, 0, Math.PI * 2);
+    ctx.fillStyle = css("--ink");
+    ctx.fill();
+  }
+  function set(key, text) {
+    var el = document.querySelector('[data-meter="' + key + '"]');
+    if (el) el.textContent = text;
+  }
+  function readout() {
+    var node = 0, joules = 0;
+    series.forEach(function (s, i) {
+      var w = data[i][N - 1];
+      node += w;
+      set(s.key, w.toFixed(1));
+      joules += data[i].reduce(function (a, b) { return a + b; }, 0);
+    });
+    set("node", node.toFixed(1));
+    set("kj", (joules / 1000).toFixed(2));
+    set("g", (joules / 3.6e6 * FACTOR).toFixed(3));
+  }
+  for (var k = 0; k < N; k++) sample();
+  draw();
+  readout();
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setInterval(function () { sample(); draw(); readout(); }, 1000);
+  }
+  window.addEventListener("resize", draw);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+})();
+</script>
 {{ end }}
