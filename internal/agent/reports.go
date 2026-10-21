@@ -4,6 +4,7 @@
 package agent
 
 import (
+	"cmp"
 	"context"
 	"encoding/csv"
 	"net/http"
@@ -125,23 +126,40 @@ func (a *Agent) sciReport(ctx context.Context, from, to time.Time, groupBy, unit
 	f, e := a.cfg.Factors(), a.cfg.EmbodiedCarbon()
 	a.mu.RUnlock()
 	now, ret := time.Now(), a.retention()
-	node, err := a.nodeTotals(ctx, f, from, to, now, ret)
-	if err != nil {
+	// The energy of the node and the use of the groups are independent
+	// queries; the database answers them at once.
+	var node report.Node
+	var nodeErr error
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		node, nodeErr = a.nodeTotals(ctx, f, from, to, now, ret)
+	}()
+	// Every grouping splits all the usage, so the rows of the groups also
+	// give the counts of the node.
+	var groups, totals []store.UsageEnergy
+	var err error
+	if groupBy != "" {
+		groups, err = a.usageRows(ctx, f, from, to, now, groupBy, ret)
+		totals = groups
+	} else {
+		totals, _, err = a.st.Usage(ctx, from, to, store.ByBackend, 0, now, ret)
+	}
+	<-done
+	if err = cmp.Or(nodeErr, err); err != nil {
 		return report.SCIReport{}, err
 	}
-	backends, _, err := a.st.Usage(ctx, from, to, store.ByBackend, 0, now, ret)
-	if err != nil {
-		return report.SCIReport{}, err
-	}
-	for _, b := range backends {
-		node.GeneratedTokens += b.GeneratedTokens
-		node.Requests += b.Requests
+	for _, g := range totals {
+		node.GeneratedTokens += g.GeneratedTokens
+		node.Requests += g.Requests
 	}
 	consumers := map[string]int64{}
 	if unit == indicators.UnitConsumer {
-		rows, _, err := a.st.Usage(ctx, from, to, store.ByConsumer, 0, now, ret)
-		if err != nil {
-			return report.SCIReport{}, err
+		rows := groups
+		if groupBy != store.ByConsumer {
+			if rows, _, err = a.st.Usage(ctx, from, to, store.ByConsumer, 0, now, ret); err != nil {
+				return report.SCIReport{}, err
+			}
 		}
 		seen := map[string]bool{}
 		for _, r := range rows {
@@ -152,12 +170,6 @@ func (a *Agent) sciReport(ctx context.Context, from, to time.Time, groupBy, unit
 			seen[r.Consumer] = true
 		}
 		node.Consumers = int64(len(seen))
-	}
-	var groups []store.UsageEnergy
-	if groupBy != "" {
-		if groups, err = a.usageRows(ctx, f, from, to, now, groupBy, ret); err != nil {
-			return report.SCIReport{}, err
-		}
 	}
 	return report.BuildSCI(report.SCIInput{
 		From: from, To: to, GroupBy: groupBy, Unit: unit, Factors: apiFactors(f), Embodied: e,

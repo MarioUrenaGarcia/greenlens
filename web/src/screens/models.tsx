@@ -38,7 +38,10 @@ function useUsage(period: Period, bucket?: string) {
   const [error, setError] = useState<unknown>(null);
   useEffect(() => {
     const to = new Date();
-    const from = new Date(to.getTime() - periodMs[period]);
+    let from = new Date(to.getTime() - periodMs[period]);
+    // Buckets that start on the hour are read from the hourly rollups,
+    // which keeps long periods fast.
+    if (bucket) from = new Date(Math.floor(from.getTime() / 36e5) * 36e5);
     let stale = false;
     setDoc(null);
     api

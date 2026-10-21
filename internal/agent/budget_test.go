@@ -150,18 +150,21 @@ func TestBudgetOfThirtyDayQueries(t *testing.T) {
 	}
 	from := now.Add(-30 * 24 * time.Hour).UTC().Format(time.RFC3339)
 	to := now.UTC().Format(time.RFC3339)
-	// Hourly buckets read hourly rollups when the period starts on the
-	// hour, as the reports, which start at midnight, do.
+	// Periods split in buckets start on the hour, as the interface sends
+	// them: the reports at midnight and the history of a model at the
+	// hour, so every bucket reads hourly rollups.
 	hour := now.Add(-30 * 24 * time.Hour).Truncate(time.Hour).UTC().Format(time.RFC3339)
 	// The queries of 30 days the interface makes: the summary and the
 	// reports by day or hour, and the models, backends and consumers.
 	queries := []url.Values{
 		{"from": {from}, "to": {to}},
-		{"from": {from}, "to": {to}, "bucket": {"24h"}},
+		{"from": {hour}, "to": {to}, "bucket": {"24h"}},
 		{"from": {hour}, "to": {to}, "bucket": {"1h"}},
 		{"from": {from}, "to": {to}, "group_by": {"model"}},
-		{"from": {from}, "to": {to}, "group_by": {"backend"}, "bucket": {"24h"}},
+		{"from": {hour}, "to": {to}, "group_by": {"model"}, "bucket": {"24h"}},
+		{"from": {hour}, "to": {to}, "group_by": {"backend"}, "bucket": {"24h"}},
 		{"from": {from}, "to": {to}, "group_by": {"consumer"}},
+		{"from": {from}, "to": {to}, "kind": {"sci"}, "group_by": {"model"}},
 	}
 	client := &http.Client{Timeout: 10 * time.Second}
 	// Requests are spaced below the rate limit of one address.
@@ -172,7 +175,11 @@ func TestBudgetOfThirtyDayQueries(t *testing.T) {
 		var res string
 		for i := range 61 {
 			<-pace.C
-			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+listen+api.PathUsage+"?"+q.Encode(), nil)
+			path := api.PathUsage
+			if q.Has("kind") {
+				path = api.PathReports
+			}
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+listen+path+"?"+q.Encode(), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -202,7 +209,7 @@ func TestBudgetOfThirtyDayQueries(t *testing.T) {
 		}
 		slices.Sort(took)
 		p99 := took[len(took)*99/100-1]
-		t.Logf("bucket %-3s group %-8s resolution %s: p50 %s, p99 %s", q.Get("bucket"), q.Get("group_by"), res,
+		t.Logf("%-5s bucket %-3s group %-8s resolution %s: p50 %s, p99 %s", q.Get("kind"), q.Get("bucket"), q.Get("group_by"), res,
 			took[len(took)/2].Round(time.Microsecond), p99.Round(time.Microsecond))
 		if p99 > queryBudget {
 			t.Errorf("%s: p99 %s over %s", q.Encode(), p99, queryBudget)
