@@ -207,4 +207,20 @@ func TestBackendEnergyAndTokens(t *testing.T) {
 	if strings.Contains(string(body), "greenlens_energy_cost_total") {
 		t.Error("a cost is reported without a tariff")
 	}
+
+	// The documents with backends and models match the API description.
+	spec := loadSpec(t)
+	sock := call{t: t, c: socketClient(cfg.Agent.Socket), base: "http://agent"}
+	for _, x := range []struct{ id, path, schema string }{
+		{"backends", api.PathBackends, "Backends"},
+		{"status", api.PathStatus, "Status"},
+	} {
+		resp, body := sock.do("GET", x.path, nil)
+		if resp.code != 200 {
+			t.Fatalf("%s: %d", x.path, resp.code)
+		}
+		if err := spec.Validate(map[string]any{"$ref": "#/components/schemas/" + x.schema}, body); err != nil {
+			t.Errorf("%s: %v\n%s", x.id, err, body)
+		}
+	}
 }

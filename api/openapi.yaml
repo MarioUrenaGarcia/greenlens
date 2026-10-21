@@ -1,0 +1,1198 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+#
+# The HTTP API of the GreenLens agent. This file is the source of truth: the
+# tests check that every route of the agent is described here with its role,
+# and that the documents the agent returns match these schemas. Every
+# description has its Spanish translation in x-description-es, used by the
+# generated reference.
+openapi: 3.1.0
+info:
+  title: GreenLens agent API
+  version: "1"
+  description: >-
+    Energy measurements of the node, its inference backends and models, served
+    by the agent on its Unix socket and on 127.0.0.1:10060. Every document
+    carries schema_version, which changes only when a field changes meaning or
+    disappears. On the HTTP listener, any request can also be answered with
+    429 when its address sends too many, and with 413 when its body exceeds
+    1 MiB.
+  x-description-es: >-
+    Mediciones de energía del nodo, sus backends de inferencia y modelos, que
+    el agente atiende en su socket Unix y en 127.0.0.1:10060. Cada documento
+    lleva schema_version, que cambia solo cuando un campo cambia de
+    significado o desaparece. En el listener HTTP, cualquier solicitud puede
+    recibir además 429 cuando su dirección envía demasiadas, y 413 cuando su
+    cuerpo pasa de 1 MiB.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+servers:
+  - url: http://127.0.0.1:10060
+security:
+  - bearer: []
+  - session: []
+tags:
+  - name: health
+  - name: measurements
+  - name: benchmarks
+  - name: access
+  - name: administration
+
+paths:
+  /healthz:
+    get:
+      operationId: health
+      tags: [health]
+      summary: Check that the agent answers
+      x-summary-es: Comprueba que el agente responde
+      x-greenlens-role: public
+      security: []
+      responses:
+        "200":
+          description: The agent is running.
+          x-description-es: El agente está en ejecución.
+          content:
+            text/plain:
+              schema: {type: string}
+  /readyz:
+    get:
+      operationId: ready
+      tags: [health]
+      summary: Check that the agent has taken a sample
+      x-summary-es: Comprueba que el agente ya tomó una muestra
+      x-greenlens-role: public
+      security: []
+      responses:
+        "200":
+          description: At least one sample was taken.
+          x-description-es: Se tomó al menos una muestra.
+          content:
+            text/plain:
+              schema: {type: string}
+        "503":
+          description: No sample yet.
+          x-description-es: Todavía no hay muestras.
+  /metrics:
+    get:
+      operationId: metrics
+      tags: [measurements]
+      summary: Prometheus metrics
+      x-summary-es: Métricas de Prometheus
+      description: >-
+        The metrics in the Prometheus text exposition format 0.0.4. Public unless
+        server.metrics_auth is set.
+      x-description-es: >-
+        Las métricas en el formato de texto de Prometheus 0.0.4. Públicas salvo
+        que se active server.metrics_auth.
+      x-greenlens-role: public
+      security: []
+      responses:
+        "200":
+          description: The metrics.
+          x-description-es: Las métricas.
+          content:
+            text/plain:
+              schema: {type: string}
+  /api/v1/openapi.yaml:
+    get:
+      operationId: openapi
+      tags: [health]
+      summary: This description of the API
+      x-summary-es: Esta descripción de la API
+      x-greenlens-role: public
+      security: []
+      responses:
+        "200":
+          description: The OpenAPI document.
+          x-description-es: El documento OpenAPI.
+          content:
+            application/yaml:
+              schema: {type: string}
+  /api/v1/status:
+    get:
+      operationId: status
+      tags: [measurements]
+      summary: State of the node, its sources and backends
+      x-summary-es: Estado del nodo, sus fuentes y backends
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The state of the node.
+          x-description-es: El estado del nodo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Status"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/sources:
+    get:
+      operationId: sources
+      tags: [measurements]
+      summary: Energy channels found, chosen and discarded
+      x-summary-es: Canales de energía encontrados, elegidos y descartados
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: Every probed channel with the decision about it.
+          x-description-es: Cada canal probado con la decisión sobre él.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Channel"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/usage:
+    get:
+      operationId: usage
+      tags: [measurements]
+      summary: Energy of a period, by channel or by backend, model or consumer
+      x-summary-es: Energía de un periodo, por canal o por backend, modelo o consumidor
+      description: >-
+        Without group_by, the energy of every channel in buckets. With group_by,
+        the energy, tokens and requests of each backend, model or consumer.
+      x-description-es: >-
+        Sin group_by, la energía de cada canal en intervalos. Con group_by, la
+        energía, los tokens y las solicitudes de cada backend, modelo o
+        consumidor.
+      x-greenlens-role: viewer
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start of the period, RFC 3339.
+          x-description-es: Inicio del periodo, RFC 3339.
+          schema: {type: string, format: date-time}
+        - name: to
+          in: query
+          required: true
+          description: End of the period, RFC 3339, at most three years after from.
+          x-description-es: Fin del periodo, RFC 3339, a lo sumo tres años después de from.
+          schema: {type: string, format: date-time}
+        - name: bucket
+          in: query
+          description: Size of each bucket, such as 1m or 1h, at least 1m. Without it, one total.
+          x-description-es: Tamaño de cada intervalo, como 1m o 1h, al menos 1m. Sin él, un solo total.
+          schema: {type: string}
+        - name: group_by
+          in: query
+          description: Group by backend, model or consumer instead of by channel.
+          x-description-es: Agrupa por backend, modelo o consumidor en lugar de por canal.
+          schema: {type: string, enum: [backend, model, consumer]}
+      responses:
+        "200":
+          description: Usage by channel, or by group when group_by is set.
+          x-description-es: Consumo por canal, o por grupo cuando se indica group_by.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {$ref: "#/components/schemas/Usage"}
+                  - {$ref: "#/components/schemas/BackendUsage"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/backends:
+    get:
+      operationId: backends
+      tags: [measurements]
+      summary: Backends and models with their use since the agent started
+      x-summary-es: Backends y modelos con su uso desde que inició el agente
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The backends of the node.
+          x-description-es: Los backends del nodo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Backends"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/live:
+    get:
+      operationId: live
+      tags: [measurements]
+      summary: Power of every domain over the last minutes
+      x-summary-es: Potencia de cada dominio en los últimos minutos
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The samples kept in memory, at most 15 minutes.
+          x-description-es: Las muestras que se conservan en memoria, a lo sumo 15 minutos.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Live"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/calibrations:
+    post:
+      operationId: saveCalibration
+      tags: [measurements]
+      summary: Store a calibration of the idle power and apply it
+      x-summary-es: Guarda una calibración de la potencia en reposo y la aplica
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Calibration"}
+      responses:
+        "201":
+          description: The stored calibration, now in force.
+          x-description-es: La calibración guardada, ya vigente.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Calibration"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/benchmarks:
+    get:
+      operationId: benchmarks
+      tags: [benchmarks]
+      summary: Stored benchmarks, newest first
+      x-summary-es: Benchmarks guardados, del más reciente al más antiguo
+      x-greenlens-role: viewer
+      parameters:
+        - name: limit
+          in: query
+          description: Most benchmarks to return, 1 to 1000; 50 by default.
+          x-description-es: Máximo de benchmarks a devolver, de 1 a 1000; 50 por defecto.
+          schema: {type: integer, minimum: 1, maximum: 1000}
+      responses:
+        "200":
+          description: The benchmarks.
+          x-description-es: Los benchmarks.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Benchmarks"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "500": {$ref: "#/components/responses/ServerError"}
+    post:
+      operationId: saveBenchmark
+      tags: [benchmarks]
+      summary: Store the result of a benchmark
+      x-summary-es: Guarda el resultado de un benchmark
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Benchmark"}
+      responses:
+        "201":
+          description: The stored benchmark with its id.
+          x-description-es: El benchmark guardado con su id.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Benchmark"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/benchmarks/{id}:
+    get:
+      operationId: benchmark
+      tags: [benchmarks]
+      summary: One stored benchmark
+      x-summary-es: Un benchmark guardado
+      x-greenlens-role: viewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id of the benchmark.
+          x-description-es: Id del benchmark.
+          schema: {type: integer, minimum: 1}
+      responses:
+        "200":
+          description: The benchmark.
+          x-description-es: El benchmark.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Benchmark"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/backup:
+    get:
+      operationId: backup
+      tags: [administration]
+      summary: Consistent copy of the database
+      x-summary-es: Copia consistente de la base de datos
+      x-greenlens-role: admin
+      responses:
+        "200":
+          description: A SQLite database file.
+          x-description-es: Un archivo de base de datos SQLite.
+          headers:
+            X-GreenLens-Schema-Version:
+              description: Schema version of the copy.
+              x-description-es: Versión de esquema de la copia.
+              schema: {type: integer}
+          content:
+            application/vnd.sqlite3:
+              schema: {type: string, contentEncoding: binary}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/tokens:
+    get:
+      operationId: tokens
+      tags: [access]
+      summary: Access tokens, without their secrets
+      x-summary-es: Tokens de acceso, sin sus secretos
+      x-greenlens-role: admin
+      responses:
+        "200":
+          description: The tokens.
+          x-description-es: Los tokens.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Tokens"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+    post:
+      operationId: createToken
+      tags: [access]
+      summary: Create an access token
+      x-summary-es: Crea un token de acceso
+      x-greenlens-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateToken"}
+      responses:
+        "201":
+          description: The token and its secret, shown only in this answer.
+          x-description-es: El token y su secreto, que solo se muestra en esta respuesta.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CreatedToken"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/tokens/{id}:
+    delete:
+      operationId: revokeToken
+      tags: [access]
+      summary: Revoke an access token
+      x-summary-es: Revoca un token de acceso
+      x-greenlens-role: admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id or name of the token.
+          x-description-es: Id o nombre del token.
+          schema: {type: string}
+      responses:
+        "200":
+          description: The revoked token.
+          x-description-es: El token revocado.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Token"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/audit:
+    get:
+      operationId: audit
+      tags: [administration]
+      summary: Actions of operators and administrators, newest first
+      x-summary-es: Acciones de operadores y administradores, de la más reciente a la más antigua
+      x-greenlens-role: admin
+      parameters:
+        - name: limit
+          in: query
+          description: Most entries to return, 1 to 1000; 100 by default.
+          x-description-es: Máximo de entradas a devolver, de 1 a 1000; 100 por defecto.
+          schema: {type: integer, minimum: 1, maximum: 1000}
+        - name: before
+          in: query
+          description: Return entries older than the entry with this id.
+          x-description-es: Devuelve las entradas anteriores a la que tiene este id.
+          schema: {type: integer, minimum: 1}
+      responses:
+        "200":
+          description: The audit log.
+          x-description-es: El registro de auditoría.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Audit"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/session:
+    get:
+      operationId: session
+      tags: [access]
+      summary: Who sends the request, and the CSRF token of a session
+      x-summary-es: Quién envía la solicitud, y el token CSRF de una sesión
+      x-greenlens-role: public
+      security: []
+      responses:
+        "200":
+          description: The principal of the request.
+          x-description-es: El principal de la solicitud.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Session"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    post:
+      operationId: signIn
+      tags: [access]
+      summary: Open a browser session with an access token
+      x-summary-es: Abre una sesión del navegador con un token de acceso
+      x-greenlens-role: public
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Login"}
+      responses:
+        "200":
+          description: The session; its cookie is set.
+          x-description-es: La sesión; se establece su cookie.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Session"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+        "500": {$ref: "#/components/responses/ServerError"}
+    delete:
+      operationId: signOut
+      tags: [access]
+      summary: End the browser session
+      x-summary-es: Termina la sesión del navegador
+      x-greenlens-role: public
+      security: []
+      responses:
+        "204":
+          description: The session ended and its cookie was cleared.
+          x-description-es: La sesión terminó y se borró su cookie.
+  /api/v1/session/codes:
+    post:
+      operationId: sessionCode
+      tags: [access]
+      summary: One-time sign-in link for a local user
+      x-summary-es: Enlace de inicio de sesión de un solo uso para un usuario local
+      description: Served only on the Unix socket, for greenlens gui.
+      x-description-es: Solo se atiende en el socket Unix, para greenlens gui.
+      x-greenlens-role: admin
+      x-greenlens-socket-only: true
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SessionCodeRequest"}
+      responses:
+        "200":
+          description: The link, valid for two minutes.
+          x-description-es: El enlace, válido por dos minutos.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SessionCode"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "409":
+          description: The HTTP API is disabled.
+          x-description-es: La API HTTP está desactivada.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /login:
+    get:
+      operationId: signInWithCode
+      tags: [access]
+      summary: Redeem a one-time sign-in link
+      x-summary-es: Usa un enlace de inicio de sesión de un solo uso
+      x-greenlens-role: public
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: The code of the link.
+          x-description-es: El código del enlace.
+          schema: {type: string}
+      responses:
+        "303":
+          description: Redirects to the interface, with a session cookie when the code was valid.
+          x-description-es: Redirige a la interfaz, con una cookie de sesión si el código era válido.
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: An access token created with greenlens token create.
+      x-description-es: Un token de acceso creado con greenlens token create.
+    session:
+      type: apiKey
+      in: cookie
+      name: greenlens_session
+      description: >-
+        A browser session. Requests that change something also need the header
+        X-GreenLens-CSRF with the csrf of GET /api/v1/session.
+      x-description-es: >-
+        Una sesión del navegador. Las solicitudes que cambian algo también
+        necesitan la cabecera X-GreenLens-CSRF con el csrf de GET /api/v1/session.
+  responses:
+    BadRequest:
+      description: The request is not valid.
+      x-description-es: La solicitud no es válida.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Unauthorized:
+      description: No valid session or token.
+      x-description-es: No hay una sesión o un token válidos.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Forbidden:
+      description: The role is not enough, or the CSRF check failed.
+      x-description-es: El rol no alcanza, o falló la comprobación CSRF.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: Nothing has this id.
+      x-description-es: Nada tiene este id.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    ServerError:
+      description: The agent could not complete the request; its log has the details.
+      x-description-es: El agente no pudo completar la solicitud; su registro tiene los detalles.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    TooManyRequests:
+      description: Too many requests from this address.
+      x-description-es: Demasiadas solicitudes desde esta dirección.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+
+  schemas:
+    Error:
+      type: object
+      description: Returned with every error status.
+      x-description-es: Se devuelve con cada estado de error.
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: {type: string, description: What went wrong., x-description-es: Qué salió mal.}
+
+    Status:
+      type: object
+      description: State of the node.
+      x-description-es: Estado del nodo.
+      additionalProperties: false
+      required: [schema_version, version, started_at, interval_ms, sample_time, samples, estimated, domains, channels, self, idle_policy]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        version: {type: string, description: Version of the agent., x-description-es: Versión del agente.}
+        started_at: {type: string, format: date-time, description: When the agent started., x-description-es: Cuándo inició el agente.}
+        interval_ms: {type: integer, description: Sampling interval in milliseconds., x-description-es: Intervalo de muestreo en milisegundos.}
+        sample_time: {type: string, format: date-time, description: Time of the latest sample., x-description-es: Hora de la última muestra.}
+        samples: {type: integer, description: Samples taken since the start., x-description-es: Muestras tomadas desde el inicio.}
+        estimated: {type: boolean, description: Whether processor energy is estimated rather than measured., x-description-es: Si la energía del procesador es estimada en lugar de medida.}
+        domains:
+          type: array
+          description: Power and energy of every domain.
+          x-description-es: Potencia y energía de cada dominio.
+          items: {$ref: "#/components/schemas/Domain"}
+        channels:
+          type: array
+          description: Every probed channel with the decision about it.
+          x-description-es: Cada canal probado con la decisión sobre él.
+          items: {$ref: "#/components/schemas/Channel"}
+        problems:
+          type: array
+          description: Problems found in the sources.
+          x-description-es: Problemas encontrados en las fuentes.
+          items: {$ref: "#/components/schemas/Problem"}
+        calibration: {$ref: "#/components/schemas/CalibrationSummary"}
+        self: {$ref: "#/components/schemas/Self"}
+        idle_policy: {type: string, enum: [dynamic, proportional, full, wall], description: How idle power is shared., x-description-es: Cómo se reparte la potencia en reposo.}
+        backends:
+          type: array
+          description: Backends of the node.
+          x-description-es: Backends del nodo.
+          items: {$ref: "#/components/schemas/Backend"}
+        proxy: {$ref: "#/components/schemas/Proxy"}
+
+    Domain:
+      type: object
+      description: Power of one domain in the latest sample and its energy since the start.
+      x-description-es: Potencia de un dominio en la última muestra y su energía desde el inicio.
+      additionalProperties: false
+      required: [domain, level, power_w, energy_j, quality]
+      properties:
+        domain: {type: string, description: Domain, such as package, dram or gpu., x-description-es: Dominio, como package, dram o gpu.}
+        level: {type: string, enum: [component, system, wall], description: Component, system or wall meter level., x-description-es: Nivel de componente, de sistema o de medidor de pared.}
+        power_w: {type: number, description: Power in watts., x-description-es: Potencia en watts.}
+        energy_j: {type: number, description: Energy in joules since the agent started., x-description-es: Energía en joules desde que inició el agente.}
+        quality: {type: string, description: Quality of the measurement., x-description-es: Calidad de la medición.}
+
+    Channel:
+      type: object
+      description: A channel probed by the agent and the decision about it.
+      x-description-es: Un canal probado por el agente y la decisión sobre él.
+      additionalProperties: false
+      required: [id, source, domain, quality, method, selected, reason]
+      properties:
+        id: {type: string, description: Identifier of the channel., x-description-es: Identificador del canal.}
+        source: {type: string, description: Source that reads it., x-description-es: Fuente que lo lee.}
+        domain: {type: string, description: Domain it measures., x-description-es: Dominio que mide.}
+        instance: {type: string, description: Package, card or device it belongs to., x-description-es: Paquete, tarjeta o dispositivo al que pertenece.}
+        quality: {type: string, description: Quality of its values., x-description-es: Calidad de sus valores.}
+        method: {type: string, description: How the source obtains energy., x-description-es: Cómo obtiene la fuente la energía.}
+        label: {type: string, description: Label reported by the hardware., x-description-es: Etiqueta que reporta el hardware.}
+        selected: {type: boolean, description: Whether its values are used., x-description-es: Si se usan sus valores.}
+        reason: {type: string, description: Key of the reason for the decision., x-description-es: Clave del motivo de la decisión.}
+        reason_args:
+          type: object
+          description: Values that complete the reason.
+          x-description-es: Valores que completan el motivo.
+          additionalProperties: {type: string}
+
+    Problem:
+      type: object
+      description: A problem with a code of the GLxxxx catalog and its values.
+      x-description-es: Un problema con un código del catálogo GLxxxx y sus valores.
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: {type: string, pattern: "^GL[0-9]{4}$", description: Error code., x-description-es: Código de error.}
+        args:
+          type: object
+          description: Values that complete the message.
+          x-description-es: Valores que completan el mensaje.
+          additionalProperties: {type: string}
+        channel: {type: string, description: Channel it concerns., x-description-es: Canal al que se refiere.}
+        backend: {type: string, description: Backend it concerns., x-description-es: Backend al que se refiere.}
+
+    Baseline:
+      type: object
+      description: Idle power of each part of the node.
+      x-description-es: Potencia en reposo de cada parte del nodo.
+      additionalProperties: false
+      required: [cpu_w, dram_w, platform_w]
+      properties:
+        cpu_w: {type: number, description: Idle power of the processor packages., x-description-es: Potencia en reposo de los paquetes del procesador.}
+        dram_w: {type: number, description: Idle power of the memory., x-description-es: Potencia en reposo de la memoria.}
+        platform_w: {type: number, description: Idle power of the platform or wall meter., x-description-es: Potencia en reposo de la plataforma o del medidor de pared.}
+        gpu_w:
+          type: object
+          description: Idle power of each GPU by PCI address.
+          x-description-es: Potencia en reposo de cada GPU por dirección PCI.
+          additionalProperties: {type: number}
+
+    CalibrationSummary:
+      type: object
+      description: The idle baseline in force.
+      x-description-es: La línea base en reposo vigente.
+      additionalProperties: false
+      required: [at, baseline]
+      properties:
+        at: {type: string, format: date-time, description: When it was measured., x-description-es: Cuándo se midió.}
+        baseline: {$ref: "#/components/schemas/Baseline"}
+        idle_now_w: {type: number, description: Current estimate of the idle power of the package, the 5th percentile of the last 24 hours., x-description-es: Estimación actual de la potencia en reposo del paquete, el percentil 5 de las últimas 24 horas.}
+        drift: {type: number, description: Relative difference between idle_now_w and the calibration., x-description-es: Diferencia relativa entre idle_now_w y la calibración.}
+
+    Self:
+      type: object
+      description: Consumption of the agent itself.
+      x-description-es: Consumo del propio agente.
+      additionalProperties: false
+      required: [energy_j, cpu_seconds, rss_bytes]
+      properties:
+        energy_j: {type: number, description: Energy attributed to the agent., x-description-es: Energía atribuida al agente.}
+        cpu_seconds: {type: number, description: Processor time used., x-description-es: Tiempo de procesador usado.}
+        rss_bytes: {type: integer, description: Resident memory., x-description-es: Memoria residente.}
+
+    Regression:
+      type: object
+      description: Energy per prompt token and per generated token, fitted by least squares over the last day.
+      x-description-es: Energía por token de entrada y por token generado, ajustada por mínimos cuadrados sobre el último día.
+      additionalProperties: false
+      required: [prompt_j_per_token, prompt_ci95, generated_j_per_token, generated_ci95, base_w, base_ci95, r2, intervals, method]
+      properties:
+        prompt_j_per_token: {type: number, description: Joules per prompt token., x-description-es: Joules por token de entrada.}
+        prompt_ci95: {type: number, description: Half width of its 95% confidence interval., x-description-es: Mitad del ancho de su intervalo de confianza al 95%.}
+        generated_j_per_token: {type: number, description: Joules per generated token., x-description-es: Joules por token generado.}
+        generated_ci95: {type: number, description: Half width of its 95% confidence interval., x-description-es: Mitad del ancho de su intervalo de confianza al 95%.}
+        base_w: {type: number, description: Power not explained by tokens., x-description-es: Potencia que los tokens no explican.}
+        base_ci95: {type: number, description: Half width of its 95% confidence interval., x-description-es: Mitad del ancho de su intervalo de confianza al 95%.}
+        r2: {type: number, description: Coefficient of determination of the fit., x-description-es: Coeficiente de determinación del ajuste.}
+        intervals: {type: integer, description: Intervals used., x-description-es: Intervalos usados.}
+        method: {type: string, description: Fitting method., x-description-es: Método de ajuste.}
+
+    Model:
+      type: object
+      description: Use of one model of a backend since the agent started.
+      x-description-es: Uso de un modelo de un backend desde que inició el agente.
+      additionalProperties: false
+      required: [name, energy_j, prompt_tokens, generated_tokens, requests, joules_per_generated_token, method, quality]
+      properties:
+        name: {type: string, description: Name of the model, or other beyond the limit., x-description-es: Nombre del modelo, u other más allá del límite.}
+        energy_j: {type: number, description: Energy attributed to it., x-description-es: Energía que se le atribuyó.}
+        prompt_tokens: {type: integer, description: Prompt tokens counted., x-description-es: Tokens de entrada contados.}
+        generated_tokens: {type: integer, description: Generated tokens counted., x-description-es: Tokens generados contados.}
+        requests: {type: integer, description: Requests counted., x-description-es: Solicitudes contadas.}
+        joules_per_generated_token: {type: number, description: Energy per generated token; zero when no token was counted., x-description-es: Energía por token generado; cero si no se contó ningún token.}
+        method: {type: string, description: Attribution method., x-description-es: Método de atribución.}
+        quality: {type: string, description: Quality of the energy., x-description-es: Calidad de la energía.}
+        regression: {$ref: "#/components/schemas/Regression"}
+
+    Backend:
+      type: object
+      description: An inference server with its use since the agent started.
+      x-description-es: Un servidor de inferencia con su uso desde que inició el agente.
+      additionalProperties: false
+      required: [name, kind, static, processes, token_counters, power_w, energy_j, cpu_energy_j, dram_energy_j, gpu_energy_j]
+      properties:
+        name: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
+        kind: {type: string, description: Kind of server, such as ollama or llamacpp., x-description-es: Tipo de servidor, como ollama o llamacpp.}
+        endpoint: {type: string, description: Base URL of its API., x-description-es: URL base de su API.}
+        static: {type: boolean, description: Whether it is declared in the configuration., x-description-es: Si está declarado en la configuración.}
+        container_id: {type: string, description: Container it runs in., x-description-es: Contenedor en el que se ejecuta.}
+        processes: {type: integer, description: Processes found for it., x-description-es: Procesos encontrados para él.}
+        version: {type: string, description: Version it reports., x-description-es: Versión que reporta.}
+        token_counters: {type: boolean, description: Whether it reports token counts., x-description-es: Si reporta conteos de tokens.}
+        last_read: {type: string, format: date-time, description: When its counters were last read., x-description-es: Cuándo se leyeron por última vez sus contadores.}
+        problem: {$ref: "#/components/schemas/Problem"}
+        power_w: {type: number, description: Mean power in the last usage interval., x-description-es: Potencia media en el último intervalo de uso.}
+        energy_j: {type: number, description: Energy attributed to it., x-description-es: Energía que se le atribuyó.}
+        cpu_energy_j: {type: number, description: Processor share of energy_j., x-description-es: Parte de procesador de energy_j.}
+        dram_energy_j: {type: number, description: Memory share of energy_j., x-description-es: Parte de memoria de energy_j.}
+        gpu_energy_j: {type: number, description: GPU share of energy_j., x-description-es: Parte de GPU de energy_j.}
+        models:
+          type: array
+          description: Its models, most energy first.
+          x-description-es: Sus modelos, del que más energía usó al que menos.
+          items: {$ref: "#/components/schemas/Model"}
+
+    Proxy:
+      type: object
+      description: State of the token-counting proxy.
+      x-description-es: Estado del proxy que cuenta tokens.
+      additionalProperties: false
+      required: [listen, upstream, backend, requests, energy_header]
+      properties:
+        listen: {type: string, description: Address it listens on., x-description-es: Dirección en la que escucha.}
+        upstream: {type: string, description: Server it forwards to., x-description-es: Servidor al que reenvía.}
+        backend: {type: string, description: Backend of the upstream., x-description-es: Backend del servidor de destino.}
+        requests: {type: integer, description: Requests forwarded., x-description-es: Solicitudes reenviadas.}
+        energy_header: {type: boolean, description: Whether responses carry their energy., x-description-es: Si las respuestas llevan su energía.}
+        consumer_header: {type: string, description: Header that tells consumers apart., x-description-es: Cabecera que distingue a los consumidores.}
+
+    Backends:
+      type: object
+      description: The backends of the node.
+      x-description-es: Los backends del nodo.
+      additionalProperties: false
+      required: [schema_version, interval_ms, backends]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        interval_ms: {type: integer, description: Length of a usage interval in milliseconds., x-description-es: Duración de un intervalo de uso en milisegundos.}
+        backends:
+          type: array
+          description: The backends.
+          x-description-es: Los backends.
+          items: {$ref: "#/components/schemas/Backend"}
+
+    ChannelEnergy:
+      type: object
+      description: Energy of one channel in one bucket.
+      x-description-es: Energía de un canal en un intervalo.
+      additionalProperties: false
+      required: [bucket_start, channel, source, domain, quality, energy_j, samples]
+      properties:
+        bucket_start: {type: string, format: date-time, description: Start of the bucket., x-description-es: Inicio del intervalo.}
+        channel: {type: string, description: Identifier of the channel., x-description-es: Identificador del canal.}
+        source: {type: string, description: Source that read it., x-description-es: Fuente que lo leyó.}
+        domain: {type: string, description: Domain it measures., x-description-es: Dominio que mide.}
+        quality: {type: string, description: Quality of its values., x-description-es: Calidad de sus valores.}
+        energy_j: {type: number, description: Energy in joules., x-description-es: Energía en joules.}
+        samples: {type: integer, description: Samples added up., x-description-es: Muestras sumadas.}
+
+    Usage:
+      type: object
+      description: Energy of every channel in a period.
+      x-description-es: Energía de cada canal en un periodo.
+      additionalProperties: false
+      required: [schema_version, from, to, bucket_ms, resolution, rows]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
+        to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
+        bucket_ms: {type: integer, description: Size of each bucket in milliseconds; zero for one total., x-description-es: Tamaño de cada intervalo en milisegundos; cero para un solo total.}
+        resolution: {type: string, enum: [raw, 1m, 1h], description: Finest resolution read., x-description-es: Resolución más fina leída.}
+        rows:
+          type: array
+          description: Energy by channel and bucket.
+          x-description-es: Energía por canal e intervalo.
+          items: {$ref: "#/components/schemas/ChannelEnergy"}
+
+    UsageEnergy:
+      type: object
+      description: Use of one backend, model or consumer in a period.
+      x-description-es: Uso de un backend, modelo o consumidor en un periodo.
+      additionalProperties: false
+      required: [backend, kind, energy_j, prompt_tokens, generated_tokens, requests, tokens_counted]
+      properties:
+        backend: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
+        kind: {type: string, description: Kind of the backend., x-description-es: Tipo del backend.}
+        model: {type: string, description: Name of the model, when grouping by model or consumer., x-description-es: Nombre del modelo, al agrupar por modelo o consumidor.}
+        consumer: {type: string, description: Consumer, when grouping by consumer., x-description-es: Consumidor, al agrupar por consumidor.}
+        energy_j: {type: number, description: Energy in joules., x-description-es: Energía en joules.}
+        prompt_tokens: {type: integer, description: Prompt tokens., x-description-es: Tokens de entrada.}
+        generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
+        requests: {type: integer, description: Requests., x-description-es: Solicitudes.}
+        tokens_counted: {type: boolean, description: False when the backend reported no tokens in the period., x-description-es: Falso cuando el backend no reportó tokens en el periodo.}
+
+    BackendUsage:
+      type: object
+      description: Use of a period by backend, model or consumer.
+      x-description-es: Uso de un periodo por backend, modelo o consumidor.
+      additionalProperties: false
+      required: [schema_version, from, to, group_by, resolution, rows]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
+        to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
+        group_by: {type: string, enum: [backend, model, consumer], description: Grouping., x-description-es: Agrupación.}
+        resolution: {type: string, enum: [raw, 1m, 1h], description: Finest resolution read., x-description-es: Resolución más fina leída.}
+        rows:
+          type: array
+          description: Use by group.
+          x-description-es: Uso por grupo.
+          items: {$ref: "#/components/schemas/UsageEnergy"}
+
+    LivePoint:
+      type: object
+      description: Power of every domain in one sample.
+      x-description-es: Potencia de cada dominio en una muestra.
+      additionalProperties: false
+      required: [time, interval_ms, power_w]
+      properties:
+        time: {type: string, format: date-time, description: Time of the sample., x-description-es: Hora de la muestra.}
+        interval_ms: {type: integer, description: Length of the sample in milliseconds., x-description-es: Duración de la muestra en milisegundos.}
+        power_w:
+          type: object
+          description: Power in watts by domain.
+          x-description-es: Potencia en watts por dominio.
+          additionalProperties: {type: number}
+
+    Live:
+      type: object
+      description: The samples kept in memory.
+      x-description-es: Las muestras que se conservan en memoria.
+      additionalProperties: false
+      required: [schema_version, points]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        points:
+          type: array
+          description: Samples, oldest first.
+          x-description-es: Muestras, de la más antigua a la más reciente.
+          items: {$ref: "#/components/schemas/LivePoint"}
+
+    CalibrationStats:
+      type: object
+      description: Percentiles of the power of one domain while idle.
+      x-description-es: Percentiles de la potencia de un dominio en reposo.
+      additionalProperties: false
+      required: [p10_w, p50_w, p90_w]
+      properties:
+        p10_w: {type: number, description: 10th percentile in watts., x-description-es: Percentil 10 en watts.}
+        p50_w: {type: number, description: Median in watts., x-description-es: Mediana en watts.}
+        p90_w: {type: number, description: 90th percentile in watts., x-description-es: Percentil 90 en watts.}
+
+    Calibration:
+      type: object
+      description: A measurement of the idle power, as greenlens calibrate makes it.
+      x-description-es: Una medición de la potencia en reposo, como la hace greenlens calibrate.
+      additionalProperties: false
+      required: [started_at, duration, samples, domains, quality]
+      properties:
+        started_at: {type: string, format: date-time, description: Start of the measurement., x-description-es: Inicio de la medición.}
+        duration: {type: integer, description: Length in nanoseconds., x-description-es: Duración en nanosegundos.}
+        samples: {type: integer, minimum: 1, description: Samples taken., x-description-es: Muestras tomadas.}
+        domains:
+          type: object
+          description: Statistics by domain.
+          x-description-es: Estadísticas por dominio.
+          additionalProperties: {$ref: "#/components/schemas/CalibrationStats"}
+        quality:
+          type: object
+          description: Quality by domain.
+          x-description-es: Calidad por dominio.
+          additionalProperties: {type: string}
+        gpus:
+          type: object
+          description: Statistics by GPU PCI address.
+          x-description-es: Estadísticas por dirección PCI de GPU.
+          additionalProperties: {$ref: "#/components/schemas/CalibrationStats"}
+        frequency_mhz: {type: number, description: Mean processor frequency., x-description-es: Frecuencia media del procesador.}
+        governor: {type: string, description: Frequency governor., x-description-es: Gobernador de frecuencia.}
+        temperature_c: {type: number, description: Processor temperature., x-description-es: Temperatura del procesador.}
+
+    Summary:
+      type: object
+      description: Mean, deviation and confidence of a set of runs.
+      x-description-es: Media, desviación y confianza de un conjunto de corridas.
+      additionalProperties: false
+      required: [n, mean, stddev, cv, ci95]
+      properties:
+        n: {type: integer, description: Number of values., x-description-es: Número de valores.}
+        mean: {type: number, description: Mean., x-description-es: Media.}
+        stddev: {type: number, description: Sample standard deviation., x-description-es: Desviación estándar muestral.}
+        cv: {type: number, description: Coefficient of variation, stddev over mean., x-description-es: Coeficiente de variación, stddev entre la media.}
+        ci95: {type: number, description: Half width of the 95% confidence interval of the mean., x-description-es: Mitad del ancho del intervalo de confianza al 95% de la media.}
+
+    BenchmarkRun:
+      type: object
+      description: One measured run of a benchmark.
+      x-description-es: Una corrida medida de un benchmark.
+      additionalProperties: false
+      required: [energy_j, dynamic_j, backend_j, duration_s, prompt_tokens, generated_tokens, j_per_generated_token]
+      properties:
+        energy_j: {type: number, description: Energy of the node., x-description-es: Energía del nodo.}
+        dynamic_j: {type: number, description: Energy above the idle baseline., x-description-es: Energía por encima de la línea base en reposo.}
+        backend_j: {type: number, description: Energy attributed to the processes of the backend., x-description-es: Energía atribuida a los procesos del backend.}
+        domains_j:
+          type: object
+          description: Energy by domain.
+          x-description-es: Energía por dominio.
+          additionalProperties: {type: number}
+        duration_s: {type: number, description: Length in seconds., x-description-es: Duración en segundos.}
+        prompt_tokens: {type: integer, description: Prompt tokens., x-description-es: Tokens de entrada.}
+        generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
+        j_per_generated_token: {type: number, description: Energy of the basis per generated token., x-description-es: Energía de la base por token generado.}
+
+    Benchmark:
+      type: object
+      description: A reproducible benchmark of a model. Only the hash of the prompts is kept.
+      x-description-es: Un benchmark reproducible de un modelo. Solo se guarda el hash de los prompts.
+      additionalProperties: false
+      required: [started_at, ended_at, target, params, prompt_set_sha256, prompts, context, runs, basis, calibrated, energy_j, j_per_generated_token, generated_tokens]
+      properties:
+        id: {type: integer, description: Id given when stored., x-description-es: Id asignado al guardarlo.}
+        started_at: {type: string, format: date-time, description: Start., x-description-es: Inicio.}
+        ended_at: {type: string, format: date-time, description: End., x-description-es: Fin.}
+        target:
+          type: object
+          description: The model and the server measured.
+          x-description-es: El modelo y el servidor medidos.
+          additionalProperties: false
+          required: [kind, endpoint, model]
+          properties:
+            kind: {type: string, description: Kind of server., x-description-es: Tipo de servidor.}
+            endpoint: {type: string, description: Base URL of the server., x-description-es: URL base del servidor.}
+            model: {type: string, description: Model., x-description-es: Modelo.}
+        params:
+          type: object
+          description: Settings that make the runs repeatable.
+          x-description-es: Ajustes que hacen repetibles las corridas.
+          additionalProperties: false
+          required: [max_tokens, temperature, seed, runs, warmup_s, min_run_s, passes]
+          properties:
+            max_tokens: {type: integer, description: Tokens generated per prompt at most., x-description-es: Tokens generados por prompt como máximo.}
+            temperature: {type: number, description: Sampling temperature., x-description-es: Temperatura de muestreo.}
+            seed: {type: integer, description: Seed of the generation., x-description-es: Semilla de la generación.}
+            runs: {type: integer, description: Measured runs., x-description-es: Corridas medidas.}
+            warmup_s: {type: number, description: Seconds of unmeasured warmup., x-description-es: Segundos de calentamiento sin medir.}
+            min_run_s: {type: number, description: Shortest run in seconds., x-description-es: Corrida más corta en segundos.}
+            passes: {type: integer, description: Passes over the prompts per run., x-description-es: Pasadas por los prompts en cada corrida.}
+        prompt_set_sha256: {type: string, pattern: "^[0-9a-f]{64}$", description: SHA-256 of the prompts., x-description-es: SHA-256 de los prompts.}
+        prompts: {type: integer, description: Number of prompts., x-description-es: Número de prompts.}
+        context:
+          type: object
+          description: Conditions of the machine during the runs.
+          x-description-es: Condiciones de la máquina durante las corridas.
+          additionalProperties: false
+          required: [other_cpu_share]
+          properties:
+            cpu: {type: string, description: Processor model., x-description-es: Modelo de procesador.}
+            gpus:
+              type: array
+              description: GPU models.
+              x-description-es: Modelos de GPU.
+              items: {type: string}
+            kernel: {type: string, description: Kernel release., x-description-es: Versión del kernel.}
+            nvidia_driver: {type: string, description: NVIDIA driver version., x-description-es: Versión del driver de NVIDIA.}
+            governor: {type: string, description: Frequency governor., x-description-es: Gobernador de frecuencia.}
+            frequency_mhz: {type: number, description: Mean processor frequency., x-description-es: Frecuencia media del procesador.}
+            start_temperature_c: {type: number, description: Processor temperature at the start., x-description-es: Temperatura del procesador al inicio.}
+            end_temperature_c: {type: number, description: Processor temperature at the end., x-description-es: Temperatura del procesador al final.}
+            throttled: {type: boolean, description: Whether the processor throttled., x-description-es: Si el procesador redujo su frecuencia.}
+            other_cpu_share: {type: number, description: Share of processor time used by other processes., x-description-es: Parte del tiempo de procesador que usaron otros procesos.}
+            energy_channels:
+              type: array
+              description: Channels that measured the runs.
+              x-description-es: Canales que midieron las corridas.
+              items: {type: string}
+        runs:
+          type: array
+          description: The measured runs.
+          x-description-es: Las corridas medidas.
+          items: {$ref: "#/components/schemas/BenchmarkRun"}
+        basis: {type: string, enum: [backend, dynamic, total], description: Energy the result is based on., x-description-es: Energía en la que se basa el resultado.}
+        calibrated: {type: boolean, description: Whether idle energy was subtracted., x-description-es: Si se restó la energía en reposo.}
+        energy_j: {$ref: "#/components/schemas/Summary"}
+        j_per_generated_token: {$ref: "#/components/schemas/Summary"}
+        generated_tokens: {type: integer, description: Generated tokens in all runs., x-description-es: Tokens generados en todas las corridas.}
+        causes:
+          type: array
+          description: Likely causes when the runs vary by more than 10%.
+          x-description-es: Causas probables cuando las corridas varían más del 10%.
+          items: {type: string}
+
+    Benchmarks:
+      type: object
+      description: Stored benchmarks, newest first.
+      x-description-es: Benchmarks guardados, del más reciente al más antiguo.
+      additionalProperties: false
+      required: [schema_version, benchmarks]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        benchmarks:
+          type: array
+          description: The benchmarks.
+          x-description-es: Los benchmarks.
+          items: {$ref: "#/components/schemas/Benchmark"}
+
+    Token:
+      type: object
+      description: An access token without its secret.
+      x-description-es: Un token de acceso sin su secreto.
+      additionalProperties: false
+      required: [id, name, role, created_at]
+      properties:
+        id: {type: string, pattern: "^[0-9a-f]{12}$", description: Identifier., x-description-es: Identificador.}
+        name: {type: string, description: Name., x-description-es: Nombre.}
+        role: {$ref: "#/components/schemas/Role"}
+        created_at: {type: string, format: date-time, description: Creation time., x-description-es: Fecha de creación.}
+        expires_at: {type: string, format: date-time, description: Expiry; absent when it never expires., x-description-es: Caducidad; ausente si nunca caduca.}
+
+    Role:
+      type: string
+      enum: [viewer, operator, admin]
+      description: viewer reads; operator also runs benchmarks and calibrations; admin also manages tokens and backups.
+      x-description-es: viewer lee; operator además ejecuta benchmarks y calibraciones; admin además gestiona tokens y respaldos.
+
+    Tokens:
+      type: object
+      description: The access tokens.
+      x-description-es: Los tokens de acceso.
+      additionalProperties: false
+      required: [schema_version, tokens]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        tokens:
+          type: array
+          description: The tokens, oldest first.
+          x-description-es: Los tokens, del más antiguo al más reciente.
+          items: {$ref: "#/components/schemas/Token"}
+
+    CreateToken:
+      type: object
+      description: A token to create.
+      x-description-es: Un token a crear.
+      additionalProperties: false
+      required: [name, role]
+      properties:
+        name: {type: string, pattern: "^[a-z0-9][a-z0-9._-]{0,62}$", description: Name., x-description-es: Nombre.}
+        role: {$ref: "#/components/schemas/Role"}
+        expires_in_s: {type: integer, minimum: 0, description: Lifetime in seconds; zero never expires., x-description-es: Vigencia en segundos; cero nunca caduca.}
+
+    CreatedToken:
+      type: object
+      description: A new token with its secret.
+      x-description-es: Un token nuevo con su secreto.
+      additionalProperties: false
+      required: [schema_version, token, secret]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        token: {$ref: "#/components/schemas/Token"}
+        secret: {type: string, description: The secret, shown only in this answer., x-description-es: El secreto, que solo se muestra en esta respuesta.}
+
+    Login:
+      type: object
+      description: Sign-in with an access token.
+      x-description-es: Inicio de sesión con un token de acceso.
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: {type: string, description: The secret of the token., x-description-es: El secreto del token.}
+
+    Session:
+      type: object
+      description: Who sends a request.
+      x-description-es: Quién envía una solicitud.
+      additionalProperties: false
+      required: [schema_version, role, actor, via]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        role: {$ref: "#/components/schemas/Role"}
+        actor: {type: string, description: Name in the audit log, such as uid:1000 or token:grafana., x-description-es: Nombre en el registro de auditoría, como uid:1000 o token:grafana.}
+        via: {type: string, enum: [socket, session, token], description: How the principal was recognized., x-description-es: Cómo se reconoció al principal.}
+        csrf: {type: string, description: Token to send in X-GreenLens-CSRF, for browser sessions., x-description-es: Token para enviar en X-GreenLens-CSRF, en sesiones del navegador.}
+
+    SessionCodeRequest:
+      type: object
+      description: Request of a sign-in link.
+      x-description-es: Solicitud de un enlace de inicio de sesión.
+      additionalProperties: false
+      properties:
+        role: {$ref: "#/components/schemas/Role"}
+
+    SessionCode:
+      type: object
+      description: A one-time sign-in link.
+      x-description-es: Un enlace de inicio de sesión de un solo uso.
+      additionalProperties: false
+      required: [schema_version, url, expires_at]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        url: {type: string, description: Link to open in a browser of this machine., x-description-es: Enlace para abrir en un navegador de esta máquina.}
+        expires_at: {type: string, format: date-time, description: When the link stops working., x-description-es: Cuándo deja de funcionar el enlace.}
+
+    AuditEntry:
+      type: object
+      description: One action of an operator or administrator.
+      x-description-es: Una acción de un operador o administrador.
+      additionalProperties: false
+      required: [id, time, actor, action, detail]
+      properties:
+        id: {type: integer, description: Identifier., x-description-es: Identificador.}
+        time: {type: string, format: date-time, description: When it happened., x-description-es: Cuándo ocurrió.}
+        actor: {type: string, description: Who did it., x-description-es: Quién la hizo.}
+        action: {type: string, description: What was done, such as token_create or benchmark., x-description-es: Qué se hizo, como token_create o benchmark.}
+        detail: {type: string, description: Details; never a secret., x-description-es: Detalles; nunca un secreto.}
+
+    Audit:
+      type: object
+      description: The audit log.
+      x-description-es: El registro de auditoría.
+      additionalProperties: false
+      required: [schema_version, entries]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        entries:
+          type: array
+          description: Entries, newest first.
+          x-description-es: Entradas, de la más reciente a la más antigua.
+          items: {$ref: "#/components/schemas/AuditEntry"}

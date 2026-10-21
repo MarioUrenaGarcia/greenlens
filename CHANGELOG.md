@@ -61,6 +61,10 @@ All notable changes to GreenLens are recorded in this file. The format follows
   and managed with `greenlens token`, browser sessions with CSRF
   protection, an audit log, security headers, rate limits and optional TLS.
   The agent refuses to listen beyond loopback while no token exists.
+- An OpenAPI 3.1 description of the HTTP API in `api/openapi.yaml`, served
+  at `/api/v1/openapi.yaml`, with Spanish translations of every text. Tests
+  check that it lists every route with its role and that the documents of
+  the agent match its schemas; the API reference is generated from it.
 - Prometheus metrics on `/metrics`: node energy and power by domain, source
   and quality, idle and unattributed energy, energy of each backend, model
   and consumer, tokens, energy per generated token, emissions, cost and

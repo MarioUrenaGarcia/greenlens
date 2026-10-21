@@ -21,6 +21,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/MarioUrenaGarcia/greenlens"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
@@ -116,7 +117,12 @@ func (a *Agent) routes() []route {
 		{pattern: "POST " + api.PathTokens, role: auth.Admin, h: a.handleCreateToken},
 		{pattern: "DELETE " + api.PathTokens + "/{id}", role: auth.Admin, h: a.handleRevokeToken},
 		{pattern: "GET " + api.PathAudit, role: auth.Admin, h: a.handleAudit},
+		{pattern: "GET " + api.PathSession, h: a.handleSession},
 		{pattern: "POST " + api.PathSessionCodes, role: auth.Admin, socketOnly: true, h: a.handleSessionCode},
+		{pattern: "GET " + api.PathOpenAPI, h: func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/yaml")
+			_, _ = w.Write(greenlens.OpenAPI)
+		}},
 	}
 }
 
@@ -218,6 +224,9 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "usage query failed")
 		return
 	}
+	if rows == nil {
+		rows = []store.ChannelEnergy{}
+	}
 	writeJSON(w, http.StatusOK, api.Usage{
 		SchemaVersion: api.SchemaVersion, From: from, To: to, BucketMS: bucket.Milliseconds(), Resolution: res, Rows: rows,
 	})
@@ -281,6 +290,8 @@ func (a *Agent) Status() api.Status {
 		Backends:      bs,
 		Proxy:         px,
 		Self:          api.Self{EnergyJ: a.selfJ, CPUSeconds: float64(a.selfTicks) / 100, RSSBytes: rss()},
+		Domains:       []api.Domain{},
+		Channels:      []api.Channel{},
 	}
 	quality := map[source.Domain]source.Quality{}
 	for _, c := range a.sel.Channels {
@@ -392,6 +403,9 @@ func (a *Agent) handleBenchmarks(w http.ResponseWriter, r *http.Request) {
 		a.log.Error("benchmark query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "benchmark query failed")
 		return
+	}
+	if list == nil {
+		list = []bench.Result{}
 	}
 	writeJSON(w, http.StatusOK, api.Benchmarks{SchemaVersion: api.SchemaVersion, Benchmarks: list})
 }

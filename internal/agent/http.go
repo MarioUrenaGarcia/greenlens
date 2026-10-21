@@ -87,19 +87,12 @@ func (a *Agent) httpServer() *http.Server {
 // CSRF check for browser sessions.
 func (a *Agent) httpHandler() http.Handler {
 	mux := a.mux(false)
-	static := newStatic(web.Assets())
-	mux.Handle("GET /", static)
-	mux.HandleFunc("GET "+api.PathLogin, a.handleLogin)
-	mux.HandleFunc("GET "+api.PathSession, a.handleSession)
-	mux.HandleFunc("POST "+api.PathSession, a.handleTokenLogin)
-	mux.HandleFunc("DELETE "+api.PathSession, a.handleLogout)
+	mux.Handle("GET /", newStatic(web.Assets()))
 	a.mu.RLock()
 	metricsAuth := a.cfg.Server.MetricsAuth
 	a.mu.RUnlock()
-	if metricsAuth {
-		mux.Handle("GET "+api.PathMetrics, require(auth.Viewer, a.handleMetrics))
-	} else {
-		mux.HandleFunc("GET "+api.PathMetrics, a.handleMetrics)
+	for _, rt := range a.httpRoutes(metricsAuth) {
+		mux.Handle(rt.pattern, require(rt.role, rt.h))
 	}
 	requests := newLimiter(requestRate, requestBurst)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +131,22 @@ func (a *Agent) httpHandler() http.Handler {
 		}
 		mux.ServeHTTP(w, r)
 	})
+}
+
+// httpRoutes are served only on the HTTP listener: signing in and out,
+// and the metrics, public unless metricsAuth is set. The socket serves the
+// metrics without conditions.
+func (a *Agent) httpRoutes(metricsAuth bool) []route {
+	var metricsRole auth.Role
+	if metricsAuth {
+		metricsRole = auth.Viewer
+	}
+	return []route{
+		{pattern: "GET " + api.PathLogin, h: a.handleLogin},
+		{pattern: "POST " + api.PathSession, h: a.handleTokenLogin},
+		{pattern: "DELETE " + api.PathSession, h: a.handleLogout},
+		{pattern: "GET " + api.PathMetrics, role: metricsRole, h: a.handleMetrics},
+	}
 }
 
 func safeMethod(m string) bool {

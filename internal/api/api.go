@@ -37,6 +37,7 @@ const (
 	PathSessionCodes = "/api/v1/session/codes"
 	PathLogin        = "/login"
 	PathMetrics      = "/metrics"
+	PathOpenAPI      = "/api/v1/openapi.yaml"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )

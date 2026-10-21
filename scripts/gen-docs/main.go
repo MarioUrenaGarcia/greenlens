@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/MarioUrenaGarcia/greenlens"
+	"github.com/MarioUrenaGarcia/greenlens/internal/apispec"
 	"github.com/MarioUrenaGarcia/greenlens/internal/cli"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
@@ -85,10 +87,17 @@ func run(root, schemaPath string) error {
 			}
 		}
 	}
+	spec, err := apispec.Load(greenlens.OpenAPI)
+	if err != nil {
+		return fmt.Errorf("api/openapi.yaml: %w", err)
+	}
 	for _, lang := range i18n.Supported {
 		l, err := i18n.New(lang)
 		if err != nil {
 			return err
+		}
+		if _, ok := apiPages[lang]; !ok {
+			return fmt.Errorf("no texts for the API reference in %s", lang)
 		}
 		dir := filepath.Join(root, "reference")
 		if lang != i18n.Default {
@@ -105,6 +114,7 @@ func run(root, schemaPath string) error {
 			"errors.md":        errorsPage(l, pages[lang]),
 			"cli.md":           cliPage(l, pages[lang], tree),
 			"configuration.md": configPage(l, pages[lang]),
+			"api.md":           apiPage(spec, lang),
 		} {
 			if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil { //nolint:gosec // documentation file
 				return err

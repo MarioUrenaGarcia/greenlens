@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Mario Ureña García
 
-// Package greenlens holds the license texts at the root of the repository,
-// embedded so that every binary can show them.
+// Package greenlens embeds files kept at the root of the repository, such as
+// the license texts and the description of the HTTP API, so that every
+// binary carries them.
 package greenlens
 
 import _ "embed" // for go:embed
