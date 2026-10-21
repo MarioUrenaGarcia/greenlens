@@ -65,4 +65,5 @@ kWh, un PUE de 1.2, el factor de 444 gCO2e/kWh y un precio de 2.5 por kWh:
 - Con 1.8 kWh atribuidos a los backends, 0.6 kWh es energía que ningún
   backend explica.
 
-Son las cifras que verifican las pruebas de GreenLens.
+Son las cifras que verifican las pruebas de GreenLens a través de todo el
+agente: en el JSON, en el CSV y en las páginas imprimibles en ambos idiomas.

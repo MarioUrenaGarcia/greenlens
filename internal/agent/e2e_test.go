@@ -510,8 +510,10 @@ func TestInterfaceEndToEnd(t *testing.T) {
 
 	t.Run("printable reports", func(t *testing.T) {
 		g.t = t
-		for _, kind := range []string{"esg", "sci"} {
-			q := url.Values{"kind": {kind}, "format": {"html"}, "lang": {"en"}, "group_by": {"model"},
+		// Spanish text runs longer, so both languages must fit the page.
+		for _, page := range []struct{ kind, lang string }{{"esg", "en"}, {"sci", "en"}, {"esg", "es"}, {"sci", "es"}} {
+			kind := page.kind
+			q := url.Values{"kind": {kind}, "format": {"html"}, "lang": {page.lang}, "group_by": {"model"},
 				"from": {time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)}, "to": {time.Now().Add(time.Minute).UTC().Format(time.RFC3339)}}
 			if kind == "esg" {
 				q.Del("group_by")
@@ -525,7 +527,7 @@ func TestInterfaceEndToEnd(t *testing.T) {
 			if color != "rgb(9, 101, 63)" {
 				t.Errorf("%s: style not applied, h1 is %s", kind, color)
 			}
-			g.audit("report "+kind, "en")
+			g.audit("report "+kind+" "+page.lang, page.lang)
 			// A4 is 794 px wide at 96 dpi; nothing may stick out of it.
 			if err := g.p.Call(g.ctx, "Emulation.setDeviceMetricsOverride", map[string]any{"width": 794, "height": 1123, "deviceScaleFactor": 1, "mobile": false}, nil); err != nil {
 				t.Fatal(err)
@@ -533,7 +535,7 @@ func TestInterfaceEndToEnd(t *testing.T) {
 			var scroll int
 			g.eval(`document.documentElement.scrollWidth - innerWidth`, &scroll)
 			if scroll > 0 {
-				t.Errorf("%s: %d px wider than A4", kind, scroll)
+				t.Errorf("%s %s: %d px wider than A4", kind, page.lang, scroll)
 			}
 			var pdf struct {
 				Data string `json:"data"`

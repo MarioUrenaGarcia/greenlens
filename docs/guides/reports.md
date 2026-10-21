@@ -62,4 +62,5 @@ PUE of 1.2, the factor of 444 gCO2e/kWh and a price of 2.5 per kWh:
 - With 1.8 kWh attributed to the backends, 0.6 kWh is energy that no
   backend accounts for.
 
-These are the figures the tests of GreenLens check.
+These are the figures the tests of GreenLens check through the whole agent,
+in the JSON, the CSV and the printable pages in both languages.
