@@ -7,12 +7,10 @@ import (
 	"bytes"
 	"cmp"
 	"context"
-	"encoding/csv"
 	"errors"
 	"io"
 	"net/http"
 	"slices"
-	"strconv"
 	"sync"
 	"time"
 
@@ -99,7 +97,10 @@ func (a *Agent) handleReport(w http.ResponseWriter, r *http.Request) {
 		switch format {
 		case formatCSV:
 			attach(w, name+".csv")
-			writeESGCSV(w, rep)
+			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+			if err := report.WriteESGCSV(w, rep); err != nil {
+				a.log.Warn("writing the report failed", "error", err)
+			}
 		case formatHTML:
 			writeHTML(w, name+".html", func(b io.Writer) error { return report.RenderESG(b, rep, l) })
 		default:
@@ -115,7 +116,10 @@ func (a *Agent) handleReport(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case formatCSV:
 		attach(w, name+".csv")
-		writeSCICSV(w, rep)
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		if err := report.WriteSCICSV(w, rep); err != nil {
+			a.log.Warn("writing the report failed", "error", err)
+		}
 	case formatHTML:
 		writeHTML(w, name+".html", func(b io.Writer) error { return report.RenderSCI(b, rep, time.Now(), a.o.Version, l) })
 	default:
@@ -295,59 +299,4 @@ func (a *Agent) sciReport(ctx context.Context, from, to time.Time, groupBy, unit
 		From: from, To: to, GroupBy: groupBy, Unit: unit, Factors: apiFactors(f), Embodied: e,
 		Node: node, Groups: groups, Consumers: consumers,
 	}), nil
-}
-
-// writeSCICSV writes the node and every group, with the column names of
-// the JSON document.
-func writeSCICSV(w http.ResponseWriter, rep report.SCIReport) {
-	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	cw := csv.NewWriter(w)
-	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
-	opt := func(v *float64) string {
-		if v == nil {
-			return ""
-		}
-		return num(*v)
-	}
-	_ = cw.Write([]string{"scope", "backend", "model", "consumer", "energy_j", "server_share", "gpu_share",
-		"operational_g", "embodied_g", "functional_unit", "units", "g_per_unit"})
-	line := func(scope string, r report.SCIRow) {
-		_ = cw.Write([]string{scope, r.Backend, r.Model, r.Consumer, num(r.EnergyJ), num(r.ServerShare), num(r.GPUShare),
-			num(r.SCI.OperationalG), opt(r.SCI.EmbodiedG), r.SCI.Unit, num(r.SCI.Units), opt(r.SCI.GPerUnit)})
-	}
-	line("node", rep.Node)
-	for _, r := range rep.Rows {
-		line(rep.GroupBy, r)
-	}
-	cw.Flush()
-}
-
-// writeESGCSV writes the totals, the domains, the backends and the models,
-// one per line, with the column names of the JSON document.
-func writeESGCSV(w http.ResponseWriter, rep report.ESGReport) {
-	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	cw := csv.NewWriter(w)
-	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
-	opt := func(v *float64) string {
-		if v == nil {
-			return ""
-		}
-		return num(*v)
-	}
-	_ = cw.Write([]string{"section", "domain", "backend", "model", "energy_j", "kwh", "co2e_g", "cost", "water_l", "generated_tokens"})
-	_ = cw.Write([]string{"total", "", "", "", num(rep.ComponentsJ), num(rep.Indicators.KWh), num(rep.Indicators.CO2eG),
-		opt(rep.Indicators.Cost), opt(rep.Indicators.WaterL), ""})
-	for _, d := range rep.Domains {
-		_ = cw.Write([]string{"domain", string(d.Domain), "", "", num(d.EnergyJ), num(d.EnergyJ / indicators.JoulesPerKWh), "", "", "", ""})
-	}
-	for _, sec := range []struct {
-		name string
-		rows []report.ESGGroup
-	}{{"backend", rep.Backends}, {"model", rep.Models}} {
-		for _, g := range sec.rows {
-			_ = cw.Write([]string{sec.name, "", g.Backend, g.Model, num(g.EnergyJ), num(g.Indicators.KWh), num(g.Indicators.CO2eG),
-				opt(g.Indicators.Cost), opt(g.Indicators.WaterL), strconv.FormatInt(g.GeneratedTokens, 10)})
-		}
-	}
-	cw.Flush()
 }
