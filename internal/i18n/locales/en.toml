@@ -238,6 +238,68 @@ agent = "from the agent"
 database = "from the last calibration"
 none = "no calibration"
 
+[tui]
+too_small = "Enlarge the terminal to at least {width} by {height} characters."
+unreachable = "The agent cannot be reached; trying again."
+waiting = "Waiting for the first reading of the agent..."
+stale = "(agent unreachable, showing the last reading)"
+paused = "paused"
+summary = "Node {power}, {quality}  |  {backends} backends  |  agent {version}"
+filtered = "Filter: {filter}  (/ to change, Esc in the filter to clear)"
+self = "top: {cpu}% CPU, {memory} MiB"
+exported = "Exported to {path}"
+export_failed = "Export failed: {detail}"
+chart_window = "last {minutes} min"
+problems = "Problems ({count}); 'greenlens doctor' explains how to fix them:"
+
+[tui.view]
+node = "Node"
+backends = "Backends"
+consumers = "Consumers"
+sources = "Sources"
+
+[tui.key]
+next = "next view"
+prev = "previous view"
+views = "views"
+up = "up"
+down = "down"
+sort = "sort"
+filter = "filter"
+pause = "pause"
+export = "export CSV"
+help = "help"
+quit = "quit"
+
+[tui.col]
+backend = "Backend / model"
+power = "Power"
+energy = "Energy"
+energy_start = "Since start"
+jpt = "J/token"
+tps = "tok/s"
+cost = "Cost"
+consumer = "Consumer"
+tokens = "Tokens in/out"
+channel = "Channel"
+domain = "Domain"
+quality = "Quality"
+reason = "Status"
+
+[tui.empty]
+node = "The agent reports no energy domain yet."
+backends = "No inference backend found. Declare yours under backends in the configuration if discovery cannot see it."
+consumers = "No consumer attribution. Set proxy.consumer_header and send requests through the proxy to see the energy of each consumer."
+sources = "The agent reports no energy source."
+
+[tui.help]
+title = "greenlens top"
+node = "Node: the power of every domain over the last minutes and the energy since the agent started. Platform and wall values include the components and are not added to them."
+backends = "Backends and models: the power of each backend in the last usage interval and, since the agent started, the energy of every model, its energy per generated token, the tokens it generates per second, and the emissions of that energy."
+consumers = "Consumers: the energy and tokens of each consumer the proxy identifies, over the last day. Consumers are named by an HMAC of a request header or by an alias."
+sources = "Sources: every energy channel the agent found, whether it is used and why not."
+close = "Press ? or Esc to close."
+
 [cli.bench]
 short = "Benchmark the energy of a model"
 long = "Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. With a calibration, the energy per token is on the energy above idle."
@@ -294,6 +356,14 @@ basis = "one benchmark counts energy above idle and the other includes idle"
 hardware = "the benchmarks ran on different hardware"
 max_tokens = "the benchmarks generated a different number of tokens per prompt"
 traffic = "the projection assumes the second model would answer the same requests with as many tokens"
+
+[cli.top]
+short = "Show the power of the node and its backends live"
+long = "Open a live view of the agent in the terminal: the power of every domain, the backends and models with their energy per token, the consumers and the energy sources. Keys 1 to 4 or Tab change the view, / filters, s sorts, p pauses, e exports the view to CSV, ? shows the help of the view and q quits. It works over SSH from 80 by 24 characters, in ASCII when the locale is not UTF-8 and without color with --no-color or NO_COLOR."
+
+[cli.top.flag]
+refresh = "How often the agent is read, from 250ms to 1m"
+ascii = "Draw with ASCII only, for terminals without Unicode"
 
 [cli.proxy]
 short = "Show the state of the token-counting proxy"
@@ -417,6 +487,11 @@ fix = "use one of: {supported}"
 message = "'{command}' takes {want} arguments"
 cause = "received {got}"
 fix = "run '{command} --help' to see how to use it"
+
+[errors.GL0016]
+message = "greenlens top needs a terminal"
+cause = "the standard output is not a terminal"
+fix = "run it in a terminal, or use 'greenlens status' for a summary that can be piped"
 
 [errors.GL1001]
 message = "no measured energy source is available"

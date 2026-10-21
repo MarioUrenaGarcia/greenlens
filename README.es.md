@@ -74,7 +74,9 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 Un proxy cuenta los tokens de Ollama y de otros servidores compatibles con
 OpenAI y puede devolver la energía de cada petición, y `greenlens bench` y
 `compare` miden modelos de forma reproducible y proyectan el ahorro de
-cambiar. La interfaz gráfica forma parte del diseño que se muestra abajo.
+cambiar. La interfaz gráfica forma parte del diseño que se muestra abajo;
+`greenlens top` ya muestra en vivo en la terminal el nodo, los backends y las
+fuentes.
 
 <p align="center">
   <img src="site/static/images/terminal-es.svg" alt="Sesión de terminal con greenlens: ayuda, sugerencia de comando y error con causa y solución" width="820">

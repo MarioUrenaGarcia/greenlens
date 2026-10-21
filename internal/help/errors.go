@@ -37,6 +37,7 @@ const (
 	GL0013 Code = "GL0013" // process to measure not found
 	GL0014 Code = "GL0014" // cgroup of the unit not found
 	GL0015 Code = "GL0015" // wrong number of positional arguments
+	GL0016 Code = "GL0016" // the terminal interface needs a terminal
 
 	GL1001 Code = "GL1001" // no measured energy source
 	GL1002 Code = "GL1002" // RAPL counters readable only by root
@@ -98,6 +99,7 @@ var exitCodes = map[Code]int{
 	GL0013: ExitError,
 	GL0014: ExitError,
 	GL0015: ExitUsage,
+	GL0016: ExitUsage,
 	GL1001: ExitNoSource,
 	GL1002: ExitPermission,
 	GL1003: ExitPermission,

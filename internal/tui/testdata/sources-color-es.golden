@@ -1,0 +1,24 @@
+[1;38;2;232;247;239mGreenLens[m [38;2;156;196;175m 1 Nodo [m [38;2;156;196;175m 2 Backends [m [38;2;156;196;175m 3 Consumidores [m [1;38;2;232;247;239;48;2;22;56;42m 4 Fuentes [m            [38;2;156;196;175m18:30:00[m
+Nodo [1;38;2;242;165;65m121 W[m, medido  |  2 backends  |  agente v0.3.0
+ [1;38;2;156;196;175mCanal ^                 [m  [1;38;2;156;196;175mDominio       [m  [1;38;2;156;196;175mCalidad  [m  [1;38;2;156;196;175mEstado                   [m 
+ nvidia_smi:0000:01:00.0   GPU             medido     nvml ya mide este dominio 
+ nvml:0000:01:00.0         GPU             medido     seleccionado              
+ rapl:package-0            Paquete de CPU  medido     seleccionado              
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
+[1;38;2;232;247;239mProblemas (1); 'greenlens doctor' explica cómo corregirlos:[m
+[1;38;2;239;90;90mGL1003[m [38;2;156;196;175mno se pueden abrir los contadores de energía de perf_event[m
+
+
+[38;2;156;196;175m[m
+[1;38;2;232;247;239m1-4[m [38;2;156;196;175mvistas[m[38;2;156;196;175m  [m[1;38;2;232;247;239m/[m [38;2;156;196;175mfiltrar[m[38;2;156;196;175m  [m[1;38;2;232;247;239ms[m [38;2;156;196;175mordenar[m[38;2;156;196;175m  [m[1;38;2;232;247;239mp[m [38;2;156;196;175mpausa[m[38;2;156;196;175m  [m[1;38;2;232;247;239me[m [38;2;156;196;175mexportar CSV[m[38;2;156;196;175m  [m[1;38;2;232;247;239m?[m [38;2;156;196;175mayuda[m[38;2;156;196;175m  [m[1;38;2;232;247;239mq[m [38;2;156;196;175msalir[m     

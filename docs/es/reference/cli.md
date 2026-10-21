@@ -351,6 +351,30 @@ greenlens status
 greenlens status --output json
 ```
 
+## greenlens top
+
+Abre en la terminal una vista en vivo del agente: la potencia de cada dominio, los backends y modelos con su energía por token, los consumidores y las fuentes de energía. Las teclas 1 a 4 o Tab cambian de vista, / filtra, s ordena, p pausa, e exporta la vista a CSV, ? muestra la ayuda de la vista y q sale. Funciona por SSH desde 80 por 24 caracteres, en ASCII cuando el locale no es UTF-8 y sin color con --no-color o NO_COLOR.
+
+**Uso**
+
+```text
+greenlens top [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--ascii` | Dibuja solo con ASCII, para terminales sin Unicode |  |
+| `--refresh` | Cada cuánto se lee el agente, de 250ms a 1m | `1s` |
+
+**Ejemplos**
+
+```bash
+greenlens top
+greenlens top --refresh 5s --ascii
+```
+
 ## greenlens version
 
 Muestra la versión de este binario, la revisión del código fuente con la que se compiló, la versión de Go y la plataforma.

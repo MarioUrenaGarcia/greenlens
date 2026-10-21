@@ -1,0 +1,24 @@
+[1mGreenLens[m  1 Nodo   2 Backends   3 Consumidores  [1;7m 4 Fuentes [m            18:30:00
+Nodo [1m121 W[m, medido  |  2 backends  |  agente v0.3.0
+ [1mCanal ^                 [m  [1mDominio       [m  [1mCalidad  [m  [1mEstado                   [m 
+ nvidia_smi:0000:01:00.0   GPU             medido     nvml ya mide este dominio 
+ nvml:0000:01:00.0         GPU             medido     seleccionado              
+ rapl:package-0            Paquete de CPU  medido     seleccionado              
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
+[1mProblemas (1); 'greenlens doctor' explica cómo corregirlos:[m
+[1mGL1003[m no se pueden abrir los contadores de energía de perf_event
+
+
+
+[1m1-4[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     

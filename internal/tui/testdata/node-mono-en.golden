@@ -1,0 +1,24 @@
+[1mGreenLens[m [1;7m 1 Node [m  2 Backends   3 Consumers   4 Sources                18:30:00
+Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
+  100 W                                                                         
+                                                                                
+                                    ++  +++ +++ +++ +++  ++  +++ +++ +++ +++  ++
+                                 ++++++++ +++ +++ +++ ++++++++ +++ +++ +++ +++++
+                                 +                                              
+                                 +                                              
+                                 +                                              
+                                 +                                              
+ 50.0 W                          +                                              
+             ***   ***    ***   *+*    ***    ***   ***    ***   ***    ***    *
+        ****** ***** ****** *****+****** ****** ***** ****** ***** ****** ******
+        ++++++++++++++++++++++++++                                              
+                                                                                
+                                                                                
+                                                                                
+    0 W                                                                         
+        last 2 min
+Domain                      Power  Since start  Quality
+* CPU package          [1m    42.5 W[m [1m     42.2 Wh[m  measured
++ GPU                  [1m    78.2 W[m [1m     72.2 Wh[m  measured
+
+[1m1-4[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              

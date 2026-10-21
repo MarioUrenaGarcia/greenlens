@@ -1,0 +1,24 @@
+[1mGreenLens[m  1 Node  [1;7m 2 Backends [m  3 Consumers   4 Sources                18:30:00
+Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
+ [1mBackend / model ^   [m  [1mPower    [m  [1mEnergy   [m  [1mJ/token  [m  [1mtok/s  [m  [1mCO2e       [m 
+ llamacpp-18080        9.40 W     3352 J                -        0.41 gCO2e     
+   qwen2.5-0.5b-in...             3352 J     90.7 mJ    -        0.41 gCO2e     
+ ollama-11434          61.2 W     10.7 Wh               -        4.75 gCO2e     
+   llama3.2:3b                    2500 J     1.25 J     -        0.31 gCO2e     
+   qwen2.5:0.5b                   10.0 Wh    237 mJ     -        4.44 gCO2e     
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
+
+
+[1m1-4[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              

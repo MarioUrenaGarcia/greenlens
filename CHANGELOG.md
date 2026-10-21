@@ -37,6 +37,10 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the hash of the prompts is stored.
 - `greenlens compare`: compares two benchmarks or two models and projects
   the energy, emissions and cost saved by switching.
+- `greenlens top`: a live terminal view of the node, the backends and
+  models, the consumers and the energy sources, with sorting, filtering,
+  pause and CSV export; it works from 80 by 24 characters, in ASCII and
+  without color.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

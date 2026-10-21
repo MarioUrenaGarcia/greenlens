@@ -57,6 +57,7 @@ func newRoot(a *app) *cobra.Command {
 		newReportCmd(a),
 		newSetupPermissionsCmd(a),
 		newStatusCmd(a),
+		newTopCmd(a),
 		newVersionCmd(l),
 	)
 	localizeCommands(root, l)

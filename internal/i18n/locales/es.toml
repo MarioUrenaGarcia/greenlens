@@ -238,6 +238,68 @@ agent = "del agente"
 database = "de la última calibración"
 none = "sin calibración"
 
+[tui]
+too_small = "Agranda la terminal a por lo menos {width} por {height} caracteres."
+unreachable = "No se puede contactar al agente; se vuelve a intentar."
+waiting = "Esperando la primera lectura del agente..."
+stale = "(agente inaccesible, se muestra la última lectura)"
+paused = "en pausa"
+summary = "Nodo {power}, {quality}  |  {backends} backends  |  agente {version}"
+filtered = "Filtro: {filter}  (/ para cambiarlo, Esc en el filtro para quitarlo)"
+self = "top: {cpu}% CPU, {memory} MiB"
+exported = "Exportado a {path}"
+export_failed = "Falló la exportación: {detail}"
+chart_window = "últimos {minutes} min"
+problems = "Problemas ({count}); 'greenlens doctor' explica cómo corregirlos:"
+
+[tui.view]
+node = "Nodo"
+backends = "Backends"
+consumers = "Consumidores"
+sources = "Fuentes"
+
+[tui.key]
+next = "vista siguiente"
+prev = "vista anterior"
+views = "vistas"
+up = "arriba"
+down = "abajo"
+sort = "ordenar"
+filter = "filtrar"
+pause = "pausa"
+export = "exportar CSV"
+help = "ayuda"
+quit = "salir"
+
+[tui.col]
+backend = "Backend / modelo"
+power = "Potencia"
+energy = "Energía"
+energy_start = "Desde el inicio"
+jpt = "J/token"
+tps = "tok/s"
+cost = "Costo"
+consumer = "Consumidor"
+tokens = "Tokens entrada/salida"
+channel = "Canal"
+domain = "Dominio"
+quality = "Calidad"
+reason = "Estado"
+
+[tui.empty]
+node = "El agente todavía no reporta ningún dominio de energía."
+backends = "No se encontró ningún backend de inferencia. Declara el tuyo en backends de la configuración si el descubrimiento no lo ve."
+consumers = "Sin atribución por consumidor. Define proxy.consumer_header y envía las peticiones por el proxy para ver la energía de cada consumidor."
+sources = "El agente no reporta ninguna fuente de energía."
+
+[tui.help]
+title = "greenlens top"
+node = "Nodo: la potencia de cada dominio en los últimos minutos y la energía desde que inició el agente. Los valores de plataforma y de pared incluyen los componentes y no se suman a ellos."
+backends = "Backends y modelos: la potencia de cada backend en el último intervalo de uso y, desde que inició el agente, la energía de cada modelo, su energía por token generado, los tokens que genera por segundo y las emisiones de esa energía."
+consumers = "Consumidores: la energía y los tokens de cada consumidor que identifica el proxy, en el último día. Los consumidores se nombran por un HMAC de una cabecera de la petición o por un alias."
+sources = "Fuentes: cada canal de energía que encontró el agente, si se usa y por qué no."
+close = "Pulsa ? o Esc para cerrar."
+
 [cli.bench]
 short = "Mide la energía de un modelo con un benchmark"
 long = "Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. Con una calibración, la energía por token es la que está sobre el reposo."
@@ -294,6 +356,14 @@ basis = "un benchmark cuenta la energía sobre el reposo y el otro incluye el re
 hardware = "los benchmarks corrieron en hardware distinto"
 max_tokens = "los benchmarks generaron un número distinto de tokens por prompt"
 traffic = "la proyección supone que el segundo modelo respondería las mismas peticiones con los mismos tokens"
+
+[cli.top]
+short = "Muestra en vivo la potencia del nodo y de sus backends"
+long = "Abre en la terminal una vista en vivo del agente: la potencia de cada dominio, los backends y modelos con su energía por token, los consumidores y las fuentes de energía. Las teclas 1 a 4 o Tab cambian de vista, / filtra, s ordena, p pausa, e exporta la vista a CSV, ? muestra la ayuda de la vista y q sale. Funciona por SSH desde 80 por 24 caracteres, en ASCII cuando el locale no es UTF-8 y sin color con --no-color o NO_COLOR."
+
+[cli.top.flag]
+refresh = "Cada cuánto se lee el agente, de 250ms a 1m"
+ascii = "Dibuja solo con ASCII, para terminales sin Unicode"
 
 [cli.proxy]
 short = "Muestra el estado del proxy que cuenta tokens"
@@ -417,6 +487,11 @@ fix = "usa uno de: {supported}"
 message = "'{command}' recibe {want} argumentos"
 cause = "se recibieron {got}"
 fix = "ejecuta '{command} --help' para ver cómo usarlo"
+
+[errors.GL0016]
+message = "greenlens top necesita una terminal"
+cause = "la salida estándar no es una terminal"
+fix = "ejecútalo en una terminal, o usa 'greenlens status' para un resumen que se puede redirigir"
 
 [errors.GL1001]
 message = "no hay ninguna fuente de energía medida disponible"
