@@ -262,6 +262,13 @@ func TestHTTPAPI(t *testing.T) {
 	if !limited {
 		t.Error("no rate limit")
 	}
+	// The files of the interface are not limited: one visit and its
+	// service worker ask for many at once.
+	for range requestBurst + 20 {
+		if resp, _ := anon.do("GET", "/main.js", nil); resp.code != http.StatusOK {
+			t.Fatalf("interface file after the limit: %d", resp.code)
+		}
+	}
 }
 
 func TestExposedWithoutTokensIsRefused(t *testing.T) {

@@ -73,5 +73,5 @@ something must carry its CSRF token and come from the same origin.
 ## Limits
 
 Each address may send 30 requests per second, with bursts of 60, and 10
-sign-in attempts per minute. Request bodies are limited to 1 MiB and headers
-to 32 KiB.
+sign-in attempts per minute; the files of the interface do not count.
+Request bodies are limited to 1 MiB and headers to 32 KiB.

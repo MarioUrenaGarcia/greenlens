@@ -71,12 +71,26 @@ func newStatic(fsys fs.FS) *static {
 	return s
 }
 
-func (s *static) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// assetName returns the file a request asks for.
+func assetName(r *http.Request) string {
 	p := strings.TrimPrefix(r.URL.Path, "/")
 	if p == "" {
 		p = "index.html"
 	}
-	a, ok := s.files[p]
+	return p
+}
+
+// has reports whether r reads one of the files.
+func (s *static) has(r *http.Request) bool {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	_, ok := s.files[assetName(r)]
+	return ok
+}
+
+func (s *static) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a, ok := s.files[assetName(r)]
 	if !ok {
 		writeError(w, http.StatusNotFound, "not found")
 		return

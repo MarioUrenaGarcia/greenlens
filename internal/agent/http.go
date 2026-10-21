@@ -87,7 +87,8 @@ func (a *Agent) httpServer() *http.Server {
 // CSRF check for browser sessions.
 func (a *Agent) httpHandler() http.Handler {
 	mux := a.mux(false)
-	mux.Handle("GET /", newStatic(web.Assets()))
+	assets := newStatic(web.Assets())
+	mux.Handle("GET /", assets)
 	a.mu.RLock()
 	metricsAuth := a.cfg.Server.MetricsAuth
 	a.mu.RUnlock()
@@ -110,7 +111,10 @@ func (a *Agent) httpHandler() http.Handler {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			h.Set("Cache-Control", "no-store")
 		}
-		if !requests.allow(clientIP(r)) {
+		// The files of the interface come from memory and cost nothing to
+		// serve, while one visit asks for a dozen of them at once and the
+		// service worker as many again.
+		if !assets.has(r) && !requests.allow(clientIP(r)) {
 			h.Set("Retry-After", "1")
 			writeError(w, http.StatusTooManyRequests, "too many requests; slow down")
 			return

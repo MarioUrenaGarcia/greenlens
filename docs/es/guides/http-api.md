@@ -75,5 +75,6 @@ del mismo origen.
 ## Límites
 
 Cada dirección puede enviar 30 peticiones por segundo, con ráfagas de 60, y 10
-intentos de inicio de sesión por minuto. El cuerpo de las peticiones se
-limita a 1 MiB y las cabeceras a 32 KiB.
+intentos de inicio de sesión por minuto; los archivos de la interfaz no
+cuentan. El cuerpo de las peticiones se limita a 1 MiB y las cabeceras a
+32 KiB.
