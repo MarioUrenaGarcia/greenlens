@@ -1282,6 +1282,33 @@ base = "Power not explained by tokens"
 ci = "plus or minus {value} at 95% confidence"
 r2 = "R2 {r2} over {n} intervals of the last day"
 
+[gui.regress]
+title = "Regressions of the energy per token"
+none = "No day of this model lies {z} or more standard deviations from the mean of the {days} days before it."
+some = "{count} days of this model lie far from the days before them."
+no_days = "No day of the period has the {tokens} generated tokens needed to be judged."
+caption = "Every day of the period with its energy per generated token against the days before it"
+day = "Day"
+baseline = "Days before"
+status = "Verdict"
+changes = "Changes of context"
+no_changes = "Nothing that the measurements depend on changed in the period."
+change = "from {from} to {to}"
+
+[gui.regress.state]
+regression = "Regression"
+improvement = "Improvement"
+normal = "Normal"
+insufficient = "Too few days before"
+
+[gui.regress.kind]
+agent_version = "GreenLens"
+kernel = "Kernel"
+gpu_driver = "GPU driver"
+backend_version = "Backend"
+model_digest = "Model file"
+config = "Configuration"
+
 [gui.sci]
 column = "SCI, {unit}"
 without_embodied = "The SCI leaves out embodied carbon until indicators.sci.embodied is configured."

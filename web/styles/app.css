@@ -792,3 +792,23 @@ textarea.input {
     border-color: #999999;
   }
 }
+
+/* A regression costs energy and an improvement saves it. */
+.status-regression {
+  color: var(--critical-text);
+  font-weight: 600;
+}
+
+.status-improvement {
+  color: var(--eff-text);
+  font-weight: 600;
+}
+
+.events {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.events time {
+  font-variant-numeric: tabular-nums;
+}

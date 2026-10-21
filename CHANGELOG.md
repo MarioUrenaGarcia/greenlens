@@ -96,6 +96,13 @@ All notable changes to GreenLens are recorded in this file. The format follows
   `greenlens_sci_grams_co2e_per_unit` and the embodied scope of
   `greenlens_emissions_grams_co2e_total`. Usage rollups keep their GPU
   part for that share.
+- Regressions of the energy per generated token: every local day of a
+  model is judged against the days before it with a z-score
+  (`analysis.regression`), next to the changes of context the agent
+  records, such as its version, the kernel, the NVIDIA driver, the
+  version of each backend, the digest of each Ollama model and the
+  configuration. `GET /api/v1/regressions`, `greenlens report
+  --regressions` and the detail of each model show them.
 - Queries of long periods read every whole hour that falls inside one
   bucket from the hourly rollups and every whole minute from the minute
   rollups, with new indexes by resolution, so a query of 30 days reads

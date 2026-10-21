@@ -403,6 +403,9 @@ func TestInterfaceEndToEnd(t *testing.T) {
 			}
 			g.show("help/guides/gui")
 			g.audit("help page "+theme, "en")
+			g.show("models/ollama-test/qwen2.5:0.5b")
+			g.waitFor(`[...document.querySelectorAll("main h2")].some((h) => h.textContent.includes("Regressions"))`)
+			g.audit("model detail "+theme, "en")
 		}
 		g.choose("#theme", "system")
 		for _, scheme := range []string{"light", "dark"} {

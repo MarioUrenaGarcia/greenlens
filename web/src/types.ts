@@ -301,3 +301,40 @@ export interface SCIReport {
   node: SCIRow;
   rows: SCIRow[];
 }
+
+// Finding is one day of a model judged against the days before it.
+export interface Finding {
+  day: string;
+  energy_j: number;
+  generated_tokens: number;
+  j_per_generated_token: number;
+  baseline_days: number;
+  baseline_mean: number;
+  baseline_sd: number;
+  z?: number;
+  status: "normal" | "regression" | "improvement" | "insufficient";
+}
+
+export interface ContextEvent {
+  id: number;
+  at: string;
+  kind: string;
+  subject?: string;
+  value: string;
+  previous?: string;
+}
+
+export interface Regressions {
+  schema_version: number;
+  from: string;
+  to: string;
+  time_zone: string;
+  params: {
+    baseline_days: number;
+    min_baseline_days: number;
+    z_threshold: number;
+    min_generated_tokens: number;
+  };
+  models: { backend: string; model: string; days: Finding[] }[];
+  events: ContextEvent[];
+}

@@ -12,6 +12,7 @@ import { useLive } from "../live";
 import { href } from "../router";
 import type { SCIReport, UsageEnergy } from "../types";
 import { jpt } from "./backends";
+import { ModelRegressions } from "./regressions";
 import { type Period, periodOptions } from "./summary";
 
 const periodMs: Record<Period, number> = { "24h": 864e5, "7d": 7 * 864e5, "30d": 30 * 864e5 };
@@ -247,6 +248,7 @@ function ModelDetail(props: { backend: string; model: string; period: Period }) 
           </div>
         </Panel>
       ) : null}
+      {doc ? <ModelRegressions backend={props.backend} model={props.model} fromMs={doc.from} /> : null}
     </div>
   );
 }

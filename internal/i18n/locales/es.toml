@@ -1282,6 +1282,33 @@ base = "Potencia que los tokens no explican"
 ci = "más o menos {value} con 95% de confianza"
 r2 = "R2 {r2} en {n} intervalos del último día"
 
+[gui.regress]
+title = "Regresiones de la energía por token"
+none = "Ningún día de este modelo está a {z} o más desviaciones estándar de la media de los {days} días anteriores."
+some = "{count} días de este modelo se alejan de los días anteriores."
+no_days = "Ningún día del periodo tiene los {tokens} tokens generados necesarios para juzgarlo."
+caption = "Cada día del periodo con su energía por token generado frente a los días anteriores"
+day = "Día"
+baseline = "Días anteriores"
+status = "Veredicto"
+changes = "Cambios de contexto"
+no_changes = "Nada de lo que dependen las mediciones cambió en el periodo."
+change = "de {from} a {to}"
+
+[gui.regress.state]
+regression = "Regresión"
+improvement = "Mejora"
+normal = "Normal"
+insufficient = "Pocos días anteriores"
+
+[gui.regress.kind]
+agent_version = "GreenLens"
+kernel = "Kernel"
+gpu_driver = "Driver de GPU"
+backend_version = "Backend"
+model_digest = "Archivo del modelo"
+config = "Configuración"
+
 [gui.sci]
 column = "SCI, {unit}"
 without_embodied = "El SCI no incluye el carbono incorporado hasta que se configure indicators.sci.embodied."
