@@ -26,6 +26,34 @@
       },
       "type": "object"
     },
+    "analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "regression": {
+          "additionalProperties": false,
+          "properties": {
+            "baseline_days": {
+              "description": "Calendar days before a day that form its baseline of energy per generated token.",
+              "type": "integer"
+            },
+            "min_baseline_days": {
+              "description": "Fewest days with data in the baseline for a day to be judged.",
+              "type": "integer"
+            },
+            "min_generated_tokens": {
+              "description": "Fewest generated tokens for a day to count; fewer make its energy per token too uncertain.",
+              "type": "integer"
+            },
+            "z_threshold": {
+              "description": "Standard deviations from the baseline mean that make a day a regression, or an improvement below it.",
+              "type": "number"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "attribution": {
       "additionalProperties": false,
       "properties": {

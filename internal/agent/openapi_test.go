@@ -159,6 +159,9 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	q.Set("unit", "request")
 	get("reports", sock, api.PathReports+"?"+q.Encode())
 	get("reports", sock, api.PathReports+"?kind=esg&"+q.Encode())
+	rq := url.Values{"from": {now.Add(-30 * 24 * time.Hour).Format(time.RFC3339)}, "to": {now.Add(time.Minute).Format(time.RFC3339)}}
+	get("regressions", sock, api.PathRegressions+"?"+rq.Encode())
+	get("regressions", sock, api.PathRegressions+"?from=now")
 	q.Set("format", "csv")
 	if resp, body := sock.do("GET", api.PathReports+"?"+q.Encode(), nil); resp.code != 200 || !strings.HasPrefix(resp.header.Get("Content-Type"), "text/csv") ||
 		!strings.HasPrefix(string(body), "scope,backend,model,consumer,energy_j") {

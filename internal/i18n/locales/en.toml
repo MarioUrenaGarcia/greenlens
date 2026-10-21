@@ -557,7 +557,7 @@ no = "no"
 
 [cli.report]
 short = "Report the energy, emissions and cost of a period"
-long = "Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. With --group, report the energy attributed to each backend or model instead, with its tokens. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d."
+long = "Report the energy measured by the agent in a period, by domain and in total, with its emissions and, when a tariff is configured, its cost. With --group, report the energy attributed to each backend or model instead, with its tokens. With --regressions, list the days whose energy per generated token lies far from the days before them, next to the changes of version, driver, model file or configuration around them. Periods can be dates, RFC 3339 times or amounts of time ago such as 24h or 7d."
 no_usage = "No energy was attributed to a backend in this period."
 period = "From {from} to {to}"
 total = "total"
@@ -570,6 +570,7 @@ from = "Start of the period"
 to = "End of the period"
 by = "Group by none, hour or day"
 group = "Report by backend, model or consumer instead of by domain"
+regressions = "List the days whose energy per generated token is a regression or an improvement, and the changes of context"
 
 [cli.token]
 short = "Manage the access tokens of the HTTP API"
@@ -610,6 +611,29 @@ server = "server"
 [cli.gui.flag]
 print = "Print the link instead of opening the browser"
 role = "Role of the session: viewer, operator or admin"
+
+[cli.regress]
+none = "No regression in the period: every day judged lies within {z} standard deviations of the {days} days before it."
+changes = "Changes of context:"
+
+[cli.regress.col]
+day = "Day"
+baseline = "Baseline"
+status = "Status"
+
+[cli.regress.status]
+regression = "regression"
+improvement = "improvement"
+normal = "normal"
+insufficient = "too few days"
+
+[cli.regress.kind]
+agent_version = "GreenLens"
+kernel = "kernel"
+gpu_driver = "GPU driver"
+backend_version = "backend"
+model_digest = "model file"
+config = "configuration"
 
 [cli.sci]
 short = "Compute the Software Carbon Intensity of a period"
@@ -744,6 +768,10 @@ indicators_tariff_periods_days = "Weekdays of the period: sun, mon, tue, wed, th
 indicators_tariff_periods_from = "Local time the period starts, such as 18:00."
 indicators_tariff_periods_to = "Local time the period ends, later than from on the same day; 24:00 is the end of the day."
 indicators_tariff_periods_price_per_kwh = "Price per kWh during the period, in the currency of the tariff."
+analysis_regression_baseline_days = "Calendar days before a day that form its baseline of energy per generated token."
+analysis_regression_min_baseline_days = "Fewest days with data in the baseline for a day to be judged."
+analysis_regression_z_threshold = "Standard deviations from the baseline mean that make a day a regression, or an improvement below it."
+analysis_regression_min_generated_tokens = "Fewest generated tokens for a day to count; fewer make its energy per token too uncertain."
 indicators_sci = "Software Carbon Intensity, ISO/IEC 21031: the emissions per functional unit."
 indicators_sci_functional_unit = "Unit of the SCI: 1k_generated_tokens, request or consumer."
 indicators_sci_embodied = "Carbon of making the hardware, spread over its lifetime by the energy share of each scope."

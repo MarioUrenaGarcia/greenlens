@@ -420,6 +420,18 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 			t.Fatalf("sci %v: %d %s", args, code, errOut)
 		}
 	}
+	if code, out, _ := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--from", "30d", "--regressions"); code != 0 ||
+		!strings.Contains(out, "No regression in the period") || !strings.Contains(out, "Changes of context") {
+		t.Fatalf("regressions: %d %s", code, out)
+	}
+	code, out, _ = runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--from", "30d", "--regressions", "-o", "json")
+	var rg api.Regressions
+	if code != 0 || json.Unmarshal([]byte(out), &rg) != nil || rg.Params.BaselineDays != 14 || len(rg.Events) == 0 {
+		t.Fatalf("regressions json: %d %s", code, out)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--regressions", "--group", "model"); code != 2 || !strings.Contains(errOut, "GL0005") {
+		t.Fatalf("regressions with group: %d %s", code, errOut)
+	}
 	if code, out, _ := runWith(t, hooks{}, nil, "proxy", "--config", cfgPath); code != 0 || !strings.Contains(out, "proxy.enabled") {
 		t.Fatalf("proxy off: %d %s", code, out)
 	}

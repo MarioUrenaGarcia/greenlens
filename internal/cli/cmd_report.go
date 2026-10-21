@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/analysis"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
@@ -69,12 +70,14 @@ func parseTime(s string, now time.Time) (time.Time, error) {
 func newReportCmd(a *app) *cobra.Command {
 	l := a.l
 	var fromS, toS, by, group string
+	var regressions bool
 	cmd := &cobra.Command{
-		Use:     "report",
-		Short:   l.T("cli.report.short"),
-		Long:    wrap(l.T("cli.report.long"), helpWidth),
-		Example: "  greenlens report\n  greenlens report --from 7d --by day\n  greenlens report --from 7d --group model\n  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
-		Args:    noArgs,
+		Use:   "report",
+		Short: l.T("cli.report.short"),
+		Long:  wrap(l.T("cli.report.long"), helpWidth),
+		Example: "  greenlens report\n  greenlens report --from 7d --by day\n  greenlens report --from 7d --group model\n" +
+			"  greenlens report --from 30d --regressions\n  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
+		Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			now := time.Now()
 			from, err := parseTime(fromS, now)
@@ -92,6 +95,9 @@ func newReportCmd(a *app) *cobra.Command {
 			if group != "" && (group != store.ByBackend && group != store.ByModel && group != store.ByConsumer || by != "none") {
 				return help.New(help.GL0005, "flag", "--group", "value", group, "command", cmd.CommandPath())
 			}
+			if regressions && (group != "" || by != "none") {
+				return help.New(help.GL0005, "flag", "--regressions", "value", "true", "command", cmd.CommandPath())
+			}
 			cfg, _, err := a.config()
 			if err != nil {
 				return err
@@ -99,6 +105,13 @@ func newReportCmd(a *app) *cobra.Command {
 			c, err := a.agent(cmd.Context(), cfg)
 			if err != nil {
 				return err
+			}
+			if regressions {
+				rg, err := c.Regressions(cmd.Context(), from, to)
+				if err != nil {
+					return err
+				}
+				return a.writeRegressions(cmd, rg)
 			}
 			// The indicators come from the agent, computed hour by hour
 			// with the factors of its own configuration.
@@ -164,6 +177,7 @@ func newReportCmd(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&toS, "to", "now", l.T("cli.report.flag.to"))
 	cmd.Flags().StringVar(&by, "by", "none", l.T("cli.report.flag.by"))
 	cmd.Flags().StringVar(&group, "group", "", l.T("cli.report.flag.group"))
+	cmd.Flags().BoolVar(&regressions, "regressions", false, l.T("cli.report.flag.regressions"))
 	return cmd
 }
 
@@ -334,4 +348,49 @@ func (a *app) writeBackendReport(cmd *cobra.Command, rep BackendReport) error {
 	}
 	_, err := fmt.Fprintln(w, "\n"+l.T("cli.report.factor", "value", strconv.FormatFloat(rep.EmissionGKWh, 'f', -1, 64), "source", rep.EmissionSource))
 	return err
+}
+
+// writeRegressions lists the days that are regressions or improvements,
+// and the changes of context of the period.
+func (a *app) writeRegressions(cmd *cobra.Command, rg api.Regressions) error {
+	l := a.l
+	g := output.Grid{Header: []string{l.T("cli.regress.col.day"), l.T("cli.col.backend"), l.T("cli.col.model"),
+		l.T("cli.col.joules_per_token"), l.T("cli.regress.col.baseline"), "z", l.T("cli.regress.col.status")}}
+	for _, m := range rg.Models {
+		for _, d := range m.Days {
+			if d.Status != analysis.StatusRegression && d.Status != analysis.StatusImprovement {
+				continue
+			}
+			g.Rows = append(g.Rows, []string{d.Day, m.Backend, m.Model, units.Energy(d.JPerToken, a.raw),
+				units.Energy(d.BaselineMean, a.raw) + " +- " + units.Energy(d.BaselineSD, a.raw),
+				strconv.FormatFloat(*d.Z, 'f', 2, 64), l.T("cli.regress.status." + d.Status)})
+		}
+	}
+	if a.out() != output.Table {
+		return output.Write(cmd.OutOrStdout(), a.out(), rg, g)
+	}
+	w := cmd.OutOrStdout()
+	_, _ = fmt.Fprintln(w, l.T("cli.report.period", "from", rg.From.Local().Format(time.DateTime), "to", rg.To.Local().Format(time.DateTime)))
+	_, _ = fmt.Fprintln(w)
+	if len(g.Rows) == 0 {
+		_, _ = fmt.Fprintln(w, wrap(l.T("cli.regress.none", "z", strconv.FormatFloat(rg.Params.Z, 'f', -1, 64), "days", strconv.Itoa(rg.Params.BaselineDays)), helpWidth))
+	} else if err := output.WriteGrid(w, g); err != nil {
+		return err
+	}
+	if len(rg.Events) > 0 {
+		_, _ = fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w, l.T("cli.regress.changes"))
+		for _, e := range rg.Events {
+			what := l.T("cli.regress.kind." + e.Kind)
+			if e.Subject != "" {
+				what += " " + e.Subject
+			}
+			change := e.Value
+			if e.Previous != "" {
+				change = e.Previous + " -> " + e.Value
+			}
+			_, _ = fmt.Fprintf(w, "  %s  %s: %s\n", e.At.Local().Format(time.DateTime), what, change)
+		}
+	}
+	return nil
 }

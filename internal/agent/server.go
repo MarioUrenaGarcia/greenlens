@@ -106,6 +106,7 @@ func (a *Agent) routes() []route {
 		}},
 		{pattern: "GET " + api.PathUsage, role: auth.Viewer, h: a.handleUsage},
 		{pattern: "GET " + api.PathReports, role: auth.Viewer, h: a.handleReport},
+		{pattern: "GET " + api.PathRegressions, role: auth.Viewer, h: a.handleRegressions},
 		{pattern: "GET " + api.PathBackends, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, a.Backends())
 		}},

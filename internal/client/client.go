@@ -152,6 +152,15 @@ func (c *Client) SCIReport(ctx context.Context, from, to time.Time, groupBy, uni
 	return r, err
 }
 
+// Regressions returns the days of every model in a period judged against
+// their baseline, and the changes of context.
+func (c *Client) Regressions(ctx context.Context, from, to time.Time) (api.Regressions, error) {
+	q := url.Values{"from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}}
+	var r api.Regressions
+	err := c.get(ctx, api.PathRegressions, q, &r)
+	return r, err
+}
+
 // SaveBenchmark stores a benchmark in the agent and returns it with its id.
 func (c *Client) SaveBenchmark(ctx context.Context, b bench.Result) (bench.Result, error) {
 	body, err := json.Marshal(b)

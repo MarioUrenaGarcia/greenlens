@@ -557,7 +557,7 @@ no = "no"
 
 [cli.report]
 short = "Reporta la energía, las emisiones y el costo de un periodo"
-long = "Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d."
+long = "Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Con --regressions, lista los días cuya energía por token generado se aleja de los días anteriores, junto a los cambios de versión, driver, archivo de modelo o configuración cercanos. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d."
 no_usage = "En este periodo no se atribuyó energía a ningún backend."
 period = "Del {from} al {to}"
 total = "total"
@@ -570,6 +570,7 @@ from = "Inicio del periodo"
 to = "Fin del periodo"
 by = "Agrupa por none, hour o day"
 group = "Reporta por backend, model o consumer en lugar de por dominio"
+regressions = "Lista los días cuya energía por token generado es una regresión o una mejora, y los cambios de contexto"
 
 [cli.token]
 short = "Gestiona los tokens de acceso de la API HTTP"
@@ -610,6 +611,29 @@ server = "servidor"
 [cli.gui.flag]
 print = "Imprime el enlace en lugar de abrir el navegador"
 role = "Rol de la sesión: viewer, operator o admin"
+
+[cli.regress]
+none = "No hay regresiones en el periodo: cada día juzgado está a menos de {z} desviaciones estándar de los {days} días anteriores."
+changes = "Cambios de contexto:"
+
+[cli.regress.col]
+day = "Día"
+baseline = "Línea base"
+status = "Estado"
+
+[cli.regress.status]
+regression = "regresión"
+improvement = "mejora"
+normal = "normal"
+insufficient = "pocos días"
+
+[cli.regress.kind]
+agent_version = "GreenLens"
+kernel = "kernel"
+gpu_driver = "driver de GPU"
+backend_version = "backend"
+model_digest = "archivo del modelo"
+config = "configuración"
 
 [cli.sci]
 short = "Calcula la intensidad de carbono del software de un periodo"
@@ -744,6 +768,10 @@ indicators_tariff_periods_days = "Días del tramo: sun, mon, tue, wed, thu, fri 
 indicators_tariff_periods_from = "Hora local en que empieza el tramo, como 18:00."
 indicators_tariff_periods_to = "Hora local en que termina el tramo, después de from en el mismo día; 24:00 es el fin del día."
 indicators_tariff_periods_price_per_kwh = "Precio por kWh durante el tramo, en la moneda de la tarifa."
+analysis_regression_baseline_days = "Días del calendario antes de un día que forman su línea base de energía por token generado."
+analysis_regression_min_baseline_days = "Mínimo de días con datos en la línea base para juzgar un día."
+analysis_regression_z_threshold = "Desviaciones estándar respecto de la media de la línea base que hacen de un día una regresión, o una mejora por debajo de ella."
+analysis_regression_min_generated_tokens = "Mínimo de tokens generados para que un día cuente; con menos, su energía por token es demasiado incierta."
 indicators_sci = "Intensidad de carbono del software (SCI), ISO/IEC 21031: las emisiones por unidad funcional."
 indicators_sci_functional_unit = "Unidad del SCI: 1k_generated_tokens, request o consumer."
 indicators_sci_embodied = "Carbono de fabricación del hardware, repartido en su vida útil según la participación de energía de cada ámbito."

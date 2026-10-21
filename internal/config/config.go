@@ -70,6 +70,7 @@ type Config struct {
 	Proxy       Proxy       `yaml:"proxy"`
 	Server      Server      `yaml:"server"`
 	Indicators  Indicators  `yaml:"indicators"`
+	Analysis    Analysis    `yaml:"analysis"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
 }
@@ -242,6 +243,20 @@ type TariffPeriod struct {
 	PricePerKWh float64  `yaml:"price_per_kwh"`
 }
 
+// Analysis configures the analysis of the measurements.
+type Analysis struct {
+	Regression Regression `yaml:"regression"`
+}
+
+// Regression configures the detection of regressions of the energy per
+// generated token of each model, day by day.
+type Regression struct {
+	BaselineDays       int     `yaml:"baseline_days"`
+	MinBaselineDays    int     `yaml:"min_baseline_days"`
+	ZThreshold         float64 `yaml:"z_threshold"`
+	MinGeneratedTokens int     `yaml:"min_generated_tokens"`
+}
+
 // Retention sets how long data is kept at each resolution.
 type Retention struct {
 	Raw      Duration `yaml:"raw"`
@@ -265,6 +280,7 @@ func Defaults() Config {
 		Server:      Server{Enabled: true, Listen: DefaultListen},
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}, SCI: SCI{FunctionalUnit: indicators.UnitGeneratedTokens}},
+		Analysis:    Analysis{Regression: Regression{BaselineDays: 14, MinBaselineDays: 7, ZThreshold: 3, MinGeneratedTokens: 1000}},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
 			Rollup1m: Duration(2160 * time.Hour),
@@ -631,6 +647,19 @@ func (c Config) Validate() error {
 		bad("indicators.sci.embodied.lifetime_years", "must be more than 0 and at most 100 years")
 	case life == nil && (sci.Embodied.ServerKgCO2e != nil || sci.Embodied.GPUKgCO2e != nil):
 		bad("indicators.sci.embodied.lifetime_years", "is needed to spread the embodied carbon over the life of the hardware")
+	}
+	rg := c.Analysis.Regression
+	if rg.BaselineDays < 2 || rg.BaselineDays > 90 {
+		bad("analysis.regression.baseline_days", "must be between 2 and 90")
+	}
+	if rg.MinBaselineDays < 2 || rg.MinBaselineDays > rg.BaselineDays {
+		bad("analysis.regression.min_baseline_days", "must be at least 2 and at most baseline_days")
+	}
+	if rg.ZThreshold <= 0 || rg.ZThreshold > 10 || math.IsNaN(rg.ZThreshold) {
+		bad("analysis.regression.z_threshold", "must be more than 0 and at most 10")
+	}
+	if rg.MinGeneratedTokens < 1 {
+		bad("analysis.regression.min_generated_tokens", "must be at least 1")
 	}
 	if f := c.Indicators.HourlyProfileFile; f != "" && !filepath.IsAbs(f) {
 		bad("indicators.hourly_profile_file", "must be an absolute path")

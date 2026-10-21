@@ -293,6 +293,58 @@ paths:
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/regressions:
+    get:
+      operationId: regressions
+      tags: [reports]
+      summary: Regressions of the energy per token of each model
+      x-summary-es: Regresiones de la energía por token de cada modelo
+      description: >-
+        Every local day of the period in which a model generated enough
+        tokens, with its energy per generated token, the mean and deviation
+        of the days before it, its z-score and whether it is a regression or
+        an improvement, plus the changes of context in the period and the
+        day before it.
+      x-description-es: >-
+        Cada día local del periodo en que un modelo generó suficientes
+        tokens, con su energía por token generado, la media y la desviación
+        de los días anteriores, su z-score y si es una regresión o una
+        mejora, además de los cambios de contexto del periodo y del día
+        anterior.
+      x-greenlens-role: viewer
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start of the period, RFC 3339; the judged days start at the local midnight of it.
+          x-description-es: Inicio del periodo, RFC 3339; los días juzgados empiezan en su medianoche local.
+          schema: {type: string, format: date-time}
+        - name: to
+          in: query
+          required: true
+          description: End of the period, RFC 3339.
+          x-description-es: Fin del periodo, RFC 3339.
+          schema: {type: string, format: date-time}
+        - name: backend
+          in: query
+          description: Only the models of this backend.
+          x-description-es: Solo los modelos de este backend.
+          schema: {type: string}
+        - name: model
+          in: query
+          description: Only this model.
+          x-description-es: Solo este modelo.
+          schema: {type: string}
+      responses:
+        "200":
+          description: The days of every model and the changes of context.
+          x-description-es: Los días de cada modelo y los cambios de contexto.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Regressions"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "500": {$ref: "#/components/responses/ServerError"}
   /api/v1/backends:
     get:
       operationId: backends
@@ -1178,6 +1230,83 @@ components:
           description: Each group, when group_by is set.
           x-description-es: Cada grupo, cuando se indica group_by.
           items: {$ref: "#/components/schemas/SCIRow"}
+
+    Finding:
+      type: object
+      description: One day of a model judged against the days before it.
+      x-description-es: Un día de un modelo juzgado frente a los días anteriores.
+      additionalProperties: false
+      required: [day, energy_j, generated_tokens, j_per_generated_token, baseline_days, baseline_mean, baseline_sd, status]
+      properties:
+        day: {type: string, description: Local date of the day., x-description-es: Fecha local del día.}
+        energy_j: {type: number, description: Energy of the model that day., x-description-es: Energía del modelo ese día.}
+        generated_tokens: {type: integer, description: Tokens it generated that day., x-description-es: Tokens que generó ese día.}
+        j_per_generated_token: {type: number, description: Energy per generated token that day., x-description-es: Energía por token generado ese día.}
+        baseline_days: {type: integer, description: Days with data in the baseline., x-description-es: Días con datos en la línea base.}
+        baseline_mean: {type: number, description: Mean J per token of the baseline., x-description-es: Media de J por token de la línea base.}
+        baseline_sd: {type: number, description: Sample standard deviation of the baseline., x-description-es: Desviación estándar muestral de la línea base.}
+        z: {type: number, description: Distance from the baseline mean in standard deviations; absent with too few baseline days., x-description-es: Distancia a la media de la línea base en desviaciones estándar; ausente con muy pocos días de base.}
+        status: {type: string, enum: [normal, regression, improvement, insufficient], description: Verdict on the day., x-description-es: Veredicto sobre el día.}
+
+    ContextEvent:
+      type: object
+      description: A change of what the measurements depend on.
+      x-description-es: Un cambio de aquello de lo que dependen las mediciones.
+      additionalProperties: false
+      required: [id, at, kind, value]
+      properties:
+        id: {type: integer, description: Identifier of the event., x-description-es: Identificador del evento.}
+        at: {type: string, format: date-time, description: When the change was seen., x-description-es: Cuándo se vio el cambio.}
+        kind: {type: string, enum: [agent_version, kernel, gpu_driver, backend_version, model_digest, config], description: What changed., x-description-es: Qué cambió.}
+        subject: {type: string, description: The backend, model or source it concerns., x-description-es: El backend, modelo o fuente al que corresponde.}
+        value: {type: string, description: The new value., x-description-es: El valor nuevo.}
+        previous: {type: string, description: The value before; absent the first time., x-description-es: El valor anterior; ausente la primera vez.}
+
+    Regressions:
+      type: object
+      description: The days of every model judged against their baseline, and the changes of context.
+      x-description-es: Los días de cada modelo juzgados frente a su línea base, y los cambios de contexto.
+      additionalProperties: false
+      required: [schema_version, from, to, time_zone, params, models, events]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
+        to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
+        time_zone: {type: string, description: Time zone of the days., x-description-es: Zona horaria de los días.}
+        params:
+          type: object
+          description: The settings of analysis.regression in force.
+          x-description-es: Los ajustes de analysis.regression vigentes.
+          additionalProperties: false
+          required: [baseline_days, min_baseline_days, z_threshold, min_generated_tokens]
+          properties:
+            baseline_days: {type: integer, description: Calendar days of the baseline., x-description-es: Días del calendario de la línea base.}
+            min_baseline_days: {type: integer, description: Fewest days with data in it., x-description-es: Mínimo de días con datos en ella.}
+            z_threshold: {type: number, description: Threshold of the z-score., x-description-es: Umbral del z-score.}
+            min_generated_tokens: {type: integer, description: Fewest tokens for a day to count., x-description-es: Mínimo de tokens para que un día cuente.}
+        models:
+          type: array
+          description: Every model with days in the period.
+          x-description-es: Cada modelo con días en el periodo.
+          items:
+            type: object
+            description: The days of one model.
+            x-description-es: Los días de un modelo.
+            additionalProperties: false
+            required: [backend, model, days]
+            properties:
+              backend: {type: string, description: Backend of the model., x-description-es: Backend del modelo.}
+              model: {type: string, description: Name of the model., x-description-es: Nombre del modelo.}
+              days:
+                type: array
+                description: Its judged days, oldest first.
+                x-description-es: Sus días juzgados, del más antiguo al más reciente.
+                items: {$ref: "#/components/schemas/Finding"}
+        events:
+          type: array
+          description: Changes of context, oldest first.
+          x-description-es: Cambios de contexto, del más antiguo al más reciente.
+          items: {$ref: "#/components/schemas/ContextEvent"}
 
     About:
       type: object

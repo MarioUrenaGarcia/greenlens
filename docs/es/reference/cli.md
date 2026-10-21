@@ -481,7 +481,7 @@ greenlens report --from 24h --group consumer
 
 ## greenlens report
 
-Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d.
+Reporta la energía medida por el agente en un periodo, por dominio y en total, con sus emisiones y, cuando hay una tarifa configurada, su costo. Con --group, reporta en cambio la energía atribuida a cada backend o modelo, con sus tokens. Con --regressions, lista los días cuya energía por token generado se aleja de los días anteriores, junto a los cambios de versión, driver, archivo de modelo o configuración cercanos. Los periodos pueden ser fechas, horas RFC 3339 o tiempo atrás como 24h o 7d.
 
 **Uso**
 
@@ -496,6 +496,7 @@ greenlens report [opciones]
 | `--by` | Agrupa por none, hour o day | `none` |
 | `--from` | Inicio del periodo | `24h` |
 | `--group` | Reporta por backend, model o consumer en lugar de por dominio |  |
+| `--regressions` | Lista los días cuya energía por token generado es una regresión o una mejora, y los cambios de contexto |  |
 | `--to` | Fin del periodo | `now` |
 
 **Ejemplos**
@@ -504,6 +505,7 @@ greenlens report [opciones]
 greenlens report
 greenlens report --from 7d --by day
 greenlens report --from 7d --group model
+greenlens report --from 30d --regressions
 greenlens report --from 2026-10-01 --to 2026-11-01 --output csv
 ```
 

@@ -34,6 +34,7 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/api/v1/help/{page}` | viewer | One page of the embedded documentation, rendered to HTML |
 | `GET` | `/api/v1/live` | viewer | Power of every domain over the last minutes |
 | `GET` | `/api/v1/openapi.yaml` | public | This description of the API |
+| `GET` | `/api/v1/regressions` | viewer | Regressions of the energy per token of each model |
 | `GET` | `/api/v1/reports` | viewer | Software Carbon Intensity of a period |
 | `GET` | `/api/v1/session` | public | Who sends the request, and the CSRF token of a session |
 | `POST` | `/api/v1/session` | public | Open a browser session with an access token |
@@ -423,6 +424,30 @@ Role: `public`
 | Status | Description | Document |
 |---|---|---|
 | `200` | The OpenAPI document. |  |
+
+### GET /api/v1/regressions
+
+Regressions of the energy per token of each model. Every local day of the period in which a model generated enough tokens, with its energy per generated token, the mean and deviation of the days before it, its z-score and whether it is a regression or an improvement, plus the changes of context in the period and the day before it.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `from` | query | string (date-time) | yes | Start of the period, RFC 3339; the judged days start at the local midnight of it. |
+| `to` | query | string (date-time) | yes | End of the period, RFC 3339. |
+| `backend` | query | string | no | Only the models of this backend. |
+| `model` | query | string | no | Only this model. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The days of every model and the changes of context. | [Regressions](#regressions) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
 
 ### GET /api/v1/reports
 
@@ -1015,6 +1040,19 @@ The file that changes produce and its problems.
 | `valid` | boolean | yes | Whether the agent would accept it. |
 | `yaml` | string | yes | The resulting file. |
 
+### ContextEvent
+
+A change of what the measurements depend on.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `at` | string (date-time) | yes | When the change was seen. |
+| `id` | integer | yes | Identifier of the event. |
+| `kind` | `agent_version`, `kernel`, `gpu_driver`, `backend_version`, `model_digest`, `config` | yes | What changed. |
+| `value` | string | yes | The new value. |
+| `previous` | string | no | The value before; absent the first time. |
+| `subject` | string | no | The backend |
+
 ### CreateToken
 
 A token to create.
@@ -1070,6 +1108,22 @@ Conversion factors in force. Usage rows carry the indicators the agent computes 
 | `time_zone` | string | yes | Time zone of the hourly profile and the tariff periods. |
 | `tariff_per_kwh` | number | no | Price of a kWh; absent when no tariff is configured. |
 | `wue_l_per_kwh` | number | no | Water in liters per kWh; absent when not configured. |
+
+### Finding
+
+One day of a model judged against the days before it.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `baseline_days` | integer | yes | Days with data in the baseline. |
+| `baseline_mean` | number | yes | Mean J per token of the baseline. |
+| `baseline_sd` | number | yes | Sample standard deviation of the baseline. |
+| `day` | string | yes | Local date of the day. |
+| `energy_j` | number | yes | Energy of the model that day. |
+| `generated_tokens` | integer | yes | Tokens it generated that day. |
+| `j_per_generated_token` | number | yes | Energy per generated token that day. |
+| `status` | `normal`, `regression`, `improvement`, `insufficient` | yes | Verdict on the day. |
+| `z` | number | no | Distance from the baseline mean in standard deviations; absent with too few baseline days. |
 
 ### HelpIndex
 
@@ -1199,6 +1253,20 @@ Energy per prompt token and per generated token, fitted by least squares over th
 | `prompt_ci95` | number | yes | Half width of its 95% confidence interval. |
 | `prompt_j_per_token` | number | yes | Joules per prompt token. |
 | `r2` | number | yes | Coefficient of determination of the fit. |
+
+### Regressions
+
+The days of every model judged against their baseline, and the changes of context.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `events` | list of [ContextEvent](#contextevent) | yes | Changes of context, oldest first. |
+| `from` | string (date-time) | yes | Start of the period. |
+| `models` | list of object | yes | Every model with days in the period. |
+| `params` | object | yes | The settings of analysis.regression in force. |
+| `schema_version` | integer | yes | Version of the document. |
+| `time_zone` | string | yes | Time zone of the days. |
+| `to` | string (date-time) | yes | End of the period. |
 
 ### Role
 

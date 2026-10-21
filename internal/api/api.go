@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/analysis"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
@@ -48,6 +49,7 @@ const (
 	PathCatalogs     = "/api/v1/catalogs"
 	PathAbout        = "/api/v1/about"
 	PathReports      = "/api/v1/reports"
+	PathRegressions  = "/api/v1/regressions"
 	PathConfig       = "/api/v1/config"
 	PathHelp         = "/api/v1/help"
 	PathConfigCheck  = "/api/v1/config/preview"
@@ -476,4 +478,24 @@ type CalibrationJob struct {
 	EndedAt       *time.Time        `json:"ended_at,omitempty"`
 	Result        *calibrate.Result `json:"result,omitempty"`
 	Error         string            `json:"error,omitempty"`
+}
+
+// ModelRegressions are the days of one model judged against their baseline.
+type ModelRegressions struct {
+	Backend string             `json:"backend"`
+	Model   string             `json:"model"`
+	Days    []analysis.Finding `json:"days"`
+}
+
+// Regressions is the document of GET PathRegressions: every day of the
+// period with enough tokens, for every model, and the changes of context
+// in the period and the day before it.
+type Regressions struct {
+	SchemaVersion int                  `json:"schema_version"`
+	From          time.Time            `json:"from"`
+	To            time.Time            `json:"to"`
+	TimeZone      string               `json:"time_zone"`
+	Params        analysis.Params      `json:"params"`
+	Models        []ModelRegressions   `json:"models"`
+	Events        []store.ContextEvent `json:"events"`
 }

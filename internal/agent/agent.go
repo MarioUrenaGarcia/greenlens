@@ -102,6 +102,7 @@ type Agent struct {
 	// cutServerJ and cutGPUJ are the energy of the node at the last usage
 	// cut, touched only by the sampling loop.
 	cutServerJ, cutGPUJ float64
+	ctxLog              *contextLog
 	ready               atomic.Bool
 
 	collectors *prometheus.Collectors
@@ -250,6 +251,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 	} else if ok {
 		a.calib = &c
 	}
+	a.startContext(ctx)
 	return a, nil
 }
 
@@ -727,6 +729,7 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 		}
 	}
 	a.log.Info("configuration reloaded", "path", a.o.ConfigPath)
+	a.noteConfig(ctx)
 	return cfg.Agent.SampleInterval.D()
 }
 

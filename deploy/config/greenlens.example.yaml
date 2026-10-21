@@ -150,6 +150,18 @@ indicators:
       gpu_kgco2e:
       lifetime_years:
 
+analysis:
+  # A day whose energy per generated token is z_threshold standard
+  # deviations above the mean of the baseline_days before it is a
+  # regression, and as far below, an improvement. The baseline needs at
+  # least min_baseline_days days, and a day counts only with at least
+  # min_generated_tokens generated tokens.
+  regression:
+    baseline_days: 14
+    min_baseline_days: 7
+    z_threshold: 3
+    min_generated_tokens: 1000
+
 retention:
   raw: 168h
   rollup_1m: 2160h

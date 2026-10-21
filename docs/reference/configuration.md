@@ -99,6 +99,15 @@ Every key of the configuration file, the environment variable that overrides it 
 | `indicators.sci.embodied.gpu_kgco2e` | `GREENLENS_INDICATORS_SCI_EMBODIED_GPU_KGCO2E` | number or null | `null` | Embodied carbon of the GPUs in kgCO2e. Null: not included. |
 | `indicators.sci.embodied.lifetime_years` | `GREENLENS_INDICATORS_SCI_EMBODIED_LIFETIME_YEARS` | number or null | `null` | Years of use of the hardware, over which its embodied carbon is spread. Required with embodied carbon. |
 
+## analysis
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `analysis.regression.baseline_days` | `GREENLENS_ANALYSIS_REGRESSION_BASELINE_DAYS` | integer | `14` | Calendar days before a day that form its baseline of energy per generated token. |
+| `analysis.regression.min_baseline_days` | `GREENLENS_ANALYSIS_REGRESSION_MIN_BASELINE_DAYS` | integer | `7` | Fewest days with data in the baseline for a day to be judged. |
+| `analysis.regression.z_threshold` | `GREENLENS_ANALYSIS_REGRESSION_Z_THRESHOLD` | number | `3` | Standard deviations from the baseline mean that make a day a regression, or an improvement below it. |
+| `analysis.regression.min_generated_tokens` | `GREENLENS_ANALYSIS_REGRESSION_MIN_GENERATED_TOKENS` | integer | `1000` | Fewest generated tokens for a day to count; fewer make its energy per token too uncertain. |
+
 ## retention
 
 | Key | Environment variable | Type | Default | Description |

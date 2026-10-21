@@ -236,6 +236,7 @@ func (a *Agent) usageWorker(ctx context.Context) {
 			}
 		}
 		a.withProxy(readings)
+		a.noteBackends(ctx, readings)
 		a.split.SetMaxModels(maxModels)
 		a.split.SetMaxConsumers(maxConsumers)
 		rows := a.split.Split(c, readings)
