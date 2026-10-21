@@ -47,6 +47,7 @@ const (
 	PathOpenAPI      = "/api/v1/openapi.yaml"
 	PathCatalogs     = "/api/v1/catalogs"
 	PathAbout        = "/api/v1/about"
+	PathReports      = "/api/v1/reports"
 	PathConfig       = "/api/v1/config"
 	PathHelp         = "/api/v1/help"
 	PathConfigCheck  = "/api/v1/config/preview"

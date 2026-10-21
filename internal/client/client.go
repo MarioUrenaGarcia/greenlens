@@ -21,6 +21,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
+	"github.com/MarioUrenaGarcia/greenlens/internal/report"
 )
 
 // Client is a connection to one agent.
@@ -134,6 +135,21 @@ func (c *Client) BackendUsage(ctx context.Context, from, to time.Time, groupBy s
 	var u api.BackendUsage
 	err := c.get(ctx, api.PathUsage, q, &u)
 	return u, err
+}
+
+// SCIReport returns the Software Carbon Intensity of a period, of the node
+// and, with groupBy, of each group; an empty unit takes the configured one.
+func (c *Client) SCIReport(ctx context.Context, from, to time.Time, groupBy, unit string) (report.SCIReport, error) {
+	q := url.Values{"kind": {"sci"}, "from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}}
+	if groupBy != "" {
+		q.Set("group_by", groupBy)
+	}
+	if unit != "" {
+		q.Set("unit", unit)
+	}
+	var r report.SCIReport
+	err := c.get(ctx, api.PathReports, q, &r)
+	return r, err
 }
 
 // SaveBenchmark stores a benchmark in the agent and returns it with its id.

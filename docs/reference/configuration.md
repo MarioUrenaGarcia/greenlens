@@ -94,6 +94,10 @@ Every key of the configuration file, the environment variable that overrides it 
 | `indicators.tariff.periods[].from` | - | string | empty | Local time the period starts, such as 18:00. |
 | `indicators.tariff.periods[].to` | - | string | empty | Local time the period ends, later than from on the same day; 24:00 is the end of the day. |
 | `indicators.tariff.periods[].price_per_kwh` | - | number | `0` | Price per kWh during the period, in the currency of the tariff. |
+| `indicators.sci.functional_unit` | `GREENLENS_INDICATORS_SCI_FUNCTIONAL_UNIT` | string | `1k_generated_tokens` | Unit of the SCI: 1k_generated_tokens, request or consumer. |
+| `indicators.sci.embodied.server_kgco2e` | `GREENLENS_INDICATORS_SCI_EMBODIED_SERVER_KGCO2E` | number or null | `null` | Embodied carbon of the server in kgCO2e, from the product carbon footprint of its maker. Null: not included. |
+| `indicators.sci.embodied.gpu_kgco2e` | `GREENLENS_INDICATORS_SCI_EMBODIED_GPU_KGCO2E` | number or null | `null` | Embodied carbon of the GPUs in kgCO2e. Null: not included. |
+| `indicators.sci.embodied.lifetime_years` | `GREENLENS_INDICATORS_SCI_EMBODIED_LIFETIME_YEARS` | number or null | `null` | Years of use of the hardware, over which its embodied carbon is spread. Required with embodied carbon. |
 
 ## retention
 

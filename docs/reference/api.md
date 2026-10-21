@@ -34,6 +34,7 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/api/v1/help/{page}` | viewer | One page of the embedded documentation, rendered to HTML |
 | `GET` | `/api/v1/live` | viewer | Power of every domain over the last minutes |
 | `GET` | `/api/v1/openapi.yaml` | public | This description of the API |
+| `GET` | `/api/v1/reports` | viewer | Software Carbon Intensity of a period |
 | `GET` | `/api/v1/session` | public | Who sends the request, and the CSRF token of a session |
 | `POST` | `/api/v1/session` | public | Open a browser session with an access token |
 | `DELETE` | `/api/v1/session` | public | End the browser session |
@@ -422,6 +423,32 @@ Role: `public`
 | Status | Description | Document |
 |---|---|---|
 | `200` | The OpenAPI document. |  |
+
+### GET /api/v1/reports
+
+Software Carbon Intensity of a period. The SCI of ISO/IEC 21031 for the node and, with group_by, for each backend, model or consumer: the operational emissions, hour by hour, plus the embodied carbon of the server and the GPU in the share of their energy, per functional unit.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `kind` | query | `sci` | yes | The report, sci. |
+| `from` | query | string (date-time) | yes | Start of the period, RFC 3339. |
+| `to` | query | string (date-time) | yes | End of the period, RFC 3339, at most three years after from. |
+| `group_by` | query | `backend`, `model`, `consumer` | no | Also report each backend, model or consumer. |
+| `unit` | query | `1k_generated_tokens`, `request`, `consumer` | no | Functional unit instead of indicators.sci.functional_unit. |
+| `format` | query | `json`, `csv` | no | json, the default, or csv. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The report. | [SCIReport](#scireport) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
 
 ### GET /api/v1/session
 
@@ -1178,6 +1205,56 @@ Energy per prompt token and per generated token, fitted by least squares over th
 viewer reads; operator also runs benchmarks and calibrations; admin also manages tokens and backups.
 
 Type: `viewer`, `operator`, `admin`
+
+### SCI
+
+Software Carbon Intensity of one scope, (O + M) / R.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `functional_unit` | string | yes | The unit R counts. |
+| `operational_g` | number | yes | O: operational emissions in grams of CO2e. |
+| `units` | number | yes | R: thousands of generated tokens, requests or consumers. |
+| `embodied_g` | number | no | M: embodied carbon in grams of CO2e; absent when it is not configured. |
+| `g_per_unit` | number | no | Grams of CO2e per unit; absent when R is zero. |
+
+### SCIReport
+
+Software Carbon Intensity of a period.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `embodied` | object | yes | Embodied carbon in force, in kgCO2e, and the lifetime in years. |
+| `factors` | [Factors](#factors) | yes | Conversion factors in force. Usage rows carry the indicators the agent computes hour by hour; the factors serve projections without a time, such as the savings of another model. |
+| `from` | string (date-time) | yes | Start of the period. |
+| `functional_unit` | string | yes | The unit R counts. |
+| `missing` | list of string | yes | Configuration keys that the embodied carbon lacks. |
+| `node` | [SCIRow](#scirow) | yes | Carbon intensity of the node or of one group. |
+| `rows` | list of [SCIRow](#scirow) | yes | Each group, when group_by is set. |
+| `schema_version` | integer | yes | Version of the document. |
+| `to` | string (date-time) | yes | End of the period. |
+| `group_by` | string | no | Grouping of the rows. |
+
+### SCIRow
+
+Carbon intensity of the node or of one group.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `consumers` | integer | yes | Consumers counted |
+| `energy_j` | number | yes | Energy of processor |
+| `generated_tokens` | integer | yes | Generated tokens. |
+| `gpu_energy_j` | number | yes | GPU part of energy_j. |
+| `gpu_share` | number | yes | Share of the GPU that carries its embodied carbon. |
+| `indicators` | [Indicators](#indicators) | yes | Indicators of an amount of energy, each hour with the factors in force then. |
+| `requests` | integer | yes | Requests. |
+| `sci` | [SCI](#sci) | yes | Software Carbon Intensity of one scope, (O + M) / R. |
+| `server_energy_j` | number | yes | Processor and memory part of energy_j. |
+| `server_share` | number | yes | Share of the server that carries its embodied carbon. |
+| `backend` | string | no | Backend of the group. |
+| `consumer` | string | no | Consumer of the group. |
+| `kind` | string | no | Kind of the backend. |
+| `model` | string | no | Model of the group. |
 
 ### Self
 

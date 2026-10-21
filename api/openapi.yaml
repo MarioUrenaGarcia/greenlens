@@ -35,6 +35,7 @@ security:
 tags:
   - name: health
   - name: measurements
+  - name: reports
   - name: benchmarks
   - name: access
   - name: administration
@@ -226,6 +227,69 @@ paths:
                 oneOf:
                   - {$ref: "#/components/schemas/Usage"}
                   - {$ref: "#/components/schemas/BackendUsage"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/reports:
+    get:
+      operationId: reports
+      tags: [reports]
+      summary: Software Carbon Intensity of a period
+      x-summary-es: Intensidad de carbono del software de un periodo
+      description: >-
+        The SCI of ISO/IEC 21031 for the node and, with group_by, for each
+        backend, model or consumer: the operational emissions, hour by hour,
+        plus the embodied carbon of the server and the GPU in the share of
+        their energy, per functional unit.
+      x-description-es: >-
+        El SCI de ISO/IEC 21031 del nodo y, con group_by, de cada backend,
+        modelo o consumidor: las emisiones operacionales, hora por hora, más
+        el carbono incorporado del servidor y de la GPU en la parte de su
+        energía, por unidad funcional.
+      x-greenlens-role: viewer
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          description: The report, sci.
+          x-description-es: El reporte, sci.
+          schema: {type: string, enum: [sci]}
+        - name: from
+          in: query
+          required: true
+          description: Start of the period, RFC 3339.
+          x-description-es: Inicio del periodo, RFC 3339.
+          schema: {type: string, format: date-time}
+        - name: to
+          in: query
+          required: true
+          description: End of the period, RFC 3339, at most three years after from.
+          x-description-es: Fin del periodo, RFC 3339, a lo sumo tres años después de from.
+          schema: {type: string, format: date-time}
+        - name: group_by
+          in: query
+          description: Also report each backend, model or consumer.
+          x-description-es: Reporta además cada backend, modelo o consumidor.
+          schema: {type: string, enum: [backend, model, consumer]}
+        - name: unit
+          in: query
+          description: Functional unit instead of indicators.sci.functional_unit.
+          x-description-es: Unidad funcional en lugar de indicators.sci.functional_unit.
+          schema: {type: string, enum: [1k_generated_tokens, request, consumer]}
+        - name: format
+          in: query
+          description: json, the default, or csv.
+          x-description-es: json, el predeterminado, o csv.
+          schema: {type: string, enum: [json, csv]}
+      responses:
+        "200":
+          description: The report.
+          x-description-es: El reporte.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SCIReport"}
+            text/csv:
+              schema: {type: string}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "500": {$ref: "#/components/responses/ServerError"}
@@ -1045,6 +1109,75 @@ components:
         co2e_g: {type: number, description: Operational emissions in grams of CO2e, with the PUE., x-description-es: Emisiones operacionales en gramos de CO2e, con el PUE.}
         cost: {type: number, description: Cost in the currency of the tariff, with the PUE; absent without a tariff., x-description-es: Costo en la moneda de la tarifa, con el PUE; ausente sin tarifa.}
         water_l: {type: number, description: Water in liters; absent without a WUE., x-description-es: Agua en litros; ausente sin WUE.}
+
+    SCI:
+      type: object
+      description: Software Carbon Intensity of one scope, (O + M) / R.
+      x-description-es: Intensidad de carbono del software de un ámbito, (O + M) / R.
+      additionalProperties: false
+      required: [functional_unit, units, operational_g]
+      properties:
+        functional_unit: {type: string, description: The unit R counts., x-description-es: La unidad que cuenta R.}
+        units: {type: number, description: "R: thousands of generated tokens, requests or consumers.", x-description-es: "R: miles de tokens generados, solicitudes o consumidores."}
+        operational_g: {type: number, description: "O: operational emissions in grams of CO2e.", x-description-es: "O: emisiones operacionales en gramos de CO2e."}
+        embodied_g: {type: number, description: "M: embodied carbon in grams of CO2e; absent when it is not configured.", x-description-es: "M: carbono incorporado en gramos de CO2e; ausente si no está configurado."}
+        g_per_unit: {type: number, description: Grams of CO2e per unit; absent when R is zero., x-description-es: Gramos de CO2e por unidad; ausente cuando R es cero.}
+
+    SCIRow:
+      type: object
+      description: Carbon intensity of the node or of one group.
+      x-description-es: Intensidad de carbono del nodo o de un grupo.
+      additionalProperties: false
+      required: [energy_j, server_energy_j, gpu_energy_j, server_share, gpu_share, generated_tokens, requests, consumers, indicators, sci]
+      properties:
+        backend: {type: string, description: Backend of the group., x-description-es: Backend del grupo.}
+        kind: {type: string, description: Kind of the backend., x-description-es: Tipo del backend.}
+        model: {type: string, description: Model of the group., x-description-es: Modelo del grupo.}
+        consumer: {type: string, description: Consumer of the group., x-description-es: Consumidor del grupo.}
+        energy_j: {type: number, description: Energy of processor, memory and GPU., x-description-es: Energía de procesador, memoria y GPU.}
+        server_energy_j: {type: number, description: Processor and memory part of energy_j., x-description-es: Parte de procesador y memoria de energy_j.}
+        gpu_energy_j: {type: number, description: GPU part of energy_j., x-description-es: Parte de GPU de energy_j.}
+        server_share: {type: number, description: Share of the server that carries its embodied carbon., x-description-es: Parte del servidor que carga con su carbono incorporado.}
+        gpu_share: {type: number, description: Share of the GPU that carries its embodied carbon., x-description-es: Parte de la GPU que carga con su carbono incorporado.}
+        generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
+        requests: {type: integer, description: Requests., x-description-es: Solicitudes.}
+        consumers: {type: integer, description: Consumers counted, for the unit consumer., x-description-es: Consumidores contados, para la unidad consumer.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
+        sci: {$ref: "#/components/schemas/SCI"}
+
+    SCIReport:
+      type: object
+      description: Software Carbon Intensity of a period.
+      x-description-es: Intensidad de carbono del software de un periodo.
+      additionalProperties: false
+      required: [schema_version, from, to, functional_unit, factors, embodied, missing, node, rows]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
+        to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
+        group_by: {type: string, description: Grouping of the rows., x-description-es: Agrupación de las filas.}
+        functional_unit: {type: string, description: The unit R counts., x-description-es: La unidad que cuenta R.}
+        factors: {$ref: "#/components/schemas/Factors"}
+        embodied:
+          type: object
+          description: Embodied carbon in force, in kgCO2e, and the lifetime in years.
+          x-description-es: Carbono incorporado vigente, en kgCO2e, y la vida útil en años.
+          additionalProperties: false
+          properties:
+            server_kgco2e: {type: number, description: Embodied carbon of the server., x-description-es: Carbono incorporado del servidor.}
+            gpu_kgco2e: {type: number, description: Embodied carbon of the GPUs., x-description-es: Carbono incorporado de las GPU.}
+            lifetime_years: {type: number, description: Lifetime of the hardware., x-description-es: Vida útil del hardware.}
+        missing:
+          type: array
+          description: Configuration keys that the embodied carbon lacks.
+          x-description-es: Claves de configuración que le faltan al carbono incorporado.
+          items: {type: string}
+        node: {$ref: "#/components/schemas/SCIRow"}
+        rows:
+          type: array
+          description: Each group, when group_by is set.
+          x-description-es: Cada grupo, cuando se indica group_by.
+          items: {$ref: "#/components/schemas/SCIRow"}
 
     About:
       type: object

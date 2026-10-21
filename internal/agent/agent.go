@@ -99,7 +99,10 @@ type Agent struct {
 	dataDir  string
 	sockPath string
 	started  time.Time
-	ready    atomic.Bool
+	// cutServerJ and cutGPUJ are the energy of the node at the last usage
+	// cut, touched only by the sampling loop.
+	cutServerJ, cutGPUJ float64
+	ready               atomic.Bool
 
 	collectors *prometheus.Collectors
 

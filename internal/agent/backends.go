@@ -46,6 +46,9 @@ type backendState struct {
 	// the time of each, so they never decrease.
 	ind    map[string]*indicators.Values
 	indAll indicators.Values
+	// embodiedG is the embodied carbon of each model, interval by interval
+	// in the share of the energy of the node it used.
+	embodiedG map[string]float64
 }
 
 // refreshBackends finds the backends and their processes again.
@@ -193,6 +196,20 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) (map[string]float
 // the backends without holding up the sampling.
 func (a *Agent) cutUsage(now time.Time) {
 	c := a.acc.Cut(now)
+	var server, gpu float64
+	a.mu.RLock()
+	for d, j := range a.energy {
+		switch {
+		case d.Level() != source.LevelComponent:
+		case d == source.DomainGPU:
+			gpu += j
+		default:
+			server += j
+		}
+	}
+	a.mu.RUnlock()
+	c.NodeServerJ, c.NodeGPUJ = server-a.cutServerJ, gpu-a.cutGPUJ
+	a.cutServerJ, a.cutGPUJ = server, gpu
 	select {
 	case a.cuts <- c:
 	default:
@@ -207,7 +224,7 @@ func (a *Agent) usageWorker(ctx context.Context) {
 	for c := range a.cuts {
 		a.mu.RLock()
 		maxModels, maxConsumers := a.cfg.Attribution.MaxModelsPerBackend, a.cfg.Attribution.MaxConsumers
-		factors := a.cfg.Factors()
+		factors, embodied := a.cfg.Factors(), a.cfg.EmbodiedCarbon()
 		a.mu.RUnlock()
 		a.bmu.Lock()
 		bs := slices.Clone(a.bs)
@@ -229,7 +246,7 @@ func (a *Agent) usageWorker(ctx context.Context) {
 		if err := a.st.InsertUsage(ctx, rows, info, time.Now()); err != nil {
 			a.limited("usage-insert", "storing usage failed", "error", err)
 		}
-		a.recordUsage(c, readings, rows, factors)
+		a.recordUsage(c, readings, rows, factors, embodied)
 		a.publishBackends()
 		every := regressionEvery
 		if a.o.RegressionEvery > 0 {
@@ -292,7 +309,7 @@ func (a *Agent) regress(ctx context.Context) {
 	}
 }
 
-func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, rows []usage.Row, f indicators.Factors) {
+func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, rows []usage.Row, f indicators.Factors, e indicators.Embodied) {
 	a.bmu.Lock()
 	defer a.bmu.Unlock()
 	for name, rd := range readings {
@@ -338,6 +355,12 @@ func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, r
 			st.ind[r.Model] = mi
 		}
 		mi.Add(v)
+		if m := e.Grams(c.End.Sub(c.Start), indicators.Share(r.CPUJ+r.DRAMJ, c.NodeServerJ), indicators.Share(r.GPUJ, c.NodeGPUJ)); m != nil {
+			if st.embodiedG == nil {
+				st.embodiedG = map[string]float64{}
+			}
+			st.embodiedG[r.Model] += *m
+		}
 		m, ok := st.models[r.Model]
 		if !ok {
 			m = &api.Model{Name: r.Model}

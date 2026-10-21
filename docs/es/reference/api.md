@@ -34,6 +34,7 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/api/v1/help/{page}` | viewer | Una página de la documentación incluida, convertida a HTML |
 | `GET` | `/api/v1/live` | viewer | Potencia de cada dominio en los últimos minutos |
 | `GET` | `/api/v1/openapi.yaml` | public | Esta descripción de la API |
+| `GET` | `/api/v1/reports` | viewer | Intensidad de carbono del software de un periodo |
 | `GET` | `/api/v1/session` | public | Quién envía la solicitud, y el token CSRF de una sesión |
 | `POST` | `/api/v1/session` | public | Abre una sesión del navegador con un token de acceso |
 | `DELETE` | `/api/v1/session` | public | Termina la sesión del navegador |
@@ -422,6 +423,32 @@ Rol: `public`
 | Estado | Descripción | Documento |
 |---|---|---|
 | `200` | El documento OpenAPI. |  |
+
+### GET /api/v1/reports
+
+Intensidad de carbono del software de un periodo. El SCI de ISO/IEC 21031 del nodo y, con group_by, de cada backend, modelo o consumidor: las emisiones operacionales, hora por hora, más el carbono incorporado del servidor y de la GPU en la parte de su energía, por unidad funcional.
+
+Rol: `viewer`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `kind` | query | `sci` | sí | El reporte, sci. |
+| `from` | query | string (date-time) | sí | Inicio del periodo, RFC 3339. |
+| `to` | query | string (date-time) | sí | Fin del periodo, RFC 3339, a lo sumo tres años después de from. |
+| `group_by` | query | `backend`, `model`, `consumer` | no | Reporta además cada backend, modelo o consumidor. |
+| `unit` | query | `1k_generated_tokens`, `request`, `consumer` | no | Unidad funcional en lugar de indicators.sci.functional_unit. |
+| `format` | query | `json`, `csv` | no | json, el predeterminado, o csv. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El reporte. | [SCIReport](#scireport) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
 
 ### GET /api/v1/session
 
@@ -1178,6 +1205,56 @@ Energía por token de entrada y por token generado, ajustada por mínimos cuadra
 viewer lee; operator además ejecuta benchmarks y calibraciones; admin además gestiona tokens y respaldos.
 
 Tipo: `viewer`, `operator`, `admin`
+
+### SCI
+
+Intensidad de carbono del software de un ámbito, (O + M) / R.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `functional_unit` | string | sí | La unidad que cuenta R. |
+| `operational_g` | number | sí | O: emisiones operacionales en gramos de CO2e. |
+| `units` | number | sí | R: miles de tokens generados, solicitudes o consumidores. |
+| `embodied_g` | number | no | M: carbono incorporado en gramos de CO2e; ausente si no está configurado. |
+| `g_per_unit` | number | no | Gramos de CO2e por unidad; ausente cuando R es cero. |
+
+### SCIReport
+
+Intensidad de carbono del software de un periodo.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `embodied` | object | sí | Carbono incorporado vigente, en kgCO2e, y la vida útil en años. |
+| `factors` | [Factors](#factors) | sí | Factores de conversión vigentes. Las filas de uso traen los indicadores que el agente calcula hora por hora; los factores sirven para proyecciones sin hora, como el ahorro de otro modelo. |
+| `from` | string (date-time) | sí | Inicio del periodo. |
+| `functional_unit` | string | sí | La unidad que cuenta R. |
+| `missing` | lista de string | sí | Claves de configuración que le faltan al carbono incorporado. |
+| `node` | [SCIRow](#scirow) | sí | Intensidad de carbono del nodo o de un grupo. |
+| `rows` | lista de [SCIRow](#scirow) | sí | Cada grupo, cuando se indica group_by. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `to` | string (date-time) | sí | Fin del periodo. |
+| `group_by` | string | no | Agrupación de las filas. |
+
+### SCIRow
+
+Intensidad de carbono del nodo o de un grupo.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `consumers` | integer | sí | Consumidores contados |
+| `energy_j` | number | sí | Energía de procesador |
+| `generated_tokens` | integer | sí | Tokens generados. |
+| `gpu_energy_j` | number | sí | Parte de GPU de energy_j. |
+| `gpu_share` | number | sí | Parte de la GPU que carga con su carbono incorporado. |
+| `indicators` | [Indicators](#indicators) | sí | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
+| `requests` | integer | sí | Solicitudes. |
+| `sci` | [SCI](#sci) | sí | Intensidad de carbono del software de un ámbito, (O + M) / R. |
+| `server_energy_j` | number | sí | Parte de procesador y memoria de energy_j. |
+| `server_share` | number | sí | Parte del servidor que carga con su carbono incorporado. |
+| `backend` | string | no | Backend del grupo. |
+| `consumer` | string | no | Consumidor del grupo. |
+| `kind` | string | no | Tipo del backend. |
+| `model` | string | no | Modelo del grupo. |
 
 ### Self
 

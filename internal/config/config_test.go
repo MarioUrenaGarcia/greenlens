@@ -394,6 +394,10 @@ func TestIndicatorsOverTime(t *testing.T) {
 		{"indicators:\n  tariff:\n    periods:\n      - days: [mon]\n        from: \"18:00\"\n        to: \"22:00\"\n        price_per_kwh: 3\n", "indicators.tariff.periods", "no period covers sun at 00:00"},
 		{"indicators:\n  tariff:\n    price_per_kwh: 1\n    periods:\n      - days: [lunes]\n        from: \"6pm\"\n        to: \"22:00\"\n", "indicators.tariff.periods", "unknown day"},
 		{"indicators:\n  tariff:\n    price_per_kwh: 1\n    periods:\n      - days: [mon]\n        from: \"18:00\"\n        to: \"20:00\"\n      - days: [mon, tue]\n        from: \"19:00\"\n        to: \"21:00\"\n", "indicators.tariff.periods", "overlap on mon at 19:00"},
+		{"indicators:\n  sci:\n    functional_unit: watt\n", "indicators.sci.functional_unit", "must be one of"},
+		{"indicators:\n  sci:\n    embodied:\n      server_kgco2e: 1200\n", "indicators.sci.embodied.lifetime_years", "is needed"},
+		{"indicators:\n  sci:\n    embodied:\n      gpu_kgco2e: -1\n      lifetime_years: 4\n", "indicators.sci.embodied.gpu_kgco2e", "zero or more"},
+		{"indicators:\n  sci:\n    embodied:\n      lifetime_years: 0\n", "indicators.sci.embodied.lifetime_years", "more than 0"},
 	} {
 		if err := os.WriteFile(cfgPath, []byte(tt.yaml), 0o600); err != nil {
 			t.Fatal(err)
@@ -402,5 +406,17 @@ func TestIndicatorsOverTime(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), tt.key) || !strings.Contains(err.Error(), tt.want) {
 			t.Errorf("%s: %v", tt.key, err)
 		}
+	}
+}
+
+func TestEmbodiedCarbon(t *testing.T) {
+	cfg := Defaults()
+	if cfg.Indicators.SCI.FunctionalUnit != "1k_generated_tokens" || cfg.EmbodiedCarbon().Configured() {
+		t.Fatalf("defaults %+v", cfg.Indicators.SCI)
+	}
+	server, life := 1200.0, 4.0
+	cfg.Indicators.SCI.Embodied = Embodied{ServerKgCO2e: &server, LifetimeYears: &life}
+	if err := cfg.Validate(); err != nil || !cfg.EmbodiedCarbon().Configured() || *cfg.EmbodiedCarbon().ServerKg != 1200 {
+		t.Fatalf("%v %+v", err, cfg.EmbodiedCarbon())
 	}
 }

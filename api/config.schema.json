@@ -131,6 +131,48 @@
           "description": "Power usage effectiveness of the facility; 1.0 means no overhead.",
           "type": "number"
         },
+        "sci": {
+          "additionalProperties": false,
+          "properties": {
+            "embodied": {
+              "additionalProperties": false,
+              "properties": {
+                "gpu_kgco2e": {
+                  "description": "Embodied carbon of the GPUs in kgCO2e. Null: not included.",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "lifetime_years": {
+                  "description": "Years of use of the hardware, over which its embodied carbon is spread. Required with embodied carbon.",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "server_kgco2e": {
+                  "description": "Embodied carbon of the server in kgCO2e, from the product carbon footprint of its maker. Null: not included.",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "functional_unit": {
+              "description": "Unit of the SCI: 1k_generated_tokens, request or consumer.",
+              "enum": [
+                "1k_generated_tokens",
+                "request",
+                "consumer"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
         "tariff": {
           "additionalProperties": false,
           "properties": {

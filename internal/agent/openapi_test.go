@@ -152,6 +152,18 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	q.Del("bucket")
 	get("usage", sock, api.PathUsage+"?"+q.Encode())
 	get("usage", sock, api.PathUsage+"?from=yesterday")
+	q.Del("group_by")
+	q.Set("kind", "sci")
+	get("reports", sock, api.PathReports+"?"+q.Encode())
+	q.Set("group_by", "model")
+	q.Set("unit", "request")
+	get("reports", sock, api.PathReports+"?"+q.Encode())
+	get("reports", sock, api.PathReports+"?kind=esg&"+q.Encode())
+	q.Set("format", "csv")
+	if resp, body := sock.do("GET", api.PathReports+"?"+q.Encode(), nil); resp.code != 200 || !strings.HasPrefix(resp.header.Get("Content-Type"), "text/csv") ||
+		!strings.HasPrefix(string(body), "scope,backend,model,consumer,energy_j") {
+		t.Errorf("csv report: %d %s", resp.code, body)
+	}
 
 	cal := calibrate.Result{StartedAt: now.Add(-time.Minute), Duration: time.Minute, Samples: 60,
 		Domains: map[source.Domain]calibrate.Stats{source.DomainPackage: {P10: 1, P50: 2, P90: 3}},

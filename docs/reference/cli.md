@@ -531,6 +531,33 @@ greenlens restore greenlens-2026-10-20.db
 sudo -u greenlens greenlens restore --database /var/lib/greenlens/greenlens.db /srv/backups/greenlens.db
 ```
 
+## greenlens sci
+
+Compute the Software Carbon Intensity of ISO/IEC 21031 for a period: the operational emissions of the energy, hour by hour, plus the embodied carbon of the server and the GPU, per functional unit. With --group, also for each backend, model or consumer, which carry the share of the hardware that their energy is of the energy of the node. The unit comes from indicators.sci.functional_unit unless --unit names another.
+
+**Usage**
+
+```text
+greenlens sci [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--from` | Start of the period | `24h` |
+| `--group` | Also report each backend, model or consumer |  |
+| `--to` | End of the period | `now` |
+| `--unit` | Functional unit: 1k_generated_tokens, request or consumer |  |
+
+**Examples**
+
+```bash
+greenlens sci --from 30d
+greenlens sci --from 7d --group model
+greenlens sci --from 2026-10-01 --to 2026-11-01 --unit request --output csv
+```
+
 ## greenlens setup-permissions
 
 Show the changes that give the greenlens-power group read access to the RAPL energy counters, and optionally the IPMI device and the CAP_PERFMON capability for perf_event. Nothing changes until the command runs as root with --apply.

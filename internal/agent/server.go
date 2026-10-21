@@ -105,6 +105,7 @@ func (a *Agent) routes() []route {
 			writeJSON(w, http.StatusOK, a.Status().Channels)
 		}},
 		{pattern: "GET " + api.PathUsage, role: auth.Viewer, h: a.handleUsage},
+		{pattern: "GET " + api.PathReports, role: auth.Viewer, h: a.handleReport},
 		{pattern: "GET " + api.PathBackends, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, a.Backends())
 		}},
@@ -321,10 +322,7 @@ func (a *Agent) Status() api.Status {
 		Channels:      []api.Channel{},
 	}
 	st.CPUJPerBusyS = a.cpuJPerBusyS
-	f := a.cfg.Factors()
-	st.Factors = api.Factors{EmissionGPerKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, PUE: f.PUE,
-		TariffPerKWh: f.TariffPerKWh, Currency: f.Currency, WUELPerKWh: f.WUELPerKWh,
-		HourlyProfile: f.Profile != nil, TariffPeriods: len(f.Periods), TimeZone: f.Location.String()}
+	st.Factors = apiFactors(a.cfg.Factors())
 	quality := map[source.Domain]source.Quality{}
 	for _, c := range a.sel.Channels {
 		quality[c.Domain] = c.Quality

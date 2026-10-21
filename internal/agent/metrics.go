@@ -10,13 +10,17 @@ import (
 	"strings"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/prometheus"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 	"github.com/MarioUrenaGarcia/greenlens/internal/version"
 )
 
 // Emissions are operational for now: the energy used times the grid factor.
-const scopeOperational = "operational"
+const (
+	scopeOperational = "operational"
+	scopeEmbodied    = "embodied"
+)
 
 func (a *Agent) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", prometheus.ContentType)
@@ -63,6 +67,7 @@ func (a *Agent) metrics() []prometheus.Family {
 	calib := a.calib
 	selfJ, unattributedJ := a.selfJ, a.unattributedJ
 	currency := a.cfg.Indicators.Tariff.Currency
+	unit := a.cfg.Indicators.SCI.FunctionalUnit
 	a.mu.RUnlock()
 
 	slices.SortFunc(keys, func(x, y nodeKey) int {
@@ -111,6 +116,7 @@ func (a *Agent) metrics() []prometheus.Family {
 	emissions := prometheus.Family{Name: "greenlens_emissions_grams_co2e_total", Help: "Emissions of the energy of each model, in grams of CO2 equivalent.", Type: prometheus.Counter}
 	cost := prometheus.Family{Name: "greenlens_energy_cost_total", Help: "Cost of the energy of each model, in the configured currency.", Type: prometheus.Counter}
 	water := prometheus.Family{Name: "greenlens_water_liters_total", Help: "Water used for the energy of each model.", Type: prometheus.Counter}
+	sci := prometheus.Family{Name: "greenlens_sci_grams_co2e_per_unit", Help: "Software Carbon Intensity of each model since the agent started: operational and embodied emissions per functional unit.", Type: prometheus.Gauge}
 	consumers := prometheus.Family{Name: "greenlens_consumer_energy_joules_total", Help: "Energy attributed to each consumer identified by the proxy.", Type: prometheus.Counter}
 
 	a.bmu.Lock()
@@ -147,8 +153,15 @@ func (a *Agent) metrics() []prometheus.Family {
 			if m.GeneratedTokens > 0 {
 				jpt.Samples = append(jpt.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "window", "since_start"), Value: m.EnergyJ / float64(m.GeneratedTokens)})
 			}
+			embodied, hasEmbodied := st.embodiedG[mn]
+			if hasEmbodied {
+				emissions.Samples = append(emissions.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "scope", scopeEmbodied), Value: embodied})
+			}
 			if mi := st.ind[mn]; mi != nil {
 				emissions.Samples = append(emissions.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "scope", scopeOperational), Value: mi.CO2eG})
+				if units := indicators.UnitsOf(unit, m.GeneratedTokens, m.Requests, 0); units > 0 {
+					sci.Samples = append(sci.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "unit", unit), Value: (mi.CO2eG + embodied) / units})
+				}
 				if mi.Cost != nil {
 					cost.Samples = append(cost.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "currency", currency), Value: *mi.Cost})
 				}
@@ -174,7 +187,7 @@ func (a *Agent) metrics() []prometheus.Family {
 	self := prometheus.Family{Name: "greenlens_self_energy_joules_total", Help: "Energy attributed to the agent itself.", Type: prometheus.Counter,
 		Samples: []prometheus.Sample{{Value: selfJ}}}
 
-	fams := []prometheus.Family{nodeEnergy, nodePower, idle, unattributed, backendEnergy, modelEnergy, modelTokens, jpt, consumers, emissions, cost, water, up}
+	fams := []prometheus.Family{nodeEnergy, nodePower, idle, unattributed, backendEnergy, modelEnergy, modelTokens, jpt, consumers, emissions, sci, cost, water, up}
 	fams = append(fams, a.collectors.Families()...)
 	return append(fams, self, build)
 }

@@ -94,6 +94,10 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 | `indicators.tariff.periods[].from` | - | string | empty | Hora local en que empieza el tramo, como 18:00. |
 | `indicators.tariff.periods[].to` | - | string | empty | Hora local en que termina el tramo, después de from en el mismo día; 24:00 es el fin del día. |
 | `indicators.tariff.periods[].price_per_kwh` | - | number | `0` | Precio por kWh durante el tramo, en la moneda de la tarifa. |
+| `indicators.sci.functional_unit` | `GREENLENS_INDICATORS_SCI_FUNCTIONAL_UNIT` | string | `1k_generated_tokens` | Unidad del SCI: 1k_generated_tokens, request o consumer. |
+| `indicators.sci.embodied.server_kgco2e` | `GREENLENS_INDICATORS_SCI_EMBODIED_SERVER_KGCO2E` | number or null | `null` | Carbono incorporado del servidor en kgCO2e, de la huella de carbono de producto de su fabricante. Nulo: no se incluye. |
+| `indicators.sci.embodied.gpu_kgco2e` | `GREENLENS_INDICATORS_SCI_EMBODIED_GPU_KGCO2E` | number or null | `null` | Carbono incorporado de las GPU en kgCO2e. Nulo: no se incluye. |
+| `indicators.sci.embodied.lifetime_years` | `GREENLENS_INDICATORS_SCI_EMBODIED_LIFETIME_YEARS` | number or null | `null` | Años de uso del hardware, en los que se reparte su carbono incorporado. Obligatorio con carbono incorporado. |
 
 ## retention
 

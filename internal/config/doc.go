@@ -47,6 +47,7 @@ func enums() map[string][]string {
 		"sources.disable":                  SourceIDs,
 		"backends[].kind":                  kinds(),
 		"indicators.tariff.periods[].days": indicators.Weekdays,
+		"indicators.sci.functional_unit":   indicators.FunctionalUnits,
 	}
 }
 

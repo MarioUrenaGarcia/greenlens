@@ -104,6 +104,9 @@ type Cut struct {
 	// Quality is that of the processor energy in the interval, for rows
 	// with tokens and no energy.
 	Quality source.Quality
+	// NodeServerJ and NodeGPUJ are the processor and memory energy and the
+	// GPU energy of the whole node in the interval, set by the agent.
+	NodeServerJ, NodeGPUJ float64
 }
 
 // Accountant adds up the energy of the backends between cuts. It is not

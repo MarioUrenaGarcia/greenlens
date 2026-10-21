@@ -25,6 +25,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
+	"github.com/MarioUrenaGarcia/greenlens/internal/report"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/ipmi"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/perfevent"
@@ -402,6 +403,22 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	}
 	if code, out, _ := runWith(t, hooks{}, map[string]string{"GREENLENS_LANG": "es"}, "report", "--config", cfgPath, "--group", "backend"); code != 0 || !strings.Contains(out, "no se atribuyó energía") {
 		t.Fatalf("report by backend: %d %s", code, out)
+	}
+	// SCI of the node, without embodied carbon configured.
+	code, out, errOut = runWith(t, hooks{}, nil, "sci", "--config", cfgPath, "--from", "1h", "-o", "json")
+	var sci report.SCIReport
+	if code != 0 || json.Unmarshal([]byte(out), &sci) != nil || sci.Node.EnergyJ <= 0 || sci.Node.SCI.OperationalG <= 0 ||
+		sci.Unit != "1k_generated_tokens" || len(sci.Missing) != 3 || sci.Node.SCI.EmbodiedG != nil {
+		t.Fatalf("sci: %d %+v %s", code, sci, errOut)
+	}
+	if code, out, _ := runWith(t, hooks{}, map[string]string{"GREENLENS_LANG": "es"}, "sci", "--config", cfgPath, "--group", "model", "--unit", "request"); code != 0 ||
+		!strings.Contains(out, "No se incluye el carbono incorporado") || !strings.Contains(out, "por solicitud") {
+		t.Fatalf("sci table: %d %s", code, out)
+	}
+	for _, args := range [][]string{{"--unit", "watt"}, {"--group", "team"}, {"--from", "soon"}} {
+		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"sci", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
+			t.Fatalf("sci %v: %d %s", args, code, errOut)
+		}
 	}
 	if code, out, _ := runWith(t, hooks{}, nil, "proxy", "--config", cfgPath); code != 0 || !strings.Contains(out, "proxy.enabled") {
 		t.Fatalf("proxy off: %d %s", code, out)

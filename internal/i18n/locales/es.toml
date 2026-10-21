@@ -611,6 +611,28 @@ server = "servidor"
 print = "Imprime el enlace en lugar de abrir el navegador"
 role = "Rol de la sesión: viewer, operator o admin"
 
+[cli.sci]
+short = "Calcula la intensidad de carbono del software de un periodo"
+long = "Calcula la intensidad de carbono del software (SCI) de ISO/IEC 21031 para un periodo: las emisiones operacionales de la energía, hora por hora, más el carbono incorporado del servidor y de la GPU, por unidad funcional. Con --group, también para cada backend, modelo o consumidor, que cargan con la parte del hardware que su energía representa de la energía del nodo. La unidad viene de indicators.sci.functional_unit salvo que --unit indique otra."
+node = "nodo"
+missing = "No se incluye el carbono incorporado, porque a la configuración le falta {keys}. El SCI mostrado es solo la parte operacional."
+method = "SCI = (operacional + incorporado) / unidades. Las emisiones operacionales incluyen el PUE; el carbono incorporado se reparte en la vida útil del hardware."
+
+[cli.sci.flag]
+group = "Reporta además cada backend, modelo o consumidor"
+unit = "Unidad funcional: 1k_generated_tokens, request o consumer"
+
+[cli.sci.col]
+scope = "Ámbito"
+operational = "Operacional"
+embodied = "Incorporado"
+units = "Unidades"
+
+[cli.sci.unit]
+1k_generated_tokens = "SCI en gramos de CO2e por cada 1,000 tokens generados."
+request = "SCI en gramos de CO2e por solicitud."
+consumer = "SCI en gramos de CO2e por consumidor."
+
 [cli.license]
 short = "Muestra la licencia y los avisos de terceros"
 long = "Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente."
@@ -722,6 +744,12 @@ indicators_tariff_periods_days = "Días del tramo: sun, mon, tue, wed, thu, fri 
 indicators_tariff_periods_from = "Hora local en que empieza el tramo, como 18:00."
 indicators_tariff_periods_to = "Hora local en que termina el tramo, después de from en el mismo día; 24:00 es el fin del día."
 indicators_tariff_periods_price_per_kwh = "Precio por kWh durante el tramo, en la moneda de la tarifa."
+indicators_sci = "Intensidad de carbono del software (SCI), ISO/IEC 21031: las emisiones por unidad funcional."
+indicators_sci_functional_unit = "Unidad del SCI: 1k_generated_tokens, request o consumer."
+indicators_sci_embodied = "Carbono de fabricación del hardware, repartido en su vida útil según la participación de energía de cada ámbito."
+indicators_sci_embodied_server_kgco2e = "Carbono incorporado del servidor en kgCO2e, de la huella de carbono de producto de su fabricante. Nulo: no se incluye."
+indicators_sci_embodied_gpu_kgco2e = "Carbono incorporado de las GPU en kgCO2e. Nulo: no se incluye."
+indicators_sci_embodied_lifetime_years = "Años de uso del hardware, en los que se reparte su carbono incorporado. Obligatorio con carbono incorporado."
 retention_raw = "Cuánto tiempo se conservan las muestras sin agregar."
 retention_rollup_1m = "Cuánto tiempo se conservan los agregados por minuto."
 retention_rollup_1h = "Cuánto tiempo se conservan los agregados por hora."

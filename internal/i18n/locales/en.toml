@@ -611,6 +611,28 @@ server = "server"
 print = "Print the link instead of opening the browser"
 role = "Role of the session: viewer, operator or admin"
 
+[cli.sci]
+short = "Compute the Software Carbon Intensity of a period"
+long = "Compute the Software Carbon Intensity of ISO/IEC 21031 for a period: the operational emissions of the energy, hour by hour, plus the embodied carbon of the server and the GPU, per functional unit. With --group, also for each backend, model or consumer, which carry the share of the hardware that their energy is of the energy of the node. The unit comes from indicators.sci.functional_unit unless --unit names another."
+node = "node"
+missing = "Embodied carbon is not included, since the configuration lacks {keys}. The SCI shown is the operational part alone."
+method = "SCI = (operational + embodied) / units. Operational emissions include the PUE; embodied carbon is spread over the lifetime of the hardware."
+
+[cli.sci.flag]
+group = "Also report each backend, model or consumer"
+unit = "Functional unit: 1k_generated_tokens, request or consumer"
+
+[cli.sci.col]
+scope = "Scope"
+operational = "Operational"
+embodied = "Embodied"
+units = "Units"
+
+[cli.sci.unit]
+1k_generated_tokens = "SCI in grams of CO2e per 1,000 generated tokens."
+request = "SCI in grams of CO2e per request."
+consumer = "SCI in grams of CO2e per consumer."
+
 [cli.license]
 short = "Show the license and the third-party notices"
 long = "Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component."
@@ -722,6 +744,12 @@ indicators_tariff_periods_days = "Weekdays of the period: sun, mon, tue, wed, th
 indicators_tariff_periods_from = "Local time the period starts, such as 18:00."
 indicators_tariff_periods_to = "Local time the period ends, later than from on the same day; 24:00 is the end of the day."
 indicators_tariff_periods_price_per_kwh = "Price per kWh during the period, in the currency of the tariff."
+indicators_sci = "Software Carbon Intensity, ISO/IEC 21031: the emissions per functional unit."
+indicators_sci_functional_unit = "Unit of the SCI: 1k_generated_tokens, request or consumer."
+indicators_sci_embodied = "Carbon of making the hardware, spread over its lifetime by the energy share of each scope."
+indicators_sci_embodied_server_kgco2e = "Embodied carbon of the server in kgCO2e, from the product carbon footprint of its maker. Null: not included."
+indicators_sci_embodied_gpu_kgco2e = "Embodied carbon of the GPUs in kgCO2e. Null: not included."
+indicators_sci_embodied_lifetime_years = "Years of use of the hardware, over which its embodied carbon is spread. Required with embodied carbon."
 retention_raw = "How long raw samples are kept."
 retention_rollup_1m = "How long one-minute rollups are kept."
 retention_rollup_1h = "How long one-hour rollups are kept."

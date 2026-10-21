@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -195,6 +196,7 @@ type Indicators struct {
 	PUE                   float64  `yaml:"pue"`
 	WUELPerKWh            *float64 `yaml:"wue_l_per_kwh"`
 	Tariff                Tariff   `yaml:"tariff"`
+	SCI                   SCI      `yaml:"sci"`
 
 	// Profile is read from HourlyProfileFile by Load.
 	Profile *indicators.Profile `yaml:"-"`
@@ -209,6 +211,26 @@ type Tariff struct {
 	PricePerKWh *float64       `yaml:"price_per_kwh"`
 	Currency    string         `yaml:"currency"`
 	Periods     []TariffPeriod `yaml:"periods"`
+}
+
+// SCI configures the Software Carbon Intensity.
+type SCI struct {
+	FunctionalUnit string   `yaml:"functional_unit"`
+	Embodied       Embodied `yaml:"embodied"`
+}
+
+// Embodied is the carbon of making the hardware and its lifetime. There
+// are no defaults: without them SCI is reported without embodied carbon.
+type Embodied struct {
+	ServerKgCO2e  *float64 `yaml:"server_kgco2e"`
+	GPUKgCO2e     *float64 `yaml:"gpu_kgco2e"`
+	LifetimeYears *float64 `yaml:"lifetime_years"`
+}
+
+// EmbodiedCarbon returns the embodied carbon for the indicators.
+func (c Config) EmbodiedCarbon() indicators.Embodied {
+	e := c.Indicators.SCI.Embodied
+	return indicators.Embodied{ServerKg: e.ServerKgCO2e, GPUKg: e.GPUKgCO2e, LifetimeYears: e.LifetimeYears}
 }
 
 // TariffPeriod is a price on some weekdays between two local times of the
@@ -242,7 +264,7 @@ func Defaults() Config {
 		Proxy:       Proxy{Listen: "127.0.0.1:11435", Upstream: "http://127.0.0.1:11434"},
 		Server:      Server{Enabled: true, Listen: DefaultListen},
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
-		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}},
+		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}, SCI: SCI{FunctionalUnit: indicators.UnitGeneratedTokens}},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
 			Rollup1m: Duration(2160 * time.Hour),
@@ -591,6 +613,24 @@ func (c Config) Validate() error {
 	}
 	if err := c.Factors().Validate(); err != nil {
 		bad("indicators", err.Error())
+	}
+	sci := c.Indicators.SCI
+	if !slices.Contains(indicators.FunctionalUnits, sci.FunctionalUnit) {
+		bad("indicators.sci.functional_unit", "must be one of "+strings.Join(indicators.FunctionalUnits, ", "))
+	}
+	for _, p := range []struct {
+		key string
+		v   *float64
+	}{{"indicators.sci.embodied.server_kgco2e", sci.Embodied.ServerKgCO2e}, {"indicators.sci.embodied.gpu_kgco2e", sci.Embodied.GPUKgCO2e}} {
+		if p.v != nil && (*p.v < 0 || math.IsNaN(*p.v) || math.IsInf(*p.v, 0)) {
+			bad(p.key, "must be zero or more kgCO2e")
+		}
+	}
+	switch life := sci.Embodied.LifetimeYears; {
+	case life != nil && (*life <= 0 || *life > 100 || math.IsNaN(*life)):
+		bad("indicators.sci.embodied.lifetime_years", "must be more than 0 and at most 100 years")
+	case life == nil && (sci.Embodied.ServerKgCO2e != nil || sci.Embodied.GPUKgCO2e != nil):
+		bad("indicators.sci.embodied.lifetime_years", "is needed to spread the embodied carbon over the life of the hardware")
 	}
 	if f := c.Indicators.HourlyProfileFile; f != "" && !filepath.IsAbs(f) {
 		bad("indicators.hourly_profile_file", "must be an absolute path")

@@ -10,6 +10,7 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
+	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 )
 
 func TestIndicatorsFollowTheHour(t *testing.T) {
@@ -79,5 +80,32 @@ func TestSpanClipsToTheBucketAndThePeriod(t *testing.T) {
 	lo, hi = span(h, from, 0, from, h.Add(15*time.Minute))
 	if !lo.Equal(h) || !hi.Equal(h.Add(15*time.Minute)) {
 		t.Fatalf("%s %s", lo, hi)
+	}
+}
+
+func TestEmbodiedCarbonAddsUpByInterval(t *testing.T) {
+	a := &Agent{bstate: map[string]*backendState{}, consumerJ: map[string]float64{}}
+	gen := int64(4000)
+	start := time.Date(2026, 10, 19, 10, 0, 0, 0, time.UTC)
+	// One hour in which the model used 600 of the 1000 J of processor and
+	// memory and 450 of the 500 J of GPU.
+	c := usage.Cut{Start: start, End: start.Add(time.Hour), NodeServerJ: 1000, NodeGPUJ: 500}
+	rows := []usage.Row{{Start: start, Interval: time.Hour, Backend: "ollama", Model: "qwen", GeneratedTokens: &gen,
+		Energy: usage.Energy{CPUJ: 500, DRAMJ: 100, GPUJ: 450}}}
+	// A server of 8766 kgCO2e and a GPU of 876.6 kgCO2e over one year give
+	// 1000 g and 100 g per hour; the model carries 0.6 and 0.9 of them,
+	// 600 + 90 = 690 g.
+	server, gpu, life := 8766.0, 876.6, 1.0
+	e := indicators.Embodied{ServerKg: &server, GPUKg: &gpu, LifetimeYears: &life}
+	a.recordUsage(c, nil, rows, indicators.Default(), e)
+	a.recordUsage(c, nil, rows, indicators.Default(), e)
+	if got := a.bstate["ollama"].embodiedG["qwen"]; math.Abs(got-2*690) > 1e-6 {
+		t.Fatalf("embodied %v, want 1380", got)
+	}
+	// Without embodied carbon nothing is added.
+	b := &Agent{bstate: map[string]*backendState{}, consumerJ: map[string]float64{}}
+	b.recordUsage(c, nil, rows, indicators.Default(), indicators.Embodied{})
+	if _, ok := b.bstate["ollama"].embodiedG["qwen"]; ok {
+		t.Fatal("embodied carbon without configuration")
 	}
 }

@@ -138,6 +138,17 @@ indicators:
     #     to: "22:00"
     #     price_per_kwh: <the price of the period>
     periods: []
+  # Software Carbon Intensity (ISO/IEC 21031): the emissions per
+  # functional unit, 1k_generated_tokens, request or consumer.
+  sci:
+    functional_unit: 1k_generated_tokens
+    # Carbon of making the server and the GPU, in kgCO2e, from the product
+    # carbon footprint of their makers, and their lifetime in years. Empty:
+    # SCI is reported without embodied carbon, and says so.
+    embodied:
+      server_kgco2e:
+      gpu_kgco2e:
+      lifetime_years:
 
 retention:
   raw: 168h
