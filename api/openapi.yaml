@@ -1478,7 +1478,7 @@ components:
       description: Use of one backend, model or consumer in a period.
       x-description-es: Uso de un backend, modelo o consumidor en un periodo.
       additionalProperties: false
-      required: [backend, kind, energy_j, prompt_tokens, generated_tokens, requests, tokens_counted]
+      required: [backend, kind, energy_j, gpu_energy_j, prompt_tokens, generated_tokens, requests, tokens_counted]
       properties:
         bucket_start: {type: string, format: date-time, description: Start of the bucket, when the period is split., x-description-es: Inicio del intervalo, cuando el periodo se divide.}
         backend: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
@@ -1486,6 +1486,7 @@ components:
         model: {type: string, description: Name of the model, when grouping by model or consumer., x-description-es: Nombre del modelo, al agrupar por modelo o consumidor.}
         consumer: {type: string, description: Consumer, when grouping by consumer., x-description-es: Consumidor, al agrupar por consumidor.}
         energy_j: {type: number, description: Energy in joules., x-description-es: Energía en joules.}
+        gpu_energy_j: {type: number, description: GPU part of energy_j., x-description-es: Parte de GPU de energy_j.}
         prompt_tokens: {type: integer, description: Prompt tokens., x-description-es: Tokens de entrada.}
         generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
         requests: {type: integer, description: Requests., x-description-es: Solicitudes.}

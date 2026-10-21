@@ -123,9 +123,9 @@ func TestQueriesMatchTheRawRows(t *testing.T) {
 	info := map[string]BackendInfo{"ollama": {Name: "ollama", Kind: "ollama", Endpoint: "http://127.0.0.1:11434"}}
 	rng := rand.New(rand.NewPCG(3, 4))
 	type sample struct {
-		at   time.Time
-		j    float64
-		used float64
+		at        time.Time
+		j         float64
+		used, gpu float64
 	}
 	var samples []sample
 	var rows []usage.Row
@@ -141,9 +141,9 @@ func TestQueriesMatchTheRawRows(t *testing.T) {
 	}
 	var usageAt []sample
 	for at := start; at.Before(end); at = at.Add(usage.Interval) {
-		cpu := rng.Float64() * 30
-		usageAt = append(usageAt, sample{at: at, used: cpu})
-		rows = append(rows, row(at, "ollama", "qwen", cpu, 0, 10, 5, usage.MethodTokenWeighted))
+		cpu, gpu := rng.Float64()*30, rng.Float64()*50
+		usageAt = append(usageAt, sample{at: at, used: cpu + gpu, gpu: gpu})
+		rows = append(rows, row(at, "ollama", "qwen", cpu, gpu, 10, 5, usage.MethodTokenWeighted))
 	}
 	if err := s.InsertUsage(ctx, rows, info, end); err != nil {
 		t.Fatal(err)
@@ -205,25 +205,28 @@ func TestQueriesMatchTheRawRows(t *testing.T) {
 			t.Fatalf("node by hour: %d parts, want %d", len(gotH), len(wantH))
 		}
 
-		wantU := map[time.Time]float64{}
+		wantU, wantGPU := map[time.Time]float64{}, map[time.Time]float64{}
 		for _, x := range usageAt {
 			if !x.at.Before(from) && x.at.Before(to) {
 				wantU[key(x.at)] += x.used
+				wantGPU[key(x.at)] += x.gpu
 			}
 		}
 		gotRows, _, err := s.Usage(ctx, from, to, ByModel, bucket, now, r)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotU := map[time.Time]float64{}
+		gotU, gotGPU := map[time.Time]float64{}, map[time.Time]float64{}
 		for _, g := range gotRows {
 			k := g.BucketStart
 			if bucket == 0 {
 				k = from.UTC()
 			}
 			gotU[k] += g.EnergyJ
+			gotGPU[k] += g.GPUEnergyJ
 		}
 		compare(t, "usage", from, to, bucket, gotU, wantU)
+		compare(t, "usage gpu", from, to, bucket, gotGPU, wantGPU)
 
 		hourRows, _, err := s.UsageHourly(ctx, from, to, ByModel, bucket, now, r)
 		if err != nil {

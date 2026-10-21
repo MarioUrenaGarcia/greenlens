@@ -106,6 +106,7 @@ func usageIndicators(rows []store.UsageEnergy, f indicators.Factors, from, to ti
 		if i, ok := at[k]; ok {
 			o := &out[i]
 			o.EnergyJ += r.EnergyJ
+			o.GPUEnergyJ += r.GPUEnergyJ
 			o.PromptTokens += r.PromptTokens
 			o.GeneratedTokens += r.GeneratedTokens
 			o.Requests += r.Requests

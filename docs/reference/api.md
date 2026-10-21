@@ -1298,6 +1298,7 @@ Use of one backend, model or consumer in a period.
 | `backend` | string | yes | Name of the backend. |
 | `energy_j` | number | yes | Energy in joules. |
 | `generated_tokens` | integer | yes | Generated tokens. |
+| `gpu_energy_j` | number | yes | GPU part of energy_j. |
 | `kind` | string | yes | Kind of the backend. |
 | `prompt_tokens` | integer | yes | Prompt tokens. |
 | `requests` | integer | yes | Requests. |

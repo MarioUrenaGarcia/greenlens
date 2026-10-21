@@ -1298,6 +1298,7 @@ Uso de un backend, modelo o consumidor en un periodo.
 | `backend` | string | sí | Nombre del backend. |
 | `energy_j` | number | sí | Energía en joules. |
 | `generated_tokens` | integer | sí | Tokens generados. |
+| `gpu_energy_j` | number | sí | Parte de GPU de energy_j. |
 | `kind` | string | sí | Tipo del backend. |
 | `prompt_tokens` | integer | sí | Tokens de entrada. |
 | `requests` | integer | sí | Solicitudes. |

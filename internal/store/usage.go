@@ -183,18 +183,18 @@ func (s *Store) rollupUsage(ctx context.Context, now time.Time) error {
 	}{
 		{usage1m, `
 			INSERT INTO usage_rollups (bucket_start_ms, resolution, backend_id, model_id, consumer_id,
-				energy_j, prompt_tokens, generated_tokens, requests)
+				energy_j, gpu_energy_j, prompt_tokens, generated_tokens, requests)
 			SELECT (ts_ms / 60000) * 60000, '1m', backend_id, model_id, consumer_id,
-				sum(` + energyExpr + `), sum(prompt_tokens), sum(generated_tokens), sum(requests)
+				sum(` + energyExpr + `), sum(gpu_energy_j), sum(prompt_tokens), sum(generated_tokens), sum(requests)
 			FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?
 			GROUP BY 1, backend_id, model_id, consumer_id`,
 			`SELECT coalesce(min(ts_ms), 9223372036854775807) FROM usage_intervals`,
 			now.Add(-usageLag).Truncate(time.Minute).UnixMilli()},
 		{usage1h, `
 			INSERT INTO usage_rollups (bucket_start_ms, resolution, backend_id, model_id, consumer_id,
-				energy_j, prompt_tokens, generated_tokens, requests)
+				energy_j, gpu_energy_j, prompt_tokens, generated_tokens, requests)
 			SELECT (bucket_start_ms / 3600000) * 3600000, '1h', backend_id, model_id, consumer_id,
-				sum(energy_j), sum(prompt_tokens), sum(generated_tokens), sum(requests)
+				sum(energy_j), sum(gpu_energy_j), sum(prompt_tokens), sum(generated_tokens), sum(requests)
 			FROM usage_rollups WHERE resolution = '1m' AND bucket_start_ms >= ? AND bucket_start_ms < ?
 			GROUP BY 1, backend_id, model_id, consumer_id`,
 			`SELECT coalesce(min(bucket_start_ms), 9223372036854775807) FROM usage_rollups WHERE resolution = '1m'`,
@@ -247,15 +247,17 @@ func (s *Store) rollupUsage(ctx context.Context, now time.Time) error {
 // in a period.
 type UsageEnergy struct {
 	// BucketStart is set when the usage is split in buckets.
-	BucketStart     time.Time `json:"bucket_start,omitzero"`
-	Backend         string    `json:"backend"`
-	Kind            string    `json:"kind"`
-	Model           string    `json:"model,omitempty"`
-	Consumer        string    `json:"consumer,omitempty"`
-	EnergyJ         float64   `json:"energy_j"`
-	PromptTokens    int64     `json:"prompt_tokens"`
-	GeneratedTokens int64     `json:"generated_tokens"`
-	Requests        int64     `json:"requests"`
+	BucketStart time.Time `json:"bucket_start,omitzero"`
+	Backend     string    `json:"backend"`
+	Kind        string    `json:"kind"`
+	Model       string    `json:"model,omitempty"`
+	Consumer    string    `json:"consumer,omitempty"`
+	EnergyJ     float64   `json:"energy_j"`
+	// GPUEnergyJ is the GPU part of EnergyJ.
+	GPUEnergyJ      float64 `json:"gpu_energy_j"`
+	PromptTokens    int64   `json:"prompt_tokens"`
+	GeneratedTokens int64   `json:"generated_tokens"`
+	Requests        int64   `json:"requests"`
 	// Counted is false when the backend reported no tokens in the period.
 	Counted bool `json:"tokens_counted"`
 	// Hour is the UTC hour of the usage, set by UsageHourly.
@@ -292,9 +294,9 @@ func (s *Store) usage(ctx context.Context, from, to time.Time, by string, bucket
 	}
 	plan := planRead(from.UnixMilli(), to.UnixMilli(), done1m, done1h, bucket.Milliseconds(), res)
 	q, args := plan.union(
-		`SELECT bucket_start_ms AS t, backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+		`SELECT bucket_start_ms AS t, backend_id, model_id, consumer_id, energy_j AS e, gpu_energy_j AS gj, prompt_tokens AS p, generated_tokens AS g, requests AS q
 			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`,
-		`SELECT ts_ms AS t, backend_id, model_id, consumer_id, `+energyExpr+` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+		`SELECT ts_ms AS t, backend_id, model_id, consumer_id, `+energyExpr+` AS e, gpu_energy_j AS gj, prompt_tokens AS p, generated_tokens AS g, requests AS q
 			FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`)
 	group, model, consumer := `b.id`, `''`, `''`
 	switch by {
@@ -317,7 +319,7 @@ func (s *Store) usage(ctx context.Context, from, to time.Time, by string, bucket
 	// Only the constant fragments above are formatted into the query;
 	// every value goes through placeholders.
 	//nolint:gosec // constant fragments, see above
-	query := `SELECT ` + slot + ` AS slot, ` + hourOf("u.t", hourly) + ` AS hour, b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
+	query := `SELECT ` + slot + ` AS slot, ` + hourOf("u.t", hourly) + ` AS hour, b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), sum(u.gj), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
 			count(u.p) > 0 OR count(u.g) > 0
 		FROM (` + q + `) AS u JOIN backends b ON b.id = u.backend_id LEFT JOIN models m ON m.id = u.model_id
 			LEFT JOIN consumers c ON c.id = u.consumer_id
@@ -331,7 +333,7 @@ func (s *Store) usage(ctx context.Context, from, to time.Time, by string, bucket
 	for rows.Next() {
 		var u UsageEnergy
 		var slotN, hour int64
-		if err := rows.Scan(&slotN, &hour, &u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
+		if err := rows.Scan(&slotN, &hour, &u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.GPUEnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
 			return nil, res, err
 		}
 		if bucket > 0 {
