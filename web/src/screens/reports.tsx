@@ -11,7 +11,8 @@ import { Empty, ErrorNotice, Loading, Metric, Panel, Segmented } from "../compon
 import { csv, save, stamp } from "../download";
 import * as fmt from "../format";
 import { t } from "../i18n";
-import type { Factors, Status, UsageEnergy } from "../types";
+import { add, factorNote, priced, tariffNote, zero } from "../indicators";
+import type { Indicators, Status, UsageEnergy } from "../types";
 
 type Group = "backend" | "model" | "consumer";
 type By = "none" | "day" | "hour";
@@ -20,6 +21,7 @@ interface Row {
   start: number;
   domains: Record<string, number>;
   componentsJ: number;
+  ind: Indicators;
 }
 
 interface Report {
@@ -32,16 +34,6 @@ interface Report {
   groups: UsageEnergy[];
   groupBy: Group;
   estimated: boolean;
-}
-
-function indicators(j: number, f: Factors) {
-  const kwh = j / fmt.joulesPerKWh;
-  return {
-    kwh,
-    co2eG: kwh * f.emission_g_per_kwh * f.pue,
-    cost: f.tariff_per_kwh === undefined ? undefined : kwh * f.tariff_per_kwh * f.pue,
-    waterL: f.wue_l_per_kwh === undefined ? undefined : kwh * f.wue_l_per_kwh,
-  };
 }
 
 function dayStart(d: Date): Date {
@@ -76,16 +68,18 @@ export function Reports(props: { status: Status }) {
       .then(([u, g]) => {
         if (stale) return;
         const rows = new Map<number, Row>();
-        const total: Row = { start: start.getTime(), domains: {}, componentsJ: 0 };
+        const total: Row = { start: start.getTime(), domains: {}, componentsJ: 0, ind: zero() };
         let estimated = false;
         for (const r of u.rows) {
           const k = Date.parse(r.bucket_start);
-          const row = rows.get(k) ?? { start: k, domains: {}, componentsJ: 0 };
+          const row = rows.get(k) ?? { start: k, domains: {}, componentsJ: 0, ind: zero() };
           row.domains[r.domain] = (row.domains[r.domain] ?? 0) + r.energy_j;
           total.domains[r.domain] = (total.domains[r.domain] ?? 0) + r.energy_j;
           if ((levels.get(r.domain) ?? "component") === "component") {
             row.componentsJ += r.energy_j;
             total.componentsJ += r.energy_j;
+            row.ind = add(row.ind, r.indicators);
+            total.ind = add(total.ind, r.indicators);
           }
           estimated ||= r.quality === "estimated";
           rows.set(k, row);
@@ -116,17 +110,14 @@ export function Reports(props: { status: Status }) {
   const exportCsv = () => {
     if (!report) return;
     const head = ["start", ...domains.map((d) => `${d}_j`), "components_j", "kwh", "co2e_g", "cost"];
-    const lines = report.rows.map((r) => {
-      const v = indicators(r.componentsJ, f);
-      return [
-        new Date(r.start).toISOString(),
-        ...domains.map((d) => r.domains[d] ?? 0),
-        r.componentsJ,
-        v.kwh,
-        v.co2eG,
-        v.cost ?? "",
-      ];
-    });
+    const lines = report.rows.map((r) => [
+      new Date(r.start).toISOString(),
+      ...domains.map((d) => r.domains[d] ?? 0),
+      r.componentsJ,
+      r.ind.kwh,
+      r.ind.co2e_g,
+      r.ind.cost ?? "",
+    ]);
     save(`greenlens-report-${stamp()}.csv`, "text/csv", csv([head, ...lines]));
   };
   const exportJson = () => {
@@ -140,24 +131,25 @@ export function Reports(props: { status: Status }) {
       estimated: report.estimated,
       emission_factor_g_per_kwh: f.emission_g_per_kwh,
       emission_factor_source: f.emission_source,
-      currency: f.tariff_per_kwh === undefined ? undefined : f.currency,
+      hourly_profile: f.hourly_profile,
+      currency: priced(f) ? f.currency : undefined,
       rows: report.rows.map((r) => ({
         start: new Date(r.start).toISOString(),
         domains_j: r.domains,
         components_j: r.componentsJ,
-        indicators: indicators(r.componentsJ, f),
+        indicators: r.ind,
       })),
       total: {
         domains_j: report.total.domains,
         components_j: report.total.componentsJ,
-        indicators: indicators(report.total.componentsJ, f),
+        indicators: report.total.ind,
       },
       groups: { group_by: report.groupBy, rows: report.groups },
     };
     save(`greenlens-report-${stamp()}.json`, "application/json", JSON.stringify(doc, null, 2));
   };
 
-  const totals = report ? indicators(report.total.componentsJ, f) : null;
+  const totals = report ? report.total.ind : null;
   return (
     <div class="stack">
       <div class="page-head">
@@ -247,20 +239,17 @@ export function Reports(props: { status: Status }) {
             />
             <Metric
               label={t("gui.summary.co2e")}
-              value={fmt.co2e(totals?.co2eG ?? 0)}
+              value={fmt.co2e(totals?.co2e_g ?? 0)}
               tone="load"
-              note={t("gui.summary.factor", {
-                value: fmt.decimal(f.emission_g_per_kwh, 1),
-                source: f.emission_source,
-              })}
+              note={factorNote(f)}
             />
             <Metric
               label={t("gui.summary.cost")}
               value={totals?.cost === undefined ? "-" : fmt.money(totals.cost, f.currency)}
-              note={totals?.cost === undefined ? t("gui.summary.no_tariff") : undefined}
+              note={tariffNote(f)}
             />
-            {totals?.waterL !== undefined ? (
-              <Metric label={t("gui.reports.water")} value={`${fmt.decimal(totals.waterL, 2)} L`} />
+            {totals?.water_l !== undefined ? (
+              <Metric label={t("gui.reports.water")} value={`${fmt.decimal(totals.water_l, 2)} L`} />
             ) : null}
           </div>
           <Panel title={t("gui.reports.by_domain")} help="explanation/measurement">
@@ -293,7 +282,7 @@ export function Reports(props: { status: Status }) {
                     key: "co2e",
                     label: t("gui.summary.co2e"),
                     numeric: true,
-                    cell: (r) => fmt.co2e(indicators(r.componentsJ, f).co2eG),
+                    cell: (r) => fmt.co2e(r.ind.co2e_g),
                   },
                 ]}
               />
@@ -346,7 +335,7 @@ export function Reports(props: { status: Status }) {
                     key: "co2e",
                     label: t("gui.summary.co2e"),
                     numeric: true,
-                    cell: (r) => fmt.co2e(indicators(r.energy_j, f).co2eG),
+                    cell: (r) => fmt.co2e(r.indicators?.co2e_g ?? 0),
                   },
                   {
                     key: "tokens",

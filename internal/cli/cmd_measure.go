@@ -209,6 +209,11 @@ func (a *app) measure(cmd *cobra.Command, argv []string, o measureOpts) error {
 	last, _ := tr.ticks()
 	var cpuTicks, busyTicks uint64
 
+	// Indicators add up sample by sample, each with the factors of its
+	// time; the components and the platform are kept apart until the
+	// policy decides which one counts.
+	f := cfg.Factors()
+	var componentsInd, platformInd indicators.Values
 	account := func(targetTicks uint64) {
 		s, err := m.smp.Sample(ctx)
 		if err != nil && a.verbose {
@@ -240,6 +245,8 @@ func (a *app) measure(cmd *cobra.Command, argv []string, o measureOpts) error {
 		rep.CPUJ += r[0].CPUJ
 		rep.DRAMJ += r[0].DRAMJ
 		rep.PlatformJ += r[0].PlatformJ
+		componentsInd.Add(f.ComputeOver(r[0].CPUJ+r[0].DRAMJ, s.Time.Add(-s.Interval), s.Time))
+		platformInd.Add(f.ComputeOver(r[0].PlatformJ, s.Time.Add(-s.Interval), s.Time))
 	}
 
 	tick := time.NewTicker(o.interval)
@@ -296,16 +303,16 @@ loop:
 		rep.CPUShare = float64(cpuTicks) / float64(max(busyTicks, cpuTicks))
 	}
 	rep.TotalJ = rep.CPUJ + rep.DRAMJ
+	rep.Indicators = componentsInd
 	if policy == attribution.Wall && rep.PlatformJ > 0 {
 		rep.TotalJ = rep.PlatformJ
+		rep.Indicators = platformInd
 	}
 	if rep.DurationS > 0 {
 		rep.AveragePowerW = rep.TotalJ / rep.DurationS
 	}
-	f := cfg.Factors()
-	rep.Indicators = f.Compute(rep.TotalJ)
 	rep.EmissionSource = f.EmissionSource
-	if f.TariffPerKWh != nil {
+	if f.TariffPerKWh != nil || len(f.Periods) > 0 {
 		rep.Currency = f.Currency
 	}
 

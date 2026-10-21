@@ -40,6 +40,7 @@ type Report struct {
 	Estimated      bool        `json:"estimated"`
 	EmissionGKWh   float64     `json:"emission_factor_g_per_kwh"`
 	EmissionSource string      `json:"emission_factor_source"`
+	HourlyProfile  bool        `json:"hourly_profile"`
 	Currency       string      `json:"currency,omitempty"`
 	Rows           []ReportRow `json:"rows"`
 	Total          ReportRow   `json:"total"`
@@ -99,22 +100,28 @@ func newReportCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// The indicators come from the agent, computed hour by hour
+			// with the factors of its own configuration.
+			st, err := c.Status(cmd.Context())
+			if err != nil {
+				return err
+			}
+			f := st.Factors
 			if group != "" {
 				u, err := c.BackendUsage(cmd.Context(), from, to, group)
 				if err != nil {
 					return err
 				}
-				return a.writeBackendReport(cmd, backendReport(u, cfg.Factors()))
+				return a.writeBackendReport(cmd, backendReport(u, f))
 			}
 			u, err := c.Usage(cmd.Context(), from, to, bucket)
 			if err != nil {
 				return err
 			}
-			f := cfg.Factors()
 			rep := Report{SchemaVersion: 1, From: from, To: to, Bucket: by, Resolution: u.Resolution,
-				EmissionGKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource,
+				EmissionGKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, HourlyProfile: f.HourlyProfile,
 				Total: ReportRow{Start: from, DomainsJ: map[source.Domain]float64{}}}
-			if f.TariffPerKWh != nil {
+			if f.TariffPerKWh != nil || f.TariffPeriods > 0 {
 				rep.Currency = f.Currency
 			}
 			byStart := map[time.Time]*ReportRow{}
@@ -126,6 +133,11 @@ func newReportCmd(a *app) *cobra.Command {
 				}
 				row.DomainsJ[r.Domain] += r.EnergyJ
 				rep.Total.DomainsJ[r.Domain] += r.EnergyJ
+				// Platform and wall meters measure the components again.
+				if r.Domain.Level() == source.LevelComponent && r.Indicators != nil {
+					row.Indicators.Add(*r.Indicators)
+					rep.Total.Indicators.Add(*r.Indicators)
+				}
 				if r.Quality == string(source.QualityEstimated) {
 					rep.Estimated = true
 				}
@@ -140,7 +152,6 @@ func newReportCmd(a *app) *cobra.Command {
 						r.ComponentsJ += j
 					}
 				}
-				r.Indicators = f.Compute(r.ComponentsJ)
 			}
 			for i := range rep.Rows {
 				finish(&rep.Rows[i])
@@ -245,16 +256,18 @@ type BackendReport struct {
 	Rows           []BackendReportRow `json:"rows"`
 }
 
-func backendReport(u api.BackendUsage, f indicators.Factors) BackendReport {
+func backendReport(u api.BackendUsage, f api.Factors) BackendReport {
 	rep := BackendReport{SchemaVersion: 1, From: u.From, To: u.To, GroupBy: u.GroupBy, Resolution: u.Resolution,
 		EmissionGKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, Rows: []BackendReportRow{}}
-	if f.TariffPerKWh != nil {
+	if f.TariffPerKWh != nil || f.TariffPeriods > 0 {
 		rep.Currency = f.Currency
 	}
 	for _, r := range u.Rows {
 		row := BackendReportRow{Backend: r.Backend, Kind: r.Kind, Model: r.Model, Consumer: r.Consumer, EnergyJ: r.EnergyJ,
-			PromptTokens: r.PromptTokens, GeneratedTokens: r.GeneratedTokens, Requests: r.Requests, TokensCounted: r.Counted,
-			Indicators: f.Compute(r.EnergyJ)}
+			PromptTokens: r.PromptTokens, GeneratedTokens: r.GeneratedTokens, Requests: r.Requests, TokensCounted: r.Counted}
+		if r.Indicators != nil {
+			row.Indicators = *r.Indicators
+		}
 		if r.GeneratedTokens > 0 {
 			row.JoulesPerToken = r.EnergyJ / float64(r.GeneratedTokens)
 		}

@@ -79,6 +79,13 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the energy of each team or application for showback.
 - `/api/v1/usage` splits the use by backend, model or consumer in buckets,
   and the backends carry their root processes.
+- An hourly profile of the grid intensity (`indicators.hourly_profile_file`,
+  the 168 hours of the week in CSV) and time-of-use tariff periods
+  (`indicators.tariff.periods`), in the time zone of `indicators.timezone`.
+  The agent computes emissions and cost hour by hour, and interval by
+  interval for backends, models and the metrics, and returns them with
+  every row of `/api/v1/usage`; `report`, `top`, `measure` and the
+  interface use them, so they always follow the configuration of the agent.
 - Queries of long periods read every whole hour that falls inside one
   bucket from the hourly rollups and every whole minute from the minute
   rollups, with new indexes by resolution, so a query of 30 days reads

@@ -44,7 +44,7 @@ func newTopCmd(a *app) *cobra.Command {
 				return err
 			}
 			m := tui.New(tui.Options{
-				Source: c, L: l, Factors: cfg.Factors(), Refresh: refresh,
+				Source: c, L: l, Refresh: refresh,
 				Color: a.color(), Unicode: !ascii && utf8Locale(a.getenv), Raw: a.raw,
 				Export: exportCSV, Self: a.selfUsage,
 			})

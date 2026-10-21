@@ -55,6 +55,17 @@ export interface Factors {
   tariff_per_kwh?: number;
   currency: string;
   wue_l_per_kwh?: number;
+  hourly_profile: boolean;
+  tariff_periods: number;
+  time_zone: string;
+}
+
+// Indicators are computed by the agent, each hour with its own factors.
+export interface Indicators {
+  kwh: number;
+  co2e_g: number;
+  cost?: number;
+  water_l?: number;
 }
 
 export interface Regression {
@@ -79,6 +90,7 @@ export interface Model {
   method: string;
   quality: string;
   regression?: Regression;
+  indicators: Indicators;
 }
 
 export interface Backend {
@@ -98,6 +110,7 @@ export interface Backend {
   cpu_energy_j: number;
   dram_energy_j: number;
   gpu_energy_j: number;
+  indicators: Indicators;
   models?: Model[];
 }
 
@@ -145,6 +158,7 @@ export interface ChannelEnergy {
   quality: string;
   energy_j: number;
   samples: number;
+  indicators?: Indicators;
 }
 
 export interface Usage {
@@ -167,6 +181,7 @@ export interface UsageEnergy {
   generated_tokens: number;
   requests: number;
   tokens_counted: boolean;
+  indicators?: Indicators;
 }
 
 export interface BackendUsage {

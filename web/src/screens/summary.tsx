@@ -8,9 +8,10 @@ import { DataTable } from "../components/table";
 import { Empty, ErrorNotice, Metric, Panel, Segmented } from "../components/ui";
 import * as fmt from "../format";
 import { t } from "../i18n";
+import { add, factorNote, priced, tariffNote, zero } from "../indicators";
 import { useLive } from "../live";
 import { href } from "../router";
-import type { Status, UsageEnergy } from "../types";
+import type { ChannelEnergy, Indicators, Status, UsageEnergy } from "../types";
 
 export type Period = "24h" | "7d" | "30d";
 const periodMs: Record<Period, number> = { "24h": 864e5, "7d": 7 * 864e5, "30d": 30 * 864e5 };
@@ -21,17 +22,16 @@ export function periodOptions(): { value: Period; label: string }[] {
 
 interface Totals {
   energyJ: number;
+  ind: Indicators;
   models: UsageEnergy[];
 }
 
-// componentEnergy adds up the energy of the component domains, which do
-// not overlap, leaving out platform and wall meters that measure the same
+// components keeps the rows of the component domains, which do not
+// overlap, leaving out platform and wall meters that measure the same
 // energy again.
-function componentEnergy(status: Status, rows: { domain: string; energy_j: number }[]): number {
+function components(status: Status, rows: ChannelEnergy[]): ChannelEnergy[] {
   const level = new Map(status.domains.map((d) => [d.domain, d.level]));
-  return rows
-    .filter((r) => (level.get(r.domain) ?? "component") === "component")
-    .reduce((a, r) => a + r.energy_j, 0);
+  return rows.filter((r) => (level.get(r.domain) ?? "component") === "component");
 }
 
 export function Summary(props: { status: Status }) {
@@ -49,7 +49,12 @@ export function Summary(props: { status: Status }) {
       .then(([u, m]) => {
         if (stale) return;
         const models = m.rows.filter((r) => r.model).sort((a, b) => b.energy_j - a.energy_j);
-        setTotals({ energyJ: componentEnergy(st, u.rows), models });
+        const rows = components(st, u.rows);
+        setTotals({
+          energyJ: rows.reduce((a, r) => a + r.energy_j, 0),
+          ind: rows.reduce((a, r) => add(a, r.indicators), zero()),
+          models,
+        });
         setError(null);
       })
       .catch((e: unknown) => !stale && setError(e));
@@ -59,7 +64,6 @@ export function Summary(props: { status: Status }) {
   }, [period, st]);
 
   const f = st.factors;
-  const kwh = (totals?.energyJ ?? 0) / fmt.joulesPerKWh;
   const problems = st.problems?.length ?? 0;
   return (
     <div class="stack">
@@ -92,25 +96,14 @@ export function Summary(props: { status: Status }) {
         />
         <Metric
           label={t("gui.summary.co2e")}
-          value={totals ? fmt.co2e(kwh * f.emission_g_per_kwh * f.pue) : "-"}
+          value={totals ? fmt.co2e(totals.ind.co2e_g) : "-"}
           tone="load"
-          note={t("gui.summary.factor", {
-            value: fmt.decimal(f.emission_g_per_kwh, 1),
-            source: f.emission_source,
-          })}
+          note={factorNote(f)}
         />
         <Metric
           label={t("gui.summary.cost")}
-          value={
-            totals && f.tariff_per_kwh !== undefined
-              ? fmt.money(kwh * f.tariff_per_kwh * f.pue, f.currency)
-              : "-"
-          }
-          note={
-            f.tariff_per_kwh === undefined
-              ? t("gui.summary.no_tariff")
-              : t("gui.summary.tariff", { value: fmt.money(f.tariff_per_kwh, f.currency) })
-          }
+          value={totals?.ind.cost !== undefined && priced(f) ? fmt.money(totals.ind.cost, f.currency) : "-"}
+          note={tariffNote(f)}
         />
       </div>
       <Panel title={t("gui.summary.models")} help="explanation/attribution">

@@ -22,7 +22,6 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
-	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 )
 
@@ -47,7 +46,6 @@ type Usage func() (ticks uint64, rssBytes uint64, ok bool)
 type Options struct {
 	Source  Source
 	L       *i18n.Localizer
-	Factors indicators.Factors
 	Refresh time.Duration
 	Color   bool
 	Unicode bool
@@ -549,7 +547,7 @@ func (m *model) columns() []column {
 			{l.T("tui.col.tps"), 7, true, "generated_tokens_per_s"},
 			{"CO2e", 11, true, "co2e_g"},
 		}
-		if m.o.Factors.TariffPerKWh != nil {
+		if m.priced() {
 			cols[0].width, cols[3].width, cols[4].width = 13, 8, 6
 			cols = append(cols, column{l.T("tui.col.cost"), 10, true, "cost"})
 		}
@@ -577,9 +575,15 @@ func (m *model) columns() []column {
 
 func (m *model) energy(j float64) string { return fmtEnergy(j, m.o.Raw) }
 
+// priced reports whether the agent has a tariff, so there is a cost.
+func (m *model) priced() bool {
+	f := m.status.Factors
+	return f.TariffPerKWh != nil || f.TariffPeriods > 0
+}
+
 func (m *model) backendRows() []row {
 	var rs []row
-	cost := m.o.Factors.TariffPerKWh != nil
+	cost, currency := m.priced(), m.status.Factors.Currency
 	add := func(r row) {
 		if !cost {
 			r.cells, r.keys, r.csv = r.cells[:6], r.keys[:6], r.csv[:6]
@@ -587,19 +591,19 @@ func (m *model) backendRows() []row {
 		rs = append(rs, r)
 	}
 	for _, b := range m.status.Backends {
-		ind := m.o.Factors.Compute(b.EnergyJ)
+		ind := b.Indicators
 		var tps float64
 		for _, md := range b.Models {
 			tps += m.rates[b.Name+"/"+md.Name]
 		}
 		add(row{
 			group: b.Name, header: true,
-			cells: []string{b.Name, fmtPower(b.PowerW, m.o.Raw), m.energy(b.EnergyJ), "", fmtRate(tps), fmtCO2e(ind.CO2eG, m.o.Raw), fmtCost(ind.Cost, m.o.Factors.Currency, m.o.Raw)},
+			cells: []string{b.Name, fmtPower(b.PowerW, m.o.Raw), m.energy(b.EnergyJ), "", fmtRate(tps), fmtCO2e(ind.CO2eG, m.o.Raw), fmtCost(ind.Cost, currency, m.o.Raw)},
 			keys:  []float64{0, b.PowerW, b.EnergyJ, 0, tps, ind.CO2eG, deref(ind.Cost)},
 			csv:   []string{b.Name, num(b.PowerW), num(b.EnergyJ), "", num(tps), num(ind.CO2eG), numPtr(ind.Cost)},
 		})
 		for _, md := range b.Models {
-			ind := m.o.Factors.Compute(md.EnergyJ)
+			ind := md.Indicators
 			rate := m.rates[b.Name+"/"+md.Name]
 			jpt := "-"
 			if md.JoulesPerToken > 0 {
@@ -607,7 +611,7 @@ func (m *model) backendRows() []row {
 			}
 			add(row{
 				group: b.Name,
-				cells: []string{"  " + md.Name, "", m.energy(md.EnergyJ), jpt, fmtRate(rate), fmtCO2e(ind.CO2eG, m.o.Raw), fmtCost(ind.Cost, m.o.Factors.Currency, m.o.Raw)},
+				cells: []string{"  " + md.Name, "", m.energy(md.EnergyJ), jpt, fmtRate(rate), fmtCO2e(ind.CO2eG, m.o.Raw), fmtCost(ind.Cost, currency, m.o.Raw)},
 				keys:  []float64{0, 0, md.EnergyJ, md.JoulesPerToken, rate, ind.CO2eG, deref(ind.Cost)},
 				csv:   []string{b.Name + "/" + md.Name, "", num(md.EnergyJ), num(md.JoulesPerToken), num(rate), num(ind.CO2eG), numPtr(ind.Cost)},
 			})

@@ -76,11 +76,27 @@ func consumers() api.BackendUsage {
 }
 
 type fake struct {
-	err error
+	err   error
+	price *float64
 }
 
-func (f fake) Status(context.Context) (api.Status, error) { return status(), f.err }
-func (f fake) Live(context.Context) (api.Live, error)     { return live(), f.err }
+func (f fake) Status(context.Context) (api.Status, error) {
+	st := status()
+	// The agent adds up the indicators of every interval; with constant
+	// factors they are those of the whole energy.
+	fs := indicators.Default()
+	fs.TariffPerKWh = f.price
+	st.Factors = api.Factors{EmissionGPerKWh: fs.EmissionGPerKWh, PUE: fs.PUE, Currency: fs.Currency, TariffPerKWh: f.price}
+	for i := range st.Backends {
+		b := &st.Backends[i]
+		b.Indicators = fs.Compute(b.EnergyJ)
+		for j := range b.Models {
+			b.Models[j].Indicators = fs.Compute(b.Models[j].EnergyJ)
+		}
+	}
+	return st, f.err
+}
+func (f fake) Live(context.Context) (api.Live, error) { return live(), f.err }
 func (f fake) BackendUsage(context.Context, time.Time, time.Time, string) (api.BackendUsage, error) {
 	return consumers(), f.err
 }
@@ -96,7 +112,7 @@ func localizer(t *testing.T, lang string) *i18n.Localizer {
 
 func newModel(t *testing.T, lang string, color, unicode bool) *model {
 	t.Helper()
-	m := New(Options{Source: fake{}, L: localizer(t, lang), Factors: indicators.Default(), Color: color, Unicode: unicode,
+	m := New(Options{Source: fake{}, L: localizer(t, lang), Color: color, Unicode: unicode,
 		Now: func() time.Time { return t0 }}).(*model)
 	m.Update(tea.WindowSizeMsg{Width: MinWidth, Height: MinHeight})
 	return m
@@ -337,7 +353,7 @@ func TestASCIIFold(t *testing.T) {
 func TestCostColumnFits(t *testing.T) {
 	price := 2.5
 	m := newModel(t, "es", false, false)
-	m.o.Factors.TariffPerKWh = &price
+	m.o.Source = fake{price: &price}
 	load(m)
 	press(m, "2")
 	out := plain(m.View().Content)
