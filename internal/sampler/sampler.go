@@ -156,12 +156,15 @@ func (s *Sampler) Sample(ctx context.Context) (Sample, error) {
 		}
 		seen[r.Channel] = true
 		p := s.prev[r.Channel]
-		var e float64
+		var e, w float64
 		valid := false
 		switch ch.Kind {
 		case source.KindCounter:
 			if p.ok {
 				e, valid = counterDelta(p.value, r.EnergyJ, ch.RangeJ)
+			}
+			if out.Interval > 0 {
+				w = e / dt.Seconds()
 			}
 			s.prev[r.Channel] = previous{value: r.EnergyJ, ok: true}
 		case source.KindPower:
@@ -170,14 +173,15 @@ func (s *Sampler) Sample(ctx context.Context) (Sample, error) {
 				if p.ok {
 					avg = (p.value + r.PowerW) / 2
 				}
-				e, valid = avg*dt.Seconds(), true
+				// The power is the average itself: dividing the energy by
+				// the interval again would round it.
+				e, w, valid = avg*dt.Seconds(), avg, true
 			}
 			s.prev[r.Channel] = previous{value: r.PowerW, ok: true}
 		}
 		if !valid || out.Interval <= 0 {
 			continue
 		}
-		w := e / dt.Seconds()
 		if w > s.maxPower[r.Channel] {
 			s.maxPower[r.Channel] = w
 		}

@@ -118,6 +118,24 @@ func TestPowerTrapezoidAndGaps(t *testing.T) {
 	}
 }
 
+// A constant power reads back exactly, whatever the length of the interval.
+func TestPowerIsNotRounded(t *testing.T) {
+	ch := source.Channel{ID: "p", Source: "x", Domain: source.DomainPlatform, Kind: source.KindPower}
+	var steps [][]source.Reading
+	for range 200 {
+		steps = append(steps, []source.Reading{{Channel: "p", PowerW: 3}})
+	}
+	s, c := setup(&scripted{id: "x", steps: steps}, ch)
+	_ = s.Prime(context.Background())
+	for i := range 199 {
+		c.advance(50*time.Millisecond + time.Duration(i)*time.Microsecond*137)
+		got, _ := s.Sample(context.Background())
+		if got.Channels[0].PowerW != 3 {
+			t.Fatalf("interval %d: power %v", i, got.Channels[0].PowerW)
+		}
+	}
+}
+
 func TestErrorsKeepOtherChannels(t *testing.T) {
 	ch := source.Channel{ID: "c", Source: "x", Domain: source.DomainDRAM, Kind: source.KindCounter}
 	src := &scripted{id: "x", err: errors.New("boom"), steps: [][]source.Reading{{{Channel: "c", EnergyJ: 1}}, {{Channel: "c", EnergyJ: 3}}}}
