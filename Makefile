@@ -14,6 +14,16 @@ LEFTHOOK_VERSION      := v2.2.2
 GO_LICENSES_VERSION   := v2.0.1
 HUGO_VERSION          := v0.167.0
 
+# Tools for the web interface, published on npm as native binaries and
+# installed without Node.js. The sha512 values are those of the registry.
+NPM_TOOLS            ?= $(HOME)/.cache/greenlens/tools
+TYPESCRIPT_VERSION   := 7.0.2
+TYPESCRIPT_INTEGRITY := sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==
+BIOME_VERSION        := 2.5.15
+BIOME_INTEGRITY      := sha512-xE4iEW/3LqlYj9GFgGrFsFSH51dEEpUbYWBfeOv0q87WkUDxK2o/HhreSb7qMJqck70RVM6Lg96hgedcAYcOkA==
+TSC                  := $(NPM_TOOLS)/typescript-$(TYPESCRIPT_VERSION)/lib/tsc
+BIOME                := $(NPM_TOOLS)/biome-$(BIOME_VERSION)/biome
+
 SITE_BASE_URL ?= https://mariourenagarcia.github.io/greenlens/
 
 # Licenses accepted for dependencies. GreenLens itself is AGPL-3.0-only and is
@@ -135,6 +145,8 @@ tools:
 	$(GO) install github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION)
 	$(GO) install github.com/evilmartians/lefthook/v2@$(LEFTHOOK_VERSION)
 	$(GO) install github.com/google/go-licenses/v2@$(GO_LICENSES_VERSION)
+	scripts/install-npm-tool.sh @typescript/typescript-linux-x64 $(TYPESCRIPT_VERSION) $(TYPESCRIPT_INTEGRITY) $(NPM_TOOLS)/typescript-$(TYPESCRIPT_VERSION)
+	scripts/install-npm-tool.sh @biomejs/cli-linux-x64 $(BIOME_VERSION) $(BIOME_INTEGRITY) $(NPM_TOOLS)/biome-$(BIOME_VERSION)
 
 hooks:
 	$(GOBIN)/lefthook install

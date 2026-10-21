@@ -1,6 +1,33 @@
 {
   "packages": [
     {
+      "name": "@ibm/plex-mono",
+      "version": "2.5.0",
+      "license": "OFL-1.1",
+      "license_file": "LICENSE.txt",
+      "source": "https://registry.npmjs.org/@ibm/plex-mono/-/plex-mono-2.5.0.tgz",
+      "integrity": "sha512-STBJIPxPomOYPmBMO7z5TKPJUotAF9u3gAUumTqVgwgrAO+K4FRNh0MlhsoJjKhJKsMbBJR10/bk4inkj/wc1w==",
+      "files": {
+        "LICENSE.txt": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+        "fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2": "e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56",
+        "package.json": "33e7beb2e79a2014c323ca197432767b932caba357e5eb9cdc8a219ec3b1d837"
+      }
+    },
+    {
+      "name": "@ibm/plex-sans",
+      "version": "1.1.0",
+      "license": "OFL-1.1",
+      "license_file": "LICENSE.txt",
+      "source": "https://registry.npmjs.org/@ibm/plex-sans/-/plex-sans-1.1.0.tgz",
+      "integrity": "sha512-WPgvO6Yfj2w5YbhyAr1tv95RUz4LRJlqN+CmYvBglabXteufP1D1E9BABMde+ZIKdRbFJDoKF5eQzfhpnbgZcQ==",
+      "files": {
+        "LICENSE.txt": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+        "fonts/split/woff2/IBMPlexSans-Regular-Latin1.woff2": "b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1",
+        "fonts/split/woff2/IBMPlexSans-SemiBold-Latin1.woff2": "fff0ab3a88b0b4aa0b693e4f0201359a15183b08e3fa5696d1918d8f0ade8ad5",
+        "package.json": "3619a6f2cecf63e15a4659c2ba9bac77582d20da3a52f5f2e6e646730afa88db"
+      }
+    },
+    {
       "name": "preact",
       "version": "10.29.8",
       "license": "MIT",
@@ -10,8 +37,29 @@
       "files": {
         "LICENSE": "1fe6958409c8c257a70c587a18b6f7f412b179b456630790d30b2ec9a8e4b7d4",
         "dist/preact.module.js": "c30e721ebfdc6e2ad4c18c14d2dfb82667829c8aec27de1207774e3fc16858a8",
+        "hooks/dist/hooks.module.js": "a6ee626f2d01570592dd569a792e3f050154aa02890eead8c223fa3ed5aa3d5a",
+        "hooks/src/index.d.ts": "7687e1c892178a4674e162427319e47fb881ac1ae5fa4c50dcc3423870dba636",
         "jsx-runtime/dist/jsxRuntime.module.js": "43af8eff4027c4d275700d867a65943353e8003dae2681c1632c4a12012db3f3",
-        "package.json": "a2cf0cce367ab3b028889b567dc1ac2fd629fbcac991c4049bb763e305b0634b"
+        "jsx-runtime/src/index.d.ts": "000776b76210c3b5afe490fbc24891a6b60a2b4fa64b0b36e214bdc05395a0c4",
+        "package.json": "a2cf0cce367ab3b028889b567dc1ac2fd629fbcac991c4049bb763e305b0634b",
+        "src/dom.d.ts": "54afc755a2e8c3290005a6f266467a8279a902e03a9c8ec8096c0fbaed3adb44",
+        "src/index.d.ts": "8ae1be898b0b0dff66a04adaf66ed0285aac1eb70135c20d1310c8e1b966baa5",
+        "src/jsx.d.ts": "6f61d487397ef4ad9da84c58a2a9ce9b018b07630c8305fef0d0e411500ee0bc"
+      }
+    },
+    {
+      "name": "uplot",
+      "version": "1.6.32",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "source": "https://registry.npmjs.org/uplot/-/uplot-1.6.32.tgz",
+      "integrity": "sha512-KIMVnG68zvu5XXUbC4LQEPnhwOxBuLyW1AHtpm6IKTXImkbLgkMy+jabjLgSLMasNuGGzQm/ep3tOkyTxpiQIw==",
+      "files": {
+        "LICENSE": "8f989229699b4fe2f1a0432d0e9edc338a8a911e250e2d1b01ecd770a5f5b1bd",
+        "dist/uPlot.d.ts": "af44374f6e808be4f7f3fa5888b9c7574dca9f8a15a66d54b6763535802c8080",
+        "dist/uPlot.esm.js": "5dd9b3281aa64b461b42d9945f6adb2649d346502b12281a9ae0d46599a80eba",
+        "dist/uPlot.min.css": "df630c6a8d6f8eeaff264b50f73ce5b114f646ffd9a0bb74f049b0a00135fa04",
+        "package.json": "6bfea8e275a2f8194e2395d2dc15f64151e69f141db19741e5a5afe75ba4180b"
       }
     }
   ]

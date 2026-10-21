@@ -18,7 +18,11 @@ fi
 name=$1
 version=$2
 shift 2
-case $name in *[!a-z0-9._-]* | "") echo "invalid package name: $name" >&2; exit 2 ;; esac
+# A scoped package such as @ibm/plex-sans keeps its scope as a directory.
+if ! [[ $name =~ ^(@[a-z0-9._-]+/)?[a-z0-9._-]+$ ]]; then
+  echo "invalid package name: $name" >&2
+  exit 2
+fi
 case $version in *[!0-9A-Za-z.+-]* | "") echo "invalid version: $version" >&2; exit 2 ;; esac
 
 root=$(git rev-parse --show-toplevel)
@@ -46,7 +50,7 @@ tar -xzf "$tmp/package.tgz" -C "$tmp/x" --no-same-owner --no-same-permissions
 src="$tmp/x/package"
 
 license_file=""
-for f in LICENSE LICENSE.md LICENSE.txt license; do
+for f in LICENSE LICENSE.md LICENSE.txt license OFL.txt; do
   if [ -f "$src/$f" ]; then
     license_file=$f
     break
