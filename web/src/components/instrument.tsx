@@ -60,7 +60,7 @@ export function PowerInstrument(props: { points: LivePoint[]; connected: boolean
   const rows = useMemo(() => props.points.map(split), [props.points]);
   const present = layers.filter((l) => rows.some((r) => r.w[l] > 0));
   const last = rows[rows.length - 1];
-  const energyJ = props.points.reduce((a, p) => a + (split(p).total * p.interval_ms) / 1000, 0);
+  const energyJ = rows.reduce((a, r, i) => a + (r.total * (props.points[i]?.interval_ms ?? 0)) / 1000, 0);
 
   useEffect(() => {
     const el = box.current;
@@ -106,11 +106,17 @@ export function PowerInstrument(props: { points: LivePoint[]; connected: boolean
     plot.current?.setData(chartData(rows));
   }, [rows, asTable]);
 
-  // The amber glow of the background follows the power of the node.
+  // The amber glow of the background follows the power of the node. The
+  // level is set on the backdrop alone, and only when it changes, since a
+  // property of the root would restyle the whole page with every sample.
   useEffect(() => {
     if (!last) return;
-    const peak = Math.max(...rows.map((r) => r.total), 1);
-    document.documentElement.style.setProperty("--load-level", String(0.15 + 0.85 * (last.total / peak)));
+    const peak = rows.reduce((m, r) => Math.max(m, r.total), 1);
+    const level = (0.15 + 0.85 * (last.total / peak)).toFixed(2);
+    const backdrop = document.querySelector<HTMLElement>(".backdrop");
+    if (backdrop && backdrop.style.getPropertyValue("--load-level") !== level) {
+      backdrop.style.setProperty("--load-level", level);
+    }
   }, [last, rows]);
 
   const first = rows[0];
