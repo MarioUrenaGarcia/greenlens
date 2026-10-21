@@ -71,10 +71,10 @@ type gui struct {
 	errs []string
 }
 
-// startGUI starts an agent with its HTTP API and a browser on its
-// interface. Without a browser the test is skipped, unless GREENLENS_CHROME
-// names one, as in CI.
-func startGUI(t *testing.T) (*running, *gui) {
+// startGUI starts an agent with its HTTP API, sampling every interval,
+// and a browser on its interface. Without a browser the test is skipped,
+// unless GREENLENS_CHROME names one, as in CI.
+func startGUI(t *testing.T, interval time.Duration) (*running, *gui) {
 	t.Helper()
 	path, err := cdp.Find()
 	if err != nil {
@@ -89,6 +89,7 @@ func startGUI(t *testing.T) (*running, *gui) {
 		c.Server.Enabled = true
 		c.Server.Listen = listen
 		c.Backends = []config.Backend{{Name: "ollama-test", Kind: "ollama", Endpoint: up.URL}}
+		c.Agent.SampleInterval = config.Duration(interval)
 	})
 	waitSamples(t, r, 3)
 	// The interface follows the languages of the browser; the checks expect
@@ -314,7 +315,7 @@ func (g *gui) walkFocus(where string) []string {
 }
 
 func TestInterfaceEndToEnd(t *testing.T) {
-	r, g := startGUI(t)
+	r, g := startGUI(t, 50*time.Millisecond)
 
 	t.Run("sign in with a token", func(t *testing.T) {
 		g.t = t
@@ -603,4 +604,62 @@ func TestInterfaceEndToEnd(t *testing.T) {
 		g.errs = nil
 		g.mu.Unlock()
 	})
+}
+
+// frameBudget is one frame at 60 Hz: an update of the charts that takes
+// longer than that drops frames.
+const frameBudget = time.Second / 60
+
+// TestChartsWithFifteenMinutesOfData fills the live charts with as many
+// samples as 15 minutes at 1 s give, arriving much faster than that, and
+// checks that each update of the page fits in a frame.
+func TestChartsWithFifteenMinutesOfData(t *testing.T) {
+	r, g := startGUI(t, 20*time.Millisecond)
+	g.signInWithCode("admin")
+	g.eval(`localStorage.setItem("greenlens.welcome", "done")`, nil)
+	g.choose("#efficient", "off")
+	g.show("summary")
+	before := waitSamples(t, r, 1).Samples
+	deadline := time.Now().Add(60 * time.Second)
+	for {
+		if s := waitSamples(t, r, 1).Samples; s-before >= 15*60+60 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the agent took over a minute for 960 samples")
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if err := g.p.Call(g.ctx, "Performance.enable", nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	busy := func() float64 {
+		var m struct {
+			Metrics []struct {
+				Name  string  `json:"name"`
+				Value float64 `json:"value"`
+			} `json:"metrics"`
+		}
+		if err := g.p.Call(g.ctx, "Performance.getMetrics", nil, &m); err != nil {
+			t.Fatal(err)
+		}
+		for _, x := range m.Metrics {
+			if x.Name == "TaskDuration" {
+				return x.Value
+			}
+		}
+		t.Fatal("no TaskDuration metric")
+		return 0
+	}
+	g.eval(`window.__long = 0; new PerformanceObserver((l) => { window.__long += l.getEntries().length; }).observe({ type: "longtask" })`, nil)
+	s0, b0 := waitSamples(t, r, 1).Samples, busy()
+	time.Sleep(5 * time.Second)
+	s1, b1 := waitSamples(t, r, 1).Samples, busy()
+	var long int
+	g.eval(`window.__long`, &long)
+	per := time.Duration((b1 - b0) / float64(s1-s0) * float64(time.Second))
+	t.Logf("%d updates in 5 s with more than 900 points: %s of main thread each, %d long tasks", s1-s0, per.Round(10*time.Microsecond), long)
+	if per > frameBudget || long > 0 {
+		t.Errorf("updates take %s each, over %s, with %d long tasks", per, frameBudget, long)
+	}
 }

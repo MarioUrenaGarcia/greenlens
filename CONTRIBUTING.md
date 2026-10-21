@@ -21,6 +21,8 @@ last section. Security problems are reported privately, as described in
 - Chromium or Google Chrome for the end-to-end tests of the interface.
   Without one they are skipped; `GREENLENS_CHROME` names the browser when
   it is not on the `PATH`.
+- `unshare` with unprivileged user namespaces, `strace` and `curl` for the
+  isolation check, which is skipped without them.
 
 Install the pinned development tools into `$(go env GOPATH)/bin` and enable
 the git hooks:
@@ -43,8 +45,10 @@ type check and lint of the interface, the tests with the race detector,
 govulncheck, gitleaks, the typography, license header and translation
 checks, the tests of those checks, the dependency license check, the
 verification that `THIRD_PARTY_NOTICES.md`, the generated reference pages,
-the terminal demos and the icons are current, and the end-to-end tests of
-the interface. CI runs the same target on every pull request.
+the terminal demos and the icons are current, the end-to-end tests of the
+interface and the isolation check, which runs the agent in a network
+namespace with loopback only and fails on any connection beyond it. CI runs
+the same target on every pull request.
 
 ## Rules for changes
 

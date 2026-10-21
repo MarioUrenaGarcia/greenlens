@@ -37,7 +37,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 
 .DEFAULT_GOAL := build
 
-.PHONY: build static-check test vet lint e2e vuln secrets typography headers i18n check-scripts \
+.PHONY: build static-check test vet lint e2e netns-check vuln secrets typography headers i18n check-scripts \
         licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check icons icons-check man \
         site hugo tools hooks check clean
 
@@ -63,12 +63,18 @@ vet:
 lint:
 	$(GOBIN)/golangci-lint run --build-tags e2e ./...
 
-# End-to-end and accessibility tests of the interface in a headless
-# Chromium. Without a browser they are skipped, unless GREENLENS_CHROME
-# names one.
+# The agent in a network namespace with loopback only: everything must work
+# and strace must see no connection beyond loopback.
+netns-check: build
+	scripts/netns-check.sh $(BIN)
+
+# End-to-end, accessibility and performance tests of the interface in a
+# headless Chromium, and the budget of 30-day queries. Without a browser the
+# interface tests are skipped, unless GREENLENS_CHROME names one. They run
+# without the race detector, which would distort the timings.
 e2e:
 	$(GO) test -tags e2e -count=1 ./internal/webtest/...
-	$(GO) test -tags e2e -count=1 -run TestInterfaceEndToEnd ./internal/agent/
+	$(GO) test -tags e2e -count=1 -run 'TestInterfaceEndToEnd|TestChartsWithFifteenMinutesOfData|TestBudgetOfThirtyDayQueries' ./internal/agent/
 
 vuln:
 	$(GOBIN)/govulncheck ./...
@@ -180,7 +186,7 @@ hooks:
 	$(GOBIN)/lefthook install
 
 check: tidy-check static-check vet lint web-check test vuln secrets typography headers i18n check-scripts licenses \
-       notices-check docs-check demo-check icons-check e2e
+       notices-check docs-check demo-check icons-check e2e netns-check
 
 clean:
 	rm -rf bin site/public site/resources

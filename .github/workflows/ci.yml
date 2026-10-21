@@ -22,6 +22,14 @@ jobs:
           go-version-file: go.mod
       - name: Install tools
         run: make tools
+      # The isolation check traces the agent with strace inside a network
+      # namespace of an unprivileged user.
+      - name: Install strace and allow user namespaces
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends strace
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          echo "GREENLENS_NETNS_REQUIRED=1" >> "$GITHUB_ENV"
       # The end-to-end tests of the interface use the Chrome of the runner
       # and fail instead of being skipped when it is missing.
       - name: Find the browser
