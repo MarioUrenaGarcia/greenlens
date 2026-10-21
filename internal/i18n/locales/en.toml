@@ -598,6 +598,19 @@ name = "Name of the token, such as grafana or ci"
 role = "Role of the token: viewer, operator or admin"
 expires = "Lifetime of the token, such as 90d, 12w or 36h, or never"
 
+[cli.gui]
+short = "Open the graphical interface in the browser"
+long = "Ask the running agent for a one-time sign-in link and open it in the default browser with xdg-open. The link works once, within {minutes} minutes, and signs the browser in with the chosen role.\n\nOver SSH, or without a graphical session, the link is printed instead, with the command that forwards the port of the agent to your computer."
+opening = "Opening GreenLens in the browser. If it does not open, visit this link within {minutes} minutes; it works once:"
+link = "Visit this link within {minutes} minutes to sign in; it works once:"
+tunnel = "The agent listens only on this machine. On your computer, forward its port and leave the command running:"
+tunnel_then = "Then open the link in a browser of your computer."
+server = "server"
+
+[cli.gui.flag]
+print = "Print the link instead of opening the browser"
+role = "Role of the session: viewer, operator or admin"
+
 [cli.license]
 short = "Show the license and the third-party notices"
 long = "Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component."
@@ -913,6 +926,11 @@ fix = "restore it from a backup, or remove it and create the tokens again; it mu
 message = "the TLS certificate cannot be loaded"
 cause = "{detail}"
 fix = "check server.tls.cert_file and server.tls.key_file: both must be PEM files of the same key pair"
+
+[errors.GL4015]
+message = "the graphical interface is off"
+cause = "the agent does not serve its HTTP API: server.enabled is false"
+fix = "set server.enabled to true in the configuration of the agent and restart it, for example with 'sudo systemctl restart greenlens'"
 
 [errors.GL0009]
 message = "unsupported output format '{value}'"

@@ -62,6 +62,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL4012](#gl4012) | the HTTP API cannot listen on `{listen}` | 1 |
 | [GL4013](#gl4013) | the token file cannot be used | 1 |
 | [GL4014](#gl4014) | the TLS certificate cannot be loaded | 6 |
+| [GL4015](#gl4015) | the graphical interface is off | 6 |
 
 ## GL0001
 
@@ -439,4 +440,11 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Message:** the TLS certificate cannot be loaded
 - **Cause:** `{detail}`
 - **Fix:** check server.tls.cert_file and server.tls.key_file: both must be PEM files of the same key pair
+- **Exit code:** 6
+
+## GL4015
+
+- **Message:** the graphical interface is off
+- **Cause:** the agent does not serve its HTTP API: server.enabled is false
+- **Fix:** set server.enabled to true in the configuration of the agent and restart it, for example with 'sudo systemctl restart greenlens'
 - **Exit code:** 6

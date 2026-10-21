@@ -80,6 +80,7 @@ const (
 	GL4012 Code = "GL4012" // HTTP API cannot listen
 	GL4013 Code = "GL4013" // token file cannot be used
 	GL4014 Code = "GL4014" // TLS certificate cannot be loaded
+	GL4015 Code = "GL4015" // HTTP API of the agent is off
 )
 
 // Process exit codes of the command line.
@@ -148,6 +149,7 @@ var exitCodes = map[Code]int{
 	GL4012: ExitError,
 	GL4013: ExitError,
 	GL4014: ExitConfig,
+	GL4015: ExitConfig,
 }
 
 // IsCode reports whether s looks like an error code, such as GL1002.

@@ -598,6 +598,19 @@ name = "Nombre del token, como grafana o ci"
 role = "Rol del token: viewer, operator o admin"
 expires = "Vigencia del token, como 90d, 12w o 36h, o never"
 
+[cli.gui]
+short = "Abre la interfaz gráfica en el navegador"
+long = "Pide al agente en ejecución un enlace de inicio de sesión de un solo uso y lo abre en el navegador predeterminado con xdg-open. El enlace funciona una vez, dentro de {minutes} minutos, e inicia la sesión del navegador con el rol elegido.\n\nPor SSH, o sin sesión gráfica, imprime el enlace en su lugar, con el comando que reenvía el puerto del agente a tu computadora."
+opening = "Abriendo GreenLens en el navegador. Si no se abre, visita este enlace dentro de {minutes} minutos; funciona una vez:"
+link = "Visita este enlace dentro de {minutes} minutos para iniciar sesión; funciona una vez:"
+tunnel = "El agente escucha solo en esta máquina. En tu computadora, reenvía su puerto y deja el comando en ejecución:"
+tunnel_then = "Luego abre el enlace en un navegador de tu computadora."
+server = "servidor"
+
+[cli.gui.flag]
+print = "Imprime el enlace en lugar de abrir el navegador"
+role = "Rol de la sesión: viewer, operator o admin"
+
 [cli.license]
 short = "Muestra la licencia y los avisos de terceros"
 long = "Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente."
@@ -913,6 +926,11 @@ fix = "restáuralo de un respaldo, o bórralo y vuelve a crear los tokens; solo 
 message = "no se puede cargar el certificado TLS"
 cause = "{detail}"
 fix = "revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archivos PEM del mismo par de llaves"
+
+[errors.GL4015]
+message = "la interfaz gráfica está apagada"
+cause = "el agente no sirve su API HTTP: server.enabled es false"
+fix = "pon server.enabled en true en la configuración del agente y reinícialo, por ejemplo con 'sudo systemctl restart greenlens'"
 
 [errors.GL0009]
 message = "formato de salida no soportado '{value}'"

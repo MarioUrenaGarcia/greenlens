@@ -380,6 +380,30 @@ greenlens export usage --from 30d --group consumer > consumers.csv
 greenlens export usage --from 7d --bucket 24h --group model --output json
 ```
 
+## greenlens gui
+
+Ask the running agent for a one-time sign-in link and open it in the default browser with xdg-open. The link works once, within 2 minutes, and signs the browser in with the chosen role.  Over SSH, or without a graphical session, the link is printed instead, with the command that forwards the port of the agent to your computer.
+
+**Usage**
+
+```text
+greenlens gui [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--print` | Print the link instead of opening the browser |  |
+| `--role` | Role of the session: viewer, operator or admin | `admin` |
+
+**Examples**
+
+```bash
+greenlens gui
+greenlens gui --print --role viewer
+```
+
 ## greenlens license
 
 Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component.

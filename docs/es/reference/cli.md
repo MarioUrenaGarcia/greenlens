@@ -380,6 +380,30 @@ greenlens export usage --from 30d --group consumer > consumers.csv
 greenlens export usage --from 7d --bucket 24h --group model --output json
 ```
 
+## greenlens gui
+
+Pide al agente en ejecución un enlace de inicio de sesión de un solo uso y lo abre en el navegador predeterminado con xdg-open. El enlace funciona una vez, dentro de 2 minutos, e inicia la sesión del navegador con el rol elegido.  Por SSH, o sin sesión gráfica, imprime el enlace en su lugar, con el comando que reenvía el puerto del agente a tu computadora.
+
+**Uso**
+
+```text
+greenlens gui [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--print` | Imprime el enlace en lugar de abrir el navegador |  |
+| `--role` | Rol de la sesión: viewer, operator o admin | `admin` |
+
+**Ejemplos**
+
+```bash
+greenlens gui
+greenlens gui --print --role viewer
+```
+
 ## greenlens license
 
 Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente.

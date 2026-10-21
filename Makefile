@@ -143,11 +143,13 @@ demo-check:
 # Icons of the interface and the desktop launcher.
 icons:
 	$(GO) run ./scripts/gen-icons -out web/assets/icons
+	cp web/assets/icons/icon.svg deploy/desktop/greenlens.svg
 
 icons-check:
 	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
 		$(GO) run ./scripts/gen-icons -out "$$tmp" && \
-		diff -rq "$$tmp" web/assets/icons >/dev/null \
+		diff -rq "$$tmp" web/assets/icons >/dev/null && \
+		diff -q "$$tmp/icon.svg" deploy/desktop/greenlens.svg >/dev/null \
 		|| { echo "icons are stale; run make icons"; exit 1; }
 
 # Documentation site for GitHub Pages, written to site/public.

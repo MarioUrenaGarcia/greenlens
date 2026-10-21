@@ -31,6 +31,10 @@ type hooks struct {
 	selfFS  fs.FS
 	sources func(config.Config) []source.Source
 	system  system
+	// open shows a link in the browser and notify shows a desktop
+	// notification; both replace programs of the desktop in tests.
+	open   func(link string) error
+	notify func(title, body string) error
 }
 
 // app holds what every command shares: the localizer, the streams and the

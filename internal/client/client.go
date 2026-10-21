@@ -88,7 +88,7 @@ func (c *Client) do(req *http.Request, v any) error {
 		if json.Unmarshal(body, &e) == nil && e.Error != "" {
 			detail = e.Error
 		}
-		return help.New(help.GL4006, "status", resp.Status, "detail", detail)
+		return help.New(help.GL4006, "status", resp.Status, "detail", detail).Wrap(&StatusError{Status: resp.StatusCode, Detail: detail})
 	}
 	if v == nil {
 		return nil
@@ -98,6 +98,14 @@ func (c *Client) do(req *http.Request, v any) error {
 	}
 	return nil
 }
+
+// StatusError is the answer of an agent that refused a request.
+type StatusError struct {
+	Status int
+	Detail string
+}
+
+func (e *StatusError) Error() string { return strconv.Itoa(e.Status) + ": " + e.Detail }
 
 // Status returns the state of the agent.
 func (c *Client) Status(ctx context.Context) (api.Status, error) {
@@ -267,10 +275,14 @@ func (c *Client) RevokeToken(ctx context.Context, idOrName string) (api.Token, e
 	return out, err
 }
 
-// SessionCode asks for a one-time sign-in link to the interface.
+// SessionCode asks for a one-time sign-in link to the interface. It returns
+// GL4015 when the agent has its HTTP API off.
 func (c *Client) SessionCode(ctx context.Context, role string) (api.SessionCode, error) {
 	var out api.SessionCode
 	err := c.send(ctx, http.MethodPost, api.PathSessionCodes, api.SessionCodeRequest{Role: role}, &out)
+	if se := (*StatusError)(nil); errors.As(err, &se) && se.Status == http.StatusConflict {
+		return out, help.New(help.GL4015).Wrap(err)
+	}
 	return out, err
 }
 

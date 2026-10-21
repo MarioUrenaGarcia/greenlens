@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+[Desktop Entry]
+Type=Application
+Name=GreenLens
+GenericName=Energy monitor
+GenericName[es]=Monitor de energía
+Comment=Energy and emissions of local AI inference
+Comment[es]=Energía y emisiones de la inferencia de IA local
+Exec=greenlens gui
+TryExec=greenlens
+Icon=greenlens
+Terminal=false
+StartupNotify=false
+Categories=System;Monitor;
+Keywords=energy;power;emissions;inference;LLM;GPU;
+Keywords[es]=energía;potencia;emisiones;inferencia;LLM;GPU;

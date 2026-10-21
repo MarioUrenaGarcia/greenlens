@@ -71,15 +71,17 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 - `greenlens backup`, `restore` y `export` copian la base de datos y entregan
   las mediciones a otras herramientas en CSV o JSON, y `greenlens license`
   muestra la licencia y dónde está el código fuente de la versión en uso;
+- `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
+  potencia en vivo, los backends, modelos y consumidores, los benchmarks,
+  los reportes, la configuración y esta documentación, todo sin internet;
 - cada mensaje está en inglés y en español, y cada error tiene un código, una
   causa y una solución.
 
 Un proxy cuenta los tokens de Ollama y de otros servidores compatibles con
 OpenAI y puede devolver la energía de cada petición, y `greenlens bench` y
 `compare` miden modelos de forma reproducible y proyectan el ahorro de
-cambiar. La interfaz gráfica forma parte del diseño que se muestra abajo;
-`greenlens top` ya muestra en vivo en la terminal el nodo, los backends y las
-fuentes.
+cambiar. `greenlens top` muestra en vivo en la terminal el nodo, los
+backends y las fuentes.
 
 <p align="center">
   <img src="site/static/images/terminal-es.svg" alt="Sesión de terminal con greenlens: ayuda, sugerencia de comando y error con causa y solución" width="820">
@@ -152,6 +154,7 @@ bin/greenlens agent
 bin/greenlens calibrate
 bin/greenlens measure -- ollama run llama3.2 "¿Por qué el cielo es azul?"
 bin/greenlens report --from 7d --by day
+bin/greenlens gui
 ```
 
 Cada comando acepta `--output json`, `csv` o `yaml` para scripts. Códigos de

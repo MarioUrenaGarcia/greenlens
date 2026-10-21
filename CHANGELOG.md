@@ -107,6 +107,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
 - Energy reports in the interface: energy, emissions, cost and water of a
   period, by domain per day or hour and by backend, model or consumer,
   printable from the browser and exported as CSV or JSON.
+- `greenlens gui` opens the interface in the browser with a one-time
+  sign-in link, prints the link with the SSH port forward when run over
+  SSH, and stops with GL4015 when the HTTP API is off. A desktop launcher
+  and its icon are in `deploy/desktop`; started from it, errors appear as
+  desktop notifications.
 - The interface can be installed as an application from the browser: a
   manifest, own icons and a service worker that keeps only the files of
   the interface, so the window opens and says that the agent does not

@@ -62,6 +62,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL4012](#gl4012) | la API HTTP no puede escuchar en `{listen}` | 1 |
 | [GL4013](#gl4013) | no se puede usar el archivo de tokens | 1 |
 | [GL4014](#gl4014) | no se puede cargar el certificado TLS | 6 |
+| [GL4015](#gl4015) | la interfaz gráfica está apagada | 6 |
 
 ## GL0001
 
@@ -439,4 +440,11 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Mensaje:** no se puede cargar el certificado TLS
 - **Causa:** `{detail}`
 - **Solución:** revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archivos PEM del mismo par de llaves
+- **Código de salida:** 6
+
+## GL4015
+
+- **Mensaje:** la interfaz gráfica está apagada
+- **Causa:** el agente no sirve su API HTTP: server.enabled es false
+- **Solución:** pon server.enabled en true en la configuración del agente y reinícialo, por ejemplo con 'sudo systemctl restart greenlens'
 - **Código de salida:** 6
