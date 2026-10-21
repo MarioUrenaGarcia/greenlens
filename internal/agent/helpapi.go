@@ -15,7 +15,10 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 )
 
-// The documentation is read once, the first time help is asked for.
+// Docs returns the embedded documentation, read once, the first time help
+// is asked for.
+func Docs() (*helpdocs.Docs, error) { return docs() }
+
 var docs = sync.OnceValues(func() (*helpdocs.Docs, error) {
 	var others []string
 	for _, l := range i18n.Supported {

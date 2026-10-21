@@ -551,14 +551,12 @@ func (a *Agent) handleBackup(w http.ResponseWriter, r *http.Request) {
 // interface uses: its own texts and those of the values and errors it shows.
 var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason.", "cli.license.", "cli.bench.cause.", "config.doc."}
 
-// handleCatalog serves the messages of one language. It is public, since
-// the sign-in page needs it.
-func handleCatalog(w http.ResponseWriter, r *http.Request) {
-	lang := r.PathValue("lang")
+// GUICatalog returns the messages of one language that the graphical
+// interface uses.
+func GUICatalog(lang string) (api.Catalog, error) {
 	msgs, err := i18n.Catalog(lang)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "unsupported language; available: "+strings.Join(i18n.Supported, ", "))
-		return
+		return api.Catalog{}, err
 	}
 	out := api.Catalog{SchemaVersion: api.SchemaVersion, Lang: lang, Languages: i18n.Supported, Messages: map[string]string{}}
 	for k, v := range msgs {
@@ -568,6 +566,17 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+	}
+	return out, nil
+}
+
+// handleCatalog serves the messages of one language. It is public, since
+// the sign-in page needs it.
+func handleCatalog(w http.ResponseWriter, r *http.Request) {
+	out, err := GUICatalog(r.PathValue("lang"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "unsupported language; available: "+strings.Join(i18n.Supported, ", "))
+		return
 	}
 	w.Header().Set("Cache-Control", "no-cache")
 	writeJSON(w, http.StatusOK, out)

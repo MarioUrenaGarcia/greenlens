@@ -120,7 +120,8 @@ languages, the budgets of the first visit and the installed window without
 the agent. On every screen it checks the contrast of the text and of the
 focus indicator, the accessible names of the controls, the headings and the
 width at 375 px. The browser is started with its network features off, and
-the tests reach only the agent on loopback.
+the tests reach only the agent on loopback. It also opens every screen of
+the demo of the site in both languages and themes and runs the same checks.
 
 ## Documentation
 
@@ -142,7 +143,17 @@ make demo
 ```
 
 The site published on GitHub Pages is built with Hugo from `site/` and the
-documentation. To preview it locally:
+documentation. `make site` also writes the demo of the graphical interface to
+`site/static/demo`: the real interface with a script that answers its API in
+the browser from a simulated workspace, generated with a fixed seed by
+`scripts/gen-site-demo`. The pictures of the interface in the README and on
+the site are taken from that demo, never from a real machine:
+
+```bash
+make screens
+```
+
+To preview the site locally:
 
 ```bash
 make hugo

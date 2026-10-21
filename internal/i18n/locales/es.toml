@@ -1358,6 +1358,10 @@ base = "Potencia que los tokens no explican"
 ci = "más o menos {value} con 95% de confianza"
 r2 = "R2 {r2} en {n} intervalos del último día"
 
+[gui.demo]
+banner = "Demo con un espacio de trabajo simulado: los backends, modelos, hardware y todos los valores son inventados."
+readonly = "la demo muestra un espacio de trabajo simulado y no puede cambiarlo"
+
 [gui.regress]
 title = "Regresiones de la energía por token"
 none = "Ningún día de este modelo está a {z} o más desviaciones estándar de la media de los {days} días anteriores."

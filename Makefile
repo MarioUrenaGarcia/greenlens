@@ -39,7 +39,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 
 .PHONY: build static-check test vet lint e2e netns-check vuln secrets typography headers i18n check-scripts \
         licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check icons icons-check man \
-        site hugo tools hooks check clean
+        site site-demo screens hugo tools hooks check clean
 
 # greenlens is static. greenlens-nvml loads the NVIDIA library through the
 # dynamic loader, which makes it a dynamic executable, so only it may import
@@ -75,6 +75,9 @@ netns-check: build
 e2e:
 	$(GO) test -tags e2e -count=1 ./internal/webtest/...
 	$(GO) test -tags e2e -count=1 -run 'TestInterfaceEndToEnd|TestChartsWithFifteenMinutesOfData|TestBudgetOfThirtyDayQueries' ./internal/agent/
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
+		$(GO) run ./scripts/gen-site-demo -out "$$tmp/demo" && \
+		$(GO) run ./scripts/gen-screens -demo "$$tmp/demo" -check
 
 vuln:
 	$(GOBIN)/govulncheck ./...
@@ -166,9 +169,17 @@ icons-check:
 		diff -q "$$tmp/icon.svg" deploy/desktop/greenlens.svg >/dev/null \
 		|| { echo "icons are stale; run make icons"; exit 1; }
 
-# Documentation site for GitHub Pages, written to site/public.
-site:
+# Documentation site for GitHub Pages, written to site/public, with the
+# demo of the graphical interface over a simulated workspace.
+site: site-demo
 	$(GOBIN)/hugo --source site --destination public --cleanDestinationDir --minify --baseURL "$(SITE_BASE_URL)"
+
+site-demo:
+	$(GO) run ./scripts/gen-site-demo -out site/static/demo
+
+# Pictures of the demo for the README and the site; they need a Chromium.
+screens: site-demo
+	$(GO) run ./scripts/gen-screens -demo site/static/demo -out site/static/images/screens
 
 hugo:
 	CGO_ENABLED=0 $(GO) install github.com/gohugoio/hugo@$(HUGO_VERSION)
@@ -189,4 +200,4 @@ check: tidy-check static-check vet lint web-check test vuln secrets typography h
        notices-check docs-check demo-check icons-check e2e netns-check
 
 clean:
-	rm -rf bin site/public site/resources
+	rm -rf bin site/public site/resources site/static/demo

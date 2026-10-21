@@ -26,4 +26,5 @@ lefthook-local.yml
 # Documentation site build output
 /site/public/
 /site/resources/
+/site/static/demo/
 .hugo_build.lock

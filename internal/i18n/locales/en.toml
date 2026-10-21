@@ -1358,6 +1358,10 @@ base = "Power not explained by tokens"
 ci = "plus or minus {value} at 95% confidence"
 r2 = "R2 {r2} over {n} intervals of the last day"
 
+[gui.demo]
+banner = "Demo with a simulated workspace: the backends, models, hardware and every value are invented."
+readonly = "the demo shows a simulated workspace and cannot change it"
+
 [gui.regress]
 title = "Regressions of the energy per token"
 none = "No day of this model lies {z} or more standard deviations from the mean of the {days} days before it."
