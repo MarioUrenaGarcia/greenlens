@@ -83,10 +83,17 @@ Every key of the configuration file, the environment variable that overrides it 
 |---|---|---|---|---|
 | `indicators.emission_factor_g_per_kwh` | `GREENLENS_INDICATORS_EMISSION_FACTOR_G_PER_KWH` | number or null | `null` | Grid emission factor in gCO2e/kWh. Null: FESEN 2024, 444 gCO2e/kWh. |
 | `indicators.emission_factor_source` | `GREENLENS_INDICATORS_EMISSION_FACTOR_SOURCE` | string | empty | Where a configured emission factor comes from; required when the factor is set. |
+| `indicators.hourly_profile_file` | `GREENLENS_INDICATORS_HOURLY_PROFILE_FILE` | string | empty | Absolute path of a CSV file with the grid intensity of each hour of the week (weekday,hour,g_co2e_per_kwh), which replaces the emission factor hour by hour. Empty: the factor applies to every hour. |
+| `indicators.timezone` | `GREENLENS_INDICATORS_TIMEZONE` | string | empty | IANA time zone of the hourly profile and the tariff periods, such as America/Mexico_City. Empty: the time zone of the system. |
 | `indicators.pue` | `GREENLENS_INDICATORS_PUE` | number | `1` | Power usage effectiveness of the facility; 1.0 means no overhead. |
 | `indicators.wue_l_per_kwh` | `GREENLENS_INDICATORS_WUE_L_PER_KWH` | number or null | `null` | Water usage effectiveness in liters per kWh. Null: water is not reported. |
 | `indicators.tariff.price_per_kwh` | `GREENLENS_INDICATORS_TARIFF_PRICE_PER_KWH` | number or null | `null` | Price of electricity per kWh. Null: cost is not reported. |
 | `indicators.tariff.currency` | `GREENLENS_INDICATORS_TARIFF_CURRENCY` | string | `MXN` | ISO 4217 code of the currency of the tariff. |
+| `indicators.tariff.periods` | - | list of objects | empty | Time-of-use prices. price_per_kwh applies outside them; without it, the periods must cover the whole week. |
+| `indicators.tariff.periods[].days` | - | list of strings | empty | Weekdays of the period: sun, mon, tue, wed, thu, fri or sat. |
+| `indicators.tariff.periods[].from` | - | string | empty | Local time the period starts, such as 18:00. |
+| `indicators.tariff.periods[].to` | - | string | empty | Local time the period ends, later than from on the same day; 24:00 is the end of the day. |
+| `indicators.tariff.periods[].price_per_kwh` | - | number | `0` | Price per kWh during the period, in the currency of the tariff. |
 
 ## retention
 

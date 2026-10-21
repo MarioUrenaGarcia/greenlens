@@ -12,6 +12,7 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 )
 
 // Field describes one configuration key for the reference documentation
@@ -40,11 +41,12 @@ func enums() map[string][]string {
 		policies = append(policies, string(p))
 	}
 	return map[string][]string{
-		"attribution.idle_policy": policies,
-		"logging.level":           {"debug", "info", "warn", "error"},
-		"logging.format":          {"json", "text"},
-		"sources.disable":         SourceIDs,
-		"backends[].kind":         kinds(),
+		"attribution.idle_policy":          policies,
+		"logging.level":                    {"debug", "info", "warn", "error"},
+		"logging.format":                   {"json", "text"},
+		"sources.disable":                  SourceIDs,
+		"backends[].kind":                  kinds(),
+		"indicators.tariff.periods[].days": indicators.Weekdays,
 	}
 }
 
@@ -143,14 +145,23 @@ func Schema(describe func(Field) string) map[string]any {
 		node["properties"].(map[string]any)[parts[len(parts)-1]] = fieldSchema(f, describe(f))
 	}
 	for list, item := range items {
-		node := root["properties"].(map[string]any)[list].(map[string]any)
-		item["required"] = []string{"name", "kind"}
+		node := root
+		for _, p := range strings.Split(list, ".") {
+			node = node["properties"].(map[string]any)[p].(map[string]any)
+		}
+		item["required"] = listRequired[list]
 		node["items"] = item
 	}
 	root["$schema"] = "https://json-schema.org/draft/2020-12/schema"
 	root["$id"] = "https://mariourenagarcia.github.io/greenlens/config.schema.json"
 	root["title"] = "GreenLens configuration"
 	return root
+}
+
+// listRequired names the keys every object of a list must have.
+var listRequired = map[string][]string{
+	"backends":                  {"name", "kind"},
+	"indicators.tariff.periods": {"days", "from", "to", "price_per_kwh"},
 }
 
 func object() map[string]any {

@@ -8,11 +8,16 @@
 //	gCO2e = kWh x emission factor x PUE
 //	cost  = kWh x tariff x PUE
 //	water = kWh x WUE
+//
+// The emission factor can follow an hourly profile of the grid and the
+// tariff can have time-of-use periods; the energy of each hour then takes
+// the values of that hour, in the local time of the agent.
 package indicators
 
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 // JoulesPerKWh converts energy units.
@@ -34,6 +39,12 @@ type Factors struct {
 	WUELPerKWh      *float64
 	TariffPerKWh    *float64
 	Currency        string
+	// Location is the time zone of the profile and of the periods.
+	Location *time.Location
+	// Profile, when set, replaces the emission factor hour by hour.
+	Profile *Profile
+	// Periods are time-of-use prices; TariffPerKWh applies outside them.
+	Periods []Period
 }
 
 // Default returns the factors used when nothing is configured.

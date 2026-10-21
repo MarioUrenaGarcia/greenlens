@@ -5,6 +5,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -348,5 +349,58 @@ func TestEdit(t *testing.T) {
 	}
 	if _, err := Edit([]byte("- a\n- b\n"), map[string]string{"logging.level": "debug"}); err == nil {
 		t.Error("accepted a list as configuration")
+	}
+}
+
+func TestIndicatorsOverTime(t *testing.T) {
+	dir := t.TempDir()
+	profile := filepath.Join(dir, "profile.csv")
+	var b strings.Builder
+	b.WriteString("weekday,hour,g_co2e_per_kwh\n")
+	for day := 1; day <= 7; day++ {
+		for h := range 24 {
+			fmt.Fprintf(&b, "%d,%d,%d\n", day, h, 400+h)
+		}
+	}
+	if err := os.WriteFile(profile, []byte(b.String()), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "greenlens.yaml")
+	text := "indicators:\n  hourly_profile_file: " + profile + "\n  timezone: America/Mexico_City\n  tariff:\n    price_per_kwh: 1.5\n" +
+		"    periods:\n      - days: [mon, tue, wed, thu, fri]\n        from: \"18:00\"\n        to: \"22:00\"\n        price_per_kwh: 3\n"
+	if err := os.WriteFile(cfgPath, []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := Load(cfgPath, func(string) string { return "" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := cfg.Factors()
+	if f.Profile == nil || f.Profile[time.Monday][5] != 405 || f.Location.String() != "America/Mexico_City" || len(f.Periods) != 1 ||
+		!f.Periods[0].Days[time.Friday] || f.Periods[0].Days[time.Saturday] || f.Periods[0].From != 18*60 || f.Periods[0].To != 22*60 {
+		t.Fatalf("factors %+v", f)
+	}
+	// Without a time zone, the zone of the system.
+	if err := os.WriteFile(cfgPath, []byte("indicators:\n  pue: 1.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, _, err := Load(cfgPath, func(string) string { return "" }); err != nil || cfg.Factors().Location != time.Local || cfg.Factors().Varies() {
+		t.Fatalf("defaults: %v %+v", err, cfg.Factors())
+	}
+	for _, tt := range []struct{ yaml, key, want string }{
+		{"indicators:\n  timezone: Mars/Olympus\n", "indicators.timezone", "unknown time zone"},
+		{"indicators:\n  hourly_profile_file: " + filepath.Join(dir, "none.csv") + "\n", "indicators.hourly_profile_file", "no such file"},
+		{"indicators:\n  hourly_profile_file: profile.csv\n", "indicators.hourly_profile_file", "absolute path"},
+		{"indicators:\n  tariff:\n    periods:\n      - days: [mon]\n        from: \"18:00\"\n        to: \"22:00\"\n        price_per_kwh: 3\n", "indicators.tariff.periods", "no period covers sun at 00:00"},
+		{"indicators:\n  tariff:\n    price_per_kwh: 1\n    periods:\n      - days: [lunes]\n        from: \"6pm\"\n        to: \"22:00\"\n", "indicators.tariff.periods", "unknown day"},
+		{"indicators:\n  tariff:\n    price_per_kwh: 1\n    periods:\n      - days: [mon]\n        from: \"18:00\"\n        to: \"20:00\"\n      - days: [mon, tue]\n        from: \"19:00\"\n        to: \"21:00\"\n", "indicators.tariff.periods", "overlap on mon at 19:00"},
+	} {
+		if err := os.WriteFile(cfgPath, []byte(tt.yaml), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		_, _, err := Load(cfgPath, func(string) string { return "" })
+		if err == nil || !strings.Contains(err.Error(), tt.key) || !strings.Contains(err.Error(), tt.want) {
+			t.Errorf("%s: %v", tt.key, err)
+		}
 	}
 }

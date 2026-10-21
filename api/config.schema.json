@@ -123,6 +123,10 @@
           "description": "Where a configured emission factor comes from; required when the factor is set.",
           "type": "string"
         },
+        "hourly_profile_file": {
+          "description": "Absolute path of a CSV file with the grid intensity of each hour of the week (weekday,hour,g_co2e_per_kwh), which replaces the emission factor hour by hour. Empty: the factor applies to every hour.",
+          "type": "string"
+        },
         "pue": {
           "description": "Power usage effectiveness of the facility; 1.0 means no overhead.",
           "type": "number"
@@ -134,6 +138,50 @@
               "description": "ISO 4217 code of the currency of the tariff.",
               "type": "string"
             },
+            "periods": {
+              "description": "Time-of-use prices. price_per_kwh applies outside them; without it, the periods must cover the whole week.",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "days": {
+                    "description": "Weekdays of the period: sun, mon, tue, wed, thu, fri or sat.",
+                    "items": {
+                      "enum": [
+                        "sun",
+                        "mon",
+                        "tue",
+                        "wed",
+                        "thu",
+                        "fri",
+                        "sat"
+                      ],
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "from": {
+                    "description": "Local time the period starts, such as 18:00.",
+                    "type": "string"
+                  },
+                  "price_per_kwh": {
+                    "description": "Price per kWh during the period, in the currency of the tariff.",
+                    "type": "number"
+                  },
+                  "to": {
+                    "description": "Local time the period ends, later than from on the same day; 24:00 is the end of the day.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "days",
+                  "from",
+                  "to",
+                  "price_per_kwh"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
             "price_per_kwh": {
               "description": "Price of electricity per kWh. Null: cost is not reported.",
               "type": [
@@ -143,6 +191,10 @@
             }
           },
           "type": "object"
+        },
+        "timezone": {
+          "description": "IANA time zone of the hourly profile and the tariff periods, such as America/Mexico_City. Empty: the time zone of the system.",
+          "type": "string"
         },
         "wue_l_per_kwh": {
           "description": "Water usage effectiveness in liters per kWh. Null: water is not reported.",

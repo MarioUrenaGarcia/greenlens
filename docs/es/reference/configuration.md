@@ -83,10 +83,17 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 |---|---|---|---|---|
 | `indicators.emission_factor_g_per_kwh` | `GREENLENS_INDICATORS_EMISSION_FACTOR_G_PER_KWH` | number or null | `null` | Factor de emisión de la red en gCO2e/kWh. Nulo: FESEN 2024, 444 gCO2e/kWh. |
 | `indicators.emission_factor_source` | `GREENLENS_INDICATORS_EMISSION_FACTOR_SOURCE` | string | empty | De dónde proviene un factor de emisión configurado; es obligatorio cuando se define el factor. |
+| `indicators.hourly_profile_file` | `GREENLENS_INDICATORS_HOURLY_PROFILE_FILE` | string | empty | Ruta absoluta de un archivo CSV con la intensidad de la red en cada hora de la semana (weekday,hour,g_co2e_per_kwh), que reemplaza al factor de emisión hora por hora. Vacío: el factor se aplica a todas las horas. |
+| `indicators.timezone` | `GREENLENS_INDICATORS_TIMEZONE` | string | empty | Zona horaria IANA del perfil horario y de los tramos de tarifa, como America/Mexico_City. Vacío: la zona horaria del sistema. |
 | `indicators.pue` | `GREENLENS_INDICATORS_PUE` | number | `1` | Eficiencia en el uso de energía (PUE) de la instalación; 1.0 significa sin sobrecarga. |
 | `indicators.wue_l_per_kwh` | `GREENLENS_INDICATORS_WUE_L_PER_KWH` | number or null | `null` | Eficiencia en el uso de agua (WUE) en litros por kWh. Nulo: no se reporta el agua. |
 | `indicators.tariff.price_per_kwh` | `GREENLENS_INDICATORS_TARIFF_PRICE_PER_KWH` | number or null | `null` | Precio de la electricidad por kWh. Nulo: no se reporta el costo. |
 | `indicators.tariff.currency` | `GREENLENS_INDICATORS_TARIFF_CURRENCY` | string | `MXN` | Código ISO 4217 de la moneda de la tarifa. |
+| `indicators.tariff.periods` | - | list of objects | empty | Precios por horario. price_per_kwh se aplica fuera de ellos; sin él, los tramos deben cubrir toda la semana. |
+| `indicators.tariff.periods[].days` | - | list of strings | empty | Días del tramo: sun, mon, tue, wed, thu, fri o sat. |
+| `indicators.tariff.periods[].from` | - | string | empty | Hora local en que empieza el tramo, como 18:00. |
+| `indicators.tariff.periods[].to` | - | string | empty | Hora local en que termina el tramo, después de from en el mismo día; 24:00 es el fin del día. |
+| `indicators.tariff.periods[].price_per_kwh` | - | number | `0` | Precio por kWh durante el tramo, en la moneda de la tarifa. |
 
 ## retention
 

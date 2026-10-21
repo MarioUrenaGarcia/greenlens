@@ -346,8 +346,11 @@ func (a *Agent) confine() {
 	}
 	root := a.cfg.Agent.HostRoot
 	ro := []string{filepath.Join(root, "sys"), filepath.Join(root, "proc")}
-	if f := a.cfg.Proxy.ConsumerAliasesFile; f != "" {
-		ro = append(ro, filepath.Dir(f))
+	// Files named by the configuration are read again on every reload.
+	for _, f := range []string{a.cfg.Proxy.ConsumerAliasesFile, a.cfg.Indicators.HourlyProfileFile} {
+		if f != "" {
+			ro = append(ro, filepath.Dir(f))
+		}
 	}
 	if root != "/" {
 		ro = append(ro, "/proc")

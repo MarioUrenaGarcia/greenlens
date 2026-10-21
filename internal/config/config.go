@@ -18,6 +18,10 @@ import (
 	"strings"
 	"time"
 
+	// Time zones are embedded, so indicators.timezone works on systems
+	// without a zone database and inside the sandbox of the agent.
+	_ "time/tzdata"
+
 	"net"
 	"net/url"
 	"regexp"
@@ -186,15 +190,34 @@ type Discovery struct {
 type Indicators struct {
 	EmissionFactorGPerKWh *float64 `yaml:"emission_factor_g_per_kwh"`
 	EmissionFactorSource  string   `yaml:"emission_factor_source"`
+	HourlyProfileFile     string   `yaml:"hourly_profile_file"`
+	Timezone              string   `yaml:"timezone"`
 	PUE                   float64  `yaml:"pue"`
 	WUELPerKWh            *float64 `yaml:"wue_l_per_kwh"`
 	Tariff                Tariff   `yaml:"tariff"`
+
+	// Profile is read from HourlyProfileFile by Load.
+	Profile *indicators.Profile `yaml:"-"`
+	// Location is the zone named by Timezone, or the zone of the system;
+	// Load resolves it.
+	Location *time.Location `yaml:"-"`
 }
 
-// Tariff is the price of electricity.
+// Tariff is the price of electricity: one price, or time-of-use periods
+// with the price for the times outside them.
 type Tariff struct {
-	PricePerKWh *float64 `yaml:"price_per_kwh"`
-	Currency    string   `yaml:"currency"`
+	PricePerKWh *float64       `yaml:"price_per_kwh"`
+	Currency    string         `yaml:"currency"`
+	Periods     []TariffPeriod `yaml:"periods"`
+}
+
+// TariffPeriod is a price on some weekdays between two local times of the
+// same day.
+type TariffPeriod struct {
+	Days        []string `yaml:"days"`
+	From        string   `yaml:"from"`
+	To          string   `yaml:"to"`
+	PricePerKWh float64  `yaml:"price_per_kwh"`
 }
 
 // Retention sets how long data is kept at each resolution.
@@ -316,7 +339,68 @@ func Load(path string, getenv func(string) string) (Config, string, error) {
 	if err := ApplyEnv(&cfg, getenv); err != nil {
 		return cfg, path, err
 	}
-	return cfg, path, cfg.Validate()
+	if err := cfg.Validate(); err != nil {
+		return cfg, path, err
+	}
+	return cfg, path, cfg.resolve()
+}
+
+// resolve reads what the configuration names beyond itself: the hourly
+// profile and the time zone.
+func (c *Config) resolve() error {
+	ind := &c.Indicators
+	// The zone of the system is read on first use; reading it now does so
+	// before the agent confines its file access.
+	_, _ = time.Now().In(time.Local).Zone()
+	ind.Location = time.Local
+	if ind.Timezone != "" {
+		loc, err := time.LoadLocation(ind.Timezone)
+		if err != nil {
+			return help.New(help.GL3003, "key", "indicators.timezone", "detail", fmt.Sprintf("unknown time zone %q; use an IANA name such as America/Mexico_City", ind.Timezone))
+		}
+		ind.Location = loc
+	}
+	if f := ind.HourlyProfileFile; f != "" {
+		p, err := indicators.ReadProfile(f)
+		if err != nil {
+			return help.New(help.GL3003, "key", "indicators.hourly_profile_file", "detail", err.Error()).Wrap(err)
+		}
+		ind.Profile = p
+	}
+	return nil
+}
+
+// periods converts the tariff periods, which Validate has checked.
+func (t Tariff) periods() ([]indicators.Period, error) {
+	var out []indicators.Period
+	for i, tp := range t.Periods {
+		var p indicators.Period
+		var errs []error
+		for _, d := range tp.Days {
+			day := slices.Index(indicators.Weekdays, strings.ToLower(d))
+			if day < 0 {
+				errs = append(errs, fmt.Errorf("unknown day %q; use %s", d, strings.Join(indicators.Weekdays, ", ")))
+				continue
+			}
+			p.Days[day] = true
+		}
+		if len(tp.Days) == 0 {
+			errs = append(errs, errors.New("days must name at least one day"))
+		}
+		var err error
+		if p.From, err = indicators.ParseClock(tp.From); err != nil {
+			errs = append(errs, fmt.Errorf("from: %w", err))
+		}
+		if p.To, err = indicators.ParseClock(tp.To); err != nil {
+			errs = append(errs, fmt.Errorf("to: %w", err))
+		}
+		p.PricePerKWh = tp.PricePerKWh
+		if len(errs) > 0 {
+			return nil, fmt.Errorf("period %d: %w", i+1, errors.Join(errs...))
+		}
+		out = append(out, p)
+	}
+	return out, nil
 }
 
 // Parse decodes YAML into cfg, keeping the values of cfg for keys the
@@ -345,6 +429,10 @@ func (c Config) Factors() indicators.Factors {
 	f.WUELPerKWh = c.Indicators.WUELPerKWh
 	f.TariffPerKWh = c.Indicators.Tariff.PricePerKWh
 	f.Currency = c.Indicators.Tariff.Currency
+	f.Location = c.Indicators.Location
+	f.Profile = c.Indicators.Profile
+	// Invalid periods are reported by Validate; here they are left out.
+	f.Periods, _ = c.Indicators.Tariff.periods()
 	return f
 }
 
@@ -503,6 +591,14 @@ func (c Config) Validate() error {
 	}
 	if err := c.Factors().Validate(); err != nil {
 		bad("indicators", err.Error())
+	}
+	if f := c.Indicators.HourlyProfileFile; f != "" && !filepath.IsAbs(f) {
+		bad("indicators.hourly_profile_file", "must be an absolute path")
+	}
+	if ps, err := c.Indicators.Tariff.periods(); err != nil {
+		bad("indicators.tariff.periods", err.Error())
+	} else if err := indicators.CheckPeriods(ps, c.Indicators.Tariff.PricePerKWh); err != nil {
+		bad("indicators.tariff.periods", err.Error())
 	}
 	if c.Indicators.Tariff.Currency == "" || len(c.Indicators.Tariff.Currency) != 3 || strings.ToUpper(c.Indicators.Tariff.Currency) != c.Indicators.Tariff.Currency {
 		bad("indicators.tariff.currency", "must be an ISO 4217 code such as MXN or USD")
