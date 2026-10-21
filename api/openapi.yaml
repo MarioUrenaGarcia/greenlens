@@ -589,6 +589,88 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/config:
+    get:
+      operationId: config
+      tags: [administration]
+      summary: The configuration in force and its file
+      x-summary-es: La configuración vigente y su archivo
+      x-greenlens-role: admin
+      responses:
+        "200":
+          description: The configuration.
+          x-description-es: La configuración.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigDoc"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+    put:
+      operationId: applyConfig
+      tags: [administration]
+      summary: Change the configuration file and reload it
+      x-summary-es: Cambia el archivo de configuración y lo recarga
+      description: >-
+        Only when the agent can write its file, as an agent run by a user can; the
+        system service cannot, and its file is installed with the previewed content
+        instead. Comments of the file are kept.
+      x-description-es: >-
+        Solo cuando el agente puede escribir su archivo, como puede un agente
+        ejecutado por un usuario; el servicio del sistema no puede, y su archivo se
+        instala con el contenido de la vista previa. Los comentarios del archivo se
+        conservan.
+      x-greenlens-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ConfigChange"}
+      responses:
+        "200":
+          description: The file was written and the configuration reloaded.
+          x-description-es: Se escribió el archivo y se recargó la configuración.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: The agent cannot write its configuration file.
+          x-description-es: El agente no puede escribir su archivo de configuración.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: The changes make the configuration invalid; nothing was written.
+          x-description-es: Los cambios vuelven inválida la configuración; no se escribió nada.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/config/preview:
+    post:
+      operationId: previewConfig
+      tags: [administration]
+      summary: The configuration file that changes would produce, checked
+      x-summary-es: El archivo de configuración que producirían los cambios, revisado
+      x-greenlens-role: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ConfigChange"}
+      responses:
+        "200":
+          description: The resulting file and its problems.
+          x-description-es: El archivo resultante y sus problemas.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
   /api/v1/session:
     get:
       operationId: session
@@ -836,6 +918,86 @@ components:
             properties:
               name: {type: string, description: Name of the component., x-description-es: Nombre del componente.}
               version: {type: string, description: Version of the component., x-description-es: Versión del componente.}
+
+    ConfigField:
+      type: object
+      description: One key of the configuration with its value in force, written as for its environment variable.
+      x-description-es: Una clave de la configuración con su valor vigente, escrito como para su variable de entorno.
+      additionalProperties: false
+      required: [key, type, value, default]
+      properties:
+        key: {type: string, description: Dotted key., x-description-es: Clave con puntos.}
+        type: {type: string, description: Type of the value., x-description-es: Tipo del valor.}
+        value: {type: string, description: Value in force., x-description-es: Valor vigente.}
+        default: {type: string, description: Default value., x-description-es: Valor por defecto.}
+        env: {type: string, description: Environment variable that overrides it., x-description-es: Variable de entorno que lo reemplaza.}
+        enum:
+          type: array
+          description: Accepted values, when they are a fixed set.
+          x-description-es: Valores aceptados, cuando son un conjunto fijo.
+          items: {type: string}
+
+    ConfigDoc:
+      type: object
+      description: The configuration of the agent and whether it can change its file.
+      x-description-es: La configuración del agente y si puede cambiar su archivo.
+      additionalProperties: false
+      required: [schema_version, path, writable, yaml, fields, restart_keys]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        path: {type: string, description: File the agent read; empty when it runs with the defaults., x-description-es: Archivo que leyó el agente; vacío si usa los valores por defecto.}
+        writable: {type: boolean, description: Whether the agent can write the file., x-description-es: Si el agente puede escribir el archivo.}
+        reason: {type: string, enum: [no_file, read_only], description: Why the file cannot be written., x-description-es: Por qué no se puede escribir el archivo.}
+        yaml: {type: string, description: Content of the file., x-description-es: Contenido del archivo.}
+        fields:
+          type: array
+          description: Every key except lists of objects such as backends.
+          x-description-es: Todas las claves salvo las listas de objetos como backends.
+          items: {$ref: "#/components/schemas/ConfigField"}
+        restart_keys:
+          type: array
+          description: Keys, or prefixes ending in a dot, that change only after a restart.
+          x-description-es: Claves, o prefijos que terminan en punto, que cambian solo tras reiniciar.
+          items: {type: string}
+
+    ConfigChange:
+      type: object
+      description: New values for keys of the configuration, written as for their environment variable; an empty value clears a number.
+      x-description-es: Valores nuevos para claves de la configuración, escritos como para su variable de entorno; un valor vacío quita un número.
+      additionalProperties: false
+      required: [changes]
+      properties:
+        changes:
+          type: object
+          description: Values by key.
+          x-description-es: Valores por clave.
+          additionalProperties: {type: string}
+
+    ConfigPreview:
+      type: object
+      description: The file that changes produce and its problems.
+      x-description-es: El archivo que producen los cambios y sus problemas.
+      additionalProperties: false
+      required: [schema_version, yaml, valid, errors, needs_restart, applied]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        yaml: {type: string, description: The resulting file., x-description-es: El archivo resultante.}
+        valid: {type: boolean, description: Whether the agent would accept it., x-description-es: Si el agente lo aceptaría.}
+        errors:
+          type: array
+          description: Problems, by key when they concern one.
+          x-description-es: Problemas, por clave cuando se refieren a una.
+          items:
+            type: object
+            description: A problem.
+            x-description-es: Un problema.
+            additionalProperties: false
+            required: [message]
+            properties:
+              key: {type: string, description: The key., x-description-es: La clave.}
+              message: {type: string, description: What is wrong., x-description-es: Qué está mal.}
+        needs_restart: {type: boolean, description: Whether some change takes effect only after a restart., x-description-es: Si algún cambio surte efecto solo tras reiniciar.}
+        applied: {type: boolean, description: Whether the file was written and reloaded., x-description-es: Si se escribió el archivo y se recargó.}
 
     Catalog:
       type: object

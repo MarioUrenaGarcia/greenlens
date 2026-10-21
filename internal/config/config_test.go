@@ -291,3 +291,62 @@ func TestServer(t *testing.T) {
 		t.Fatalf("a disabled server needs no address: %v", err)
 	}
 }
+
+func TestEdit(t *testing.T) {
+	data, err := os.ReadFile("../../deploy/config/greenlens.example.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := Edit(data, map[string]string{
+		"indicators.tariff.price_per_kwh":      "2.5",
+		"indicators.emission_factor_g_per_kwh": "300",
+		"indicators.emission_factor_source":    "Utility notice: 2026",
+		"sources.disable":                      "battery, ipmi",
+		"sources.force":                        "package=rapl",
+		"agent.sample_interval":                "2s",
+		"server.metrics_auth":                  "true",
+		"indicators.wue_l_per_kwh":             "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The comments of the file survive the edit.
+	for _, comment := range []string{"# Grid emission factor in gCO2e/kWh", "# Ask for a token on /metrics too."} {
+		if !strings.Contains(string(out), comment) {
+			t.Errorf("lost the comment %q:\n%s", comment, out)
+		}
+	}
+	cfg := Defaults()
+	if err := Parse(out, &cfg); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	v := Values(cfg)
+	for k, want := range map[string]string{
+		"indicators.tariff.price_per_kwh": "2.5", "indicators.emission_factor_g_per_kwh": "300",
+		"indicators.emission_factor_source": "Utility notice: 2026", "sources.disable": "battery,ipmi",
+		"sources.force": "package=rapl", "agent.sample_interval": "2s", "server.metrics_auth": "true", "indicators.wue_l_per_kwh": "",
+	} {
+		if v[k] != want {
+			t.Errorf("%s = %q, want %q", k, v[k], want)
+		}
+	}
+	// A file without the section gets it.
+	out, err = Edit([]byte("agent:\n  sample_interval: 1s\n"), map[string]string{"indicators.tariff.currency": "USD"})
+	if err != nil || !strings.Contains(string(out), "currency: USD") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := Edit(nil, map[string]string{"logging.level": "debug"}); err != nil || !strings.Contains(string(out), "level: debug") {
+		t.Fatalf("empty file: %v\n%s", err, out)
+	}
+	for _, bad := range []map[string]string{{"agent.nope": "1"}, {"server.enabled": "maybe"}, {"agent.sample_interval": "soon"}, {"backends": "x"}, {"sources.force": "rapl"}} {
+		if _, err := Edit(data, bad); err == nil {
+			t.Errorf("accepted %v", bad)
+		}
+	}
+	if _, err := Edit([]byte("- a\n- b\n"), map[string]string{"logging.level": "debug"}); err == nil {
+		t.Error("accepted a list as configuration")
+	}
+}

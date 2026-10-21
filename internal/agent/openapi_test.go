@@ -222,6 +222,11 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 
 	post("revokeToken", sock, "DELETE", api.PathTokens+"/viewer", nil)
 	post("revokeToken", sock, "DELETE", api.PathTokens+"/viewer", nil)
+	get("config", sock, api.PathConfig)
+	post("previewConfig", sock, "POST", api.PathConfigCheck, api.ConfigChange{Changes: map[string]string{"indicators.pue": "1.2"}})
+	post("previewConfig", sock, "POST", api.PathConfigCheck, api.ConfigChange{Changes: map[string]string{"indicators.pue": "lots"}})
+	post("previewConfig", sock, "POST", api.PathConfigCheck, "not an object")
+	post("applyConfig", sock, "PUT", api.PathConfig, api.ConfigChange{Changes: map[string]string{"indicators.pue": "1.2"}})
 	get("audit", sock, api.PathAudit)
 	get("audit", sock, api.PathAudit+"?limit=5000")
 

@@ -105,6 +105,11 @@ type Agent struct {
 
 	stream *stream
 	bjob   *benchJob
+	// selfReload asks the loop to reload the configuration, after the
+	// interface changed it.
+	selfReload     chan struct{}
+	configWritable bool
+	configReason   string
 	// stopping is closed when the agent shuts down, so live streams end
 	// instead of holding up the shutdown of the servers.
 	stopping chan struct{}
@@ -191,6 +196,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		collectors: prometheus.NewCollectors(),
 		stream:     newStream(),
 		bjob:       newBenchJob(),
+		selfReload: make(chan struct{}, 1),
 		stopping:   make(chan struct{}),
 		consumerJ:  map[string]float64{},
 		idle:       calibrate.NewIdleTracker(),
@@ -229,6 +235,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		return nil, help.New(help.GL4013, "path", tokensPath, "detail", err.Error()).Wrap(err)
 	}
 	a.sessions, a.codes, a.logins = auth.NewSessions(a.st), auth.NewCodes(), newLimiter(loginRate/60.0, loginRate)
+	a.configWritable, a.configReason = configWritable(o.ConfigPath)
 	if err := a.setupSources(ctx); err != nil {
 		_ = a.st.Close()
 		return nil, err
@@ -343,10 +350,14 @@ func (a *Agent) confine() {
 	if root != "/" {
 		ro = append(ro, "/proc")
 	}
-	if a.o.ConfigPath != "" {
+	rw := []string{a.dataDir, filepath.Dir(a.sockPath)}
+	// A configuration the agent may change from the interface needs its
+	// directory writable, for the new file it renames over the old one.
+	if a.o.ConfigPath != "" && a.configWritable {
+		rw = append(rw, filepath.Dir(a.o.ConfigPath))
+	} else if a.o.ConfigPath != "" {
 		ro = append(ro, filepath.Dir(a.o.ConfigPath))
 	}
-	rw := []string{a.dataDir, filepath.Dir(a.sockPath)}
 	if d := filepath.Dir(a.tokens.Path()); d != a.dataDir {
 		rw = append(rw, d)
 	}
@@ -486,6 +497,23 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 	hour := time.NewTicker(time.Hour)
 	defer hour.Stop()
 	lastCheck := time.Now()
+	doReload := func() {
+		if d := a.reload(ctx); d != interval && d > 0 {
+			interval = d
+			tick.Reset(interval)
+		}
+		a.mu.RLock()
+		every, policy := a.cfg.Discovery.Interval.D(), a.cfg.Attribution.IdlePolicy
+		a.mu.RUnlock()
+		if p, err := attribution.ParsePolicy(policy); err == nil {
+			a.acc.SetPolicy(p)
+		}
+		if every != discoverEvery && every > 0 {
+			discoverEvery = every
+			discover.Reset(every)
+		}
+		a.refreshBackends(ctx)
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -509,21 +537,9 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 		case <-hour.C:
 			a.hourly(ctx, &lastCheck)
 		case <-reload:
-			if d := a.reload(ctx); d != interval && d > 0 {
-				interval = d
-				tick.Reset(interval)
-			}
-			a.mu.RLock()
-			every, policy := a.cfg.Discovery.Interval.D(), a.cfg.Attribution.IdlePolicy
-			a.mu.RUnlock()
-			if p, err := attribution.ParsePolicy(policy); err == nil {
-				a.acc.SetPolicy(p)
-			}
-			if every != discoverEvery && every > 0 {
-				discoverEvery = every
-				discover.Reset(every)
-			}
-			a.refreshBackends(ctx)
+			doReload()
+		case <-a.selfReload:
+			doReload()
 		}
 	}
 }

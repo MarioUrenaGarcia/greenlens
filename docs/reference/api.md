@@ -24,6 +24,9 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | One stored benchmark |
 | `POST` | `/api/v1/calibrations` | operator | Store a calibration of the idle power and apply it |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Messages of one language for the graphical interface |
+| `GET` | `/api/v1/config` | admin | The configuration in force and its file |
+| `PUT` | `/api/v1/config` | admin | Change the configuration file and reload it |
+| `POST` | `/api/v1/config/preview` | admin | The configuration file that changes would produce, checked |
 | `GET` | `/api/v1/live` | viewer | Power of every domain over the last minutes |
 | `GET` | `/api/v1/openapi.yaml` | public | This description of the API |
 | `GET` | `/api/v1/session` | public | Who sends the request, and the CSRF token of a session |
@@ -249,6 +252,58 @@ Role: `public`
 |---|---|---|
 | `200` | The messages. | [Catalog](#catalog) |
 | `404` | Nothing has this id. | [Error](#error) |
+
+### GET /api/v1/config
+
+The configuration in force and its file.
+
+Role: `admin`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The configuration. | [ConfigDoc](#configdoc) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### PUT /api/v1/config
+
+Change the configuration file and reload it. Only when the agent can write its file, as an agent run by a user can; the system service cannot, and its file is installed with the previewed content instead. Comments of the file are kept.
+
+Role: `admin`
+
+**Document**: [ConfigChange](#configchange)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The file was written and the configuration reloaded. | [ConfigPreview](#configpreview) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | The agent cannot write its configuration file. | [Error](#error) |
+| `422` | The changes make the configuration invalid; nothing was written. | [ConfigPreview](#configpreview) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### POST /api/v1/config/preview
+
+The configuration file that changes would produce, checked.
+
+Role: `admin`
+
+**Document**: [ConfigChange](#configchange)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The resulting file and its problems. | [ConfigPreview](#configpreview) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
 
 ### GET /api/v1/live
 
@@ -767,6 +822,54 @@ Energy of one channel in one bucket.
 | `quality` | string | yes | Quality of its values. |
 | `samples` | integer | yes | Samples added up. |
 | `source` | string | yes | Source that read it. |
+
+### ConfigChange
+
+New values for keys of the configuration, written as for their environment variable; an empty value clears a number.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `changes` | map of string | yes | Values by key. |
+
+### ConfigDoc
+
+The configuration of the agent and whether it can change its file.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `fields` | list of [ConfigField](#configfield) | yes | Every key except lists of objects such as backends. |
+| `path` | string | yes | File the agent read; empty when it runs with the defaults. |
+| `restart_keys` | list of string | yes | Keys, or prefixes ending in a dot, that change only after a restart. |
+| `schema_version` | integer | yes | Version of the document. |
+| `writable` | boolean | yes | Whether the agent can write the file. |
+| `yaml` | string | yes | Content of the file. |
+| `reason` | `no_file`, `read_only` | no | Why the file cannot be written. |
+
+### ConfigField
+
+One key of the configuration with its value in force, written as for its environment variable.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `default` | string | yes | Default value. |
+| `key` | string | yes | Dotted key. |
+| `type` | string | yes | Type of the value. |
+| `value` | string | yes | Value in force. |
+| `enum` | list of string | no | Accepted values, when they are a fixed set. |
+| `env` | string | no | Environment variable that overrides it. |
+
+### ConfigPreview
+
+The file that changes produce and its problems.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `applied` | boolean | yes | Whether the file was written and reloaded. |
+| `errors` | list of object | yes | Problems, by key when they concern one. |
+| `needs_restart` | boolean | yes | Whether some change takes effect only after a restart. |
+| `schema_version` | integer | yes | Version of the document. |
+| `valid` | boolean | yes | Whether the agent would accept it. |
+| `yaml` | string | yes | The resulting file. |
 
 ### CreateToken
 

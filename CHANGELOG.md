@@ -87,6 +87,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
   tokens, and exports them as CSV or JSON. `POST /api/v1/benchmarks` now
   starts a benchmark; results measured by `greenlens bench` go to
   `/api/v1/benchmarks/results`.
+- The configuration in the interface, for administrators: every key with
+  its description, default and environment variable, a checked preview of
+  the resulting file, and applying it when the agent can write its file,
+  keeping its comments and reloading it. The system service, whose file
+  is read-only, gets the file to download and the commands to install it.
 - Energy reports in the interface: energy, emissions, cost and water of a
   period, by domain per day or hour and by backend, model or consumer,
   printable from the browser and exported as CSV or JSON.

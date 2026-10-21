@@ -124,6 +124,9 @@ func (a *Agent) routes() []route {
 		{pattern: "POST " + api.PathTokens, role: auth.Admin, h: a.handleCreateToken},
 		{pattern: "DELETE " + api.PathTokens + "/{id}", role: auth.Admin, h: a.handleRevokeToken},
 		{pattern: "GET " + api.PathAudit, role: auth.Admin, h: a.handleAudit},
+		{pattern: "GET " + api.PathConfig, role: auth.Admin, h: a.handleConfig},
+		{pattern: "POST " + api.PathConfigCheck, role: auth.Admin, h: a.handleConfigPreview},
+		{pattern: "PUT " + api.PathConfig, role: auth.Admin, h: a.handleConfigApply},
 		{pattern: "GET " + api.PathSession, h: a.handleSession},
 		{pattern: "POST " + api.PathSessionCodes, role: auth.Admin, socketOnly: true, h: a.handleSessionCode},
 		{pattern: "GET " + api.PathCatalogs + "/{lang}", h: handleCatalog},
@@ -534,7 +537,7 @@ func (a *Agent) handleBackup(w http.ResponseWriter, r *http.Request) {
 
 // catalogPrefixes are the parts of the translation catalogs the graphical
 // interface uses: its own texts and those of the values and errors it shows.
-var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason.", "cli.license.", "cli.bench.cause."}
+var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason.", "cli.license.", "cli.bench.cause.", "config.doc."}
 
 // handleCatalog serves the messages of one language. It is public, since
 // the sign-in page needs it.

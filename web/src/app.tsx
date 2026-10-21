@@ -20,6 +20,7 @@ import { href, useRoute } from "./router";
 import { About, selfPower } from "./screens/about";
 import { BackendsScreen } from "./screens/backends";
 import { Benchmarks } from "./screens/benchmarks";
+import { Config } from "./screens/config";
 import { Consumers } from "./screens/consumers";
 import { Login } from "./screens/login";
 import { Models } from "./screens/models";
@@ -31,6 +32,8 @@ import type { Session, Status } from "./types";
 interface Screen {
   id: string;
   icon: () => ComponentChildren;
+  // admin screens are listed only for administrators.
+  admin?: boolean;
   render: (ctx: { status: Status; session: Session; path: string[] }) => ComponentChildren;
 }
 
@@ -46,6 +49,7 @@ const screens: Screen[] = [
     render: ({ status, session }) => <Benchmarks status={status} role={session.role} />,
   },
   { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
+  { id: "config", icon: icons.config, admin: true, render: () => <Config /> },
   { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
 ];
 
@@ -103,7 +107,8 @@ function Shell(props: {
     onSystemTheme(() => applyTheme(prefs.theme()));
   }, [theme]);
   const id = route.path[0] ?? "summary";
-  const screen = screens.find((s) => s.id === id) ?? screens[0];
+  const visible = screens.filter((s) => !s.admin || props.session.role === "admin");
+  const screen = visible.find((s) => s.id === id) ?? visible[0];
   useEffect(() => {
     document.title = `${t(`gui.nav.${screen?.id ?? "summary"}`)} - GreenLens`;
   }, [screen]);
@@ -117,7 +122,7 @@ function Shell(props: {
           {icons.logo()} GreenLens
         </a>
         <ul class="nav">
-          {screens.map((s) => (
+          {visible.map((s) => (
             <li key={s.id}>
               <a href={href(s.id)} aria-current={s.id === screen?.id ? "page" : undefined}>
                 {s.icon()}

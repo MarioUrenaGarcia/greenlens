@@ -43,6 +43,8 @@ const (
 	PathOpenAPI      = "/api/v1/openapi.yaml"
 	PathCatalogs     = "/api/v1/catalogs"
 	PathAbout        = "/api/v1/about"
+	PathConfig       = "/api/v1/config"
+	PathConfigCheck  = "/api/v1/config/preview"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -369,4 +371,48 @@ type BenchmarkJob struct {
 	EndedAt       *time.Time        `json:"ended_at,omitempty"`
 	BenchmarkID   int64             `json:"benchmark_id,omitempty"`
 	Error         string            `json:"error,omitempty"`
+}
+
+// ConfigField is one key of the configuration with its value in force.
+type ConfigField struct {
+	Key     string   `json:"key"`
+	Type    string   `json:"type"`
+	Value   string   `json:"value"`
+	Default string   `json:"default"`
+	Env     string   `json:"env,omitempty"`
+	Enum    []string `json:"enum,omitempty"`
+}
+
+// ConfigDoc is the configuration of the agent. Values are written as for
+// their environment variable.
+type ConfigDoc struct {
+	SchemaVersion int    `json:"schema_version"`
+	Path          string `json:"path"`
+	Writable      bool   `json:"writable"`
+	// Reason says why the file cannot be written: no_file or read_only.
+	Reason  string        `json:"reason,omitempty"`
+	YAML    string        `json:"yaml"`
+	Fields  []ConfigField `json:"fields"`
+	Restart []string      `json:"restart_keys"`
+}
+
+// ConfigChange sets keys of the configuration.
+type ConfigChange struct {
+	Changes map[string]string `json:"changes"`
+}
+
+// ConfigError is a problem of a configuration.
+type ConfigError struct {
+	Key     string `json:"key,omitempty"`
+	Message string `json:"message"`
+}
+
+// ConfigPreview is the configuration file that changes would produce.
+type ConfigPreview struct {
+	SchemaVersion int           `json:"schema_version"`
+	YAML          string        `json:"yaml"`
+	Valid         bool          `json:"valid"`
+	Errors        []ConfigError `json:"errors"`
+	NeedsRestart  bool          `json:"needs_restart"`
+	Applied       bool          `json:"applied"`
 }

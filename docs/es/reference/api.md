@@ -24,6 +24,9 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | Un benchmark guardado |
 | `POST` | `/api/v1/calibrations` | operator | Guarda una calibración de la potencia en reposo y la aplica |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Mensajes de un idioma para la interfaz gráfica |
+| `GET` | `/api/v1/config` | admin | La configuración vigente y su archivo |
+| `PUT` | `/api/v1/config` | admin | Cambia el archivo de configuración y lo recarga |
+| `POST` | `/api/v1/config/preview` | admin | El archivo de configuración que producirían los cambios, revisado |
 | `GET` | `/api/v1/live` | viewer | Potencia de cada dominio en los últimos minutos |
 | `GET` | `/api/v1/openapi.yaml` | public | Esta descripción de la API |
 | `GET` | `/api/v1/session` | public | Quién envía la solicitud, y el token CSRF de una sesión |
@@ -249,6 +252,58 @@ Rol: `public`
 |---|---|---|
 | `200` | Los mensajes. | [Catalog](#catalog) |
 | `404` | Nada tiene este id. | [Error](#error) |
+
+### GET /api/v1/config
+
+La configuración vigente y su archivo.
+
+Rol: `admin`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | La configuración. | [ConfigDoc](#configdoc) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### PUT /api/v1/config
+
+Cambia el archivo de configuración y lo recarga. Solo cuando el agente puede escribir su archivo, como puede un agente ejecutado por un usuario; el servicio del sistema no puede, y su archivo se instala con el contenido de la vista previa. Los comentarios del archivo se conservan.
+
+Rol: `admin`
+
+**Documento**: [ConfigChange](#configchange)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | Se escribió el archivo y se recargó la configuración. | [ConfigPreview](#configpreview) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | El agente no puede escribir su archivo de configuración. | [Error](#error) |
+| `422` | Los cambios vuelven inválida la configuración; no se escribió nada. | [ConfigPreview](#configpreview) |
+| `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### POST /api/v1/config/preview
+
+El archivo de configuración que producirían los cambios, revisado.
+
+Rol: `admin`
+
+**Documento**: [ConfigChange](#configchange)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El archivo resultante y sus problemas. | [ConfigPreview](#configpreview) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
 
 ### GET /api/v1/live
 
@@ -767,6 +822,54 @@ Energía de un canal en un intervalo.
 | `quality` | string | sí | Calidad de sus valores. |
 | `samples` | integer | sí | Muestras sumadas. |
 | `source` | string | sí | Fuente que lo leyó. |
+
+### ConfigChange
+
+Valores nuevos para claves de la configuración, escritos como para su variable de entorno; un valor vacío quita un número.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `changes` | mapa de string | sí | Valores por clave. |
+
+### ConfigDoc
+
+La configuración del agente y si puede cambiar su archivo.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `fields` | lista de [ConfigField](#configfield) | sí | Todas las claves salvo las listas de objetos como backends. |
+| `path` | string | sí | Archivo que leyó el agente; vacío si usa los valores por defecto. |
+| `restart_keys` | lista de string | sí | Claves, o prefijos que terminan en punto, que cambian solo tras reiniciar. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `writable` | boolean | sí | Si el agente puede escribir el archivo. |
+| `yaml` | string | sí | Contenido del archivo. |
+| `reason` | `no_file`, `read_only` | no | Por qué no se puede escribir el archivo. |
+
+### ConfigField
+
+Una clave de la configuración con su valor vigente, escrito como para su variable de entorno.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `default` | string | sí | Valor por defecto. |
+| `key` | string | sí | Clave con puntos. |
+| `type` | string | sí | Tipo del valor. |
+| `value` | string | sí | Valor vigente. |
+| `enum` | lista de string | no | Valores aceptados, cuando son un conjunto fijo. |
+| `env` | string | no | Variable de entorno que lo reemplaza. |
+
+### ConfigPreview
+
+El archivo que producen los cambios y sus problemas.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `applied` | boolean | sí | Si se escribió el archivo y se recargó. |
+| `errors` | lista de object | sí | Problemas, por clave cuando se refieren a una. |
+| `needs_restart` | boolean | sí | Si algún cambio surte efecto solo tras reiniciar. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `valid` | boolean | sí | Si el agente lo aceptaría. |
+| `yaml` | string | sí | El archivo resultante. |
 
 ### CreateToken
 
