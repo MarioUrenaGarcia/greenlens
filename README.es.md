@@ -68,6 +68,9 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 - las GPU se miden con NVML, amdgpu, xe e i915, y el agente encuentra
   servidores de Ollama, llama.cpp, vLLM, TGI, SGLang y LocalAI y reporta la
   energía de cada backend y modelo, y por token generado;
+- `greenlens backup`, `restore` y `export` copian la base de datos y entregan
+  las mediciones a otras herramientas en CSV o JSON, y `greenlens license`
+  muestra la licencia y dónde está el código fuente de la versión en uso;
 - cada mensaje está en inglés y en español, y cada error tiene un código, una
   causa y una solución.
 
@@ -153,7 +156,7 @@ bin/greenlens report --from 7d --by day
 
 Cada comando acepta `--output json`, `csv` o `yaml` para scripts. Códigos de
 salida: 0 éxito, 1 error, 2 uso incorrecto, 3 sin fuente de medición,
-5 permisos insuficientes, 6 configuración no válida. El tutorial
+4 backend inaccesible, 5 permisos insuficientes, 6 configuración no válida. El tutorial
 [primeros diez minutos](https://mariourenagarcia.github.io/greenlens/es/docs/tutorials/first-steps/)
 recorre toda la instalación.
 

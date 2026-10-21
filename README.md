@@ -68,6 +68,9 @@ backends, models and the commands, processes and systemd units you choose:
 - GPUs are measured through NVML, amdgpu, xe and i915, and the agent finds
   Ollama, llama.cpp, vLLM, TGI, SGLang and LocalAI servers and reports the
   energy of each backend and model, and per generated token;
+- `greenlens backup`, `restore` and `export` copy the database and hand
+  measurements to other tools as CSV or JSON, and `greenlens license` shows
+  the license and where the source code of the running version is;
 - every message is available in English and Spanish, and every error has a
   code, a cause and a fix.
 
@@ -148,7 +151,7 @@ bin/greenlens report --from 7d --by day
 
 Every command accepts `--output json`, `csv` or `yaml` for scripts. Exit
 codes: 0 success, 1 error, 2 incorrect usage, 3 no measurement source,
-5 insufficient permissions, 6 invalid configuration. The
+4 backend not reachable, 5 insufficient permissions, 6 invalid configuration. The
 [first ten minutes](https://mariourenagarcia.github.io/greenlens/docs/tutorials/first-steps/)
 tutorial walks through the whole setup.
 
