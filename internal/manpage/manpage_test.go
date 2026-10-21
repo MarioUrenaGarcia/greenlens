@@ -65,6 +65,9 @@ func TestPages(t *testing.T) {
 		if !strings.Contains(names["greenlens-bench.1"], `\fB\-\-max\-tokens\fR \fIint\fR`) {
 			t.Errorf("options are not written as roff:\n%s", names["greenlens-bench.1"])
 		}
+		if c := names["greenlens-status.1"]; strings.Contains(c, "`") {
+			t.Errorf("the name of a value keeps its quotes:\n%s", c)
+		}
 		if !strings.Contains(names["greenlens.yaml.5"], `GREENLENS_AGENT_SAMPLE_INTERVAL`) {
 			t.Error("the configuration page lacks the variables")
 		}

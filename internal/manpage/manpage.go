@@ -96,11 +96,14 @@ func flags(fs *pflag.FlagSet) string {
 		if f.Shorthand != "" {
 			name = `\fB\-` + dashes(f.Shorthand) + `\fR, ` + name
 		}
-		if t := f.Value.Type(); t != "bool" {
-			name += ` \fI` + escape(t) + `\fR`
+		// UnquoteUsage takes a `word` of the description as the name of the
+		// value, as the help of the command does, and drops the quotes.
+		varname, usage := pflag.UnquoteUsage(f)
+		if varname != "" {
+			name += ` \fI` + escape(varname) + `\fR`
 		}
 		b.WriteString(name + "\n")
-		b.WriteString(escape(f.Usage))
+		b.WriteString(escape(usage))
 		if d := f.DefValue; d != "" && d != "false" && d != "[]" && d != "0s" && d != "0" {
 			b.WriteString(" (" + escape(d) + ")")
 		}
