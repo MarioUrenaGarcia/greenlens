@@ -79,6 +79,14 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the energy of each team or application for showback.
 - `/api/v1/usage` splits the use by backend, model or consumer in buckets,
   and the backends carry their root processes.
+- Benchmarks from the interface: the agent runs one at a time with the
+  defaults of `greenlens bench`, measures it with its own samples and the
+  energy it attributes to the backend, reports its progress on the live
+  stream and can cancel it. The benchmarks screen lists the stored ones,
+  compares two with the energy, emissions and cost saved over a number of
+  tokens, and exports them as CSV or JSON. `POST /api/v1/benchmarks` now
+  starts a benchmark; results measured by `greenlens bench` go to
+  `/api/v1/benchmarks/results`.
 - A live stream of server-sent events on `/api/v1/stream`: the power of
   every domain with each sample and the use of the backends with each
   usage interval, resumable with `Last-Event-ID` from the last 15 minutes.

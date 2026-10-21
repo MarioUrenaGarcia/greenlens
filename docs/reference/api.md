@@ -17,7 +17,10 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/api/v1/backends` | viewer | Backends and models with their use since the agent started |
 | `GET` | `/api/v1/backup` | admin | Consistent copy of the database |
 | `GET` | `/api/v1/benchmarks` | viewer | Stored benchmarks, newest first |
-| `POST` | `/api/v1/benchmarks` | operator | Store the result of a benchmark |
+| `POST` | `/api/v1/benchmarks` | operator | Run a benchmark in the agent |
+| `POST` | `/api/v1/benchmarks/results` | operator | Store the result of a benchmark measured elsewhere, as greenlens bench does |
+| `GET` | `/api/v1/benchmarks/run` | viewer | State of the benchmark run by the agent |
+| `DELETE` | `/api/v1/benchmarks/run` | operator | Cancel the benchmark run by the agent |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | One stored benchmark |
 | `POST` | `/api/v1/calibrations` | operator | Store a calibration of the idle power and apply it |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Messages of one language for the graphical interface |
@@ -126,7 +129,25 @@ Role: `viewer`
 
 ### POST /api/v1/benchmarks
 
-Store the result of a benchmark.
+Run a benchmark in the agent. The agent runs one benchmark at a time with the embedded prompt set, measures it with its own samples, stores it and records it in the audit log. Its progress comes as benchmark events of the live stream.
+
+Role: `operator`
+
+**Document**: [BenchmarkRequest](#benchmarkrequest)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `202` | The benchmark started. | [BenchmarkJob](#benchmarkjob) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | A benchmark is already running. | [Error](#error) |
+
+### POST /api/v1/benchmarks/results
+
+Store the result of a benchmark measured elsewhere, as greenlens bench does.
 
 Role: `operator`
 
@@ -141,6 +162,34 @@ Role: `operator`
 | `401` | No valid session or token. | [Error](#error) |
 | `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
 | `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### GET /api/v1/benchmarks/run
+
+State of the benchmark run by the agent.
+
+Role: `viewer`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The state. | [BenchmarkJob](#benchmarkjob) |
+| `401` | No valid session or token. | [Error](#error) |
+
+### DELETE /api/v1/benchmarks/run
+
+Cancel the benchmark run by the agent.
+
+Role: `operator`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `202` | The benchmark is stopping. | [BenchmarkJob](#benchmarkjob) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | No benchmark is running. | [Error](#error) |
 
 ### GET /api/v1/benchmarks/{id}
 
@@ -314,7 +363,7 @@ Role: `viewer`
 
 ### GET /api/v1/stream
 
-Live power and use of the backends as server-sent events. A sample event, whose data is a LivePoint and whose id grows by one with each sample, follows every sample of the agent; a backends event, whose data is a Backends document, follows every usage interval. A comment keeps the connection open every 15 seconds. A client that reconnects with Last-Event-ID receives the samples it missed while they are still in memory, at most 15 minutes. A client that falls behind is disconnected and resumes the same way.
+Live power and use of the backends as server-sent events. A sample event, whose data is a LivePoint and whose id grows by one with each sample, follows every sample of the agent; a backends event, whose data is a Backends document, follows every usage interval; a benchmark event, whose data is a BenchmarkJob, follows every change of the benchmark run by the agent. A comment keeps the connection open every 15 seconds. A client that reconnects with Last-Event-ID receives the samples it missed while they are still in memory, at most 15 minutes. A client that falls behind is disconnected and resumes the same way.
 
 Role: `viewer`
 
@@ -585,6 +634,36 @@ A reproducible benchmark of a model. Only the hash of the prompts is kept.
 | `target` | object | yes | The model and the server measured. |
 | `causes` | list of string | no | Likely causes when the runs vary by more than 10%. |
 | `id` | integer | no | Id given when stored. |
+
+### BenchmarkJob
+
+The state of the benchmark run by the agent.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `run` | integer | yes | Runs finished. |
+| `runs` | integer | yes | Runs asked for. |
+| `schema_version` | integer | yes | Version of the document. |
+| `state` | `idle`, `running`, `done`, `failed`, `canceled` | yes | State. |
+| `benchmark_id` | integer | no | Id of the stored benchmark once done. |
+| `ended_at` | string (date-time) | no | End. |
+| `error` | string | no | Why it failed. |
+| `request` | [BenchmarkRequest](#benchmarkrequest) | no | A benchmark for the agent to run, with the limits of greenlens bench. |
+| `started_at` | string (date-time) | no | Start. |
+
+### BenchmarkRequest
+
+A benchmark for the agent to run, with the limits of greenlens bench.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `kind` | string | yes | Kind of the inference server. |
+| `max_tokens` | integer | yes | Tokens generated per prompt at most. |
+| `min_run_s` | number | yes | Shortest run in seconds. |
+| `model` | string | yes | Model to measure. |
+| `runs` | integer | yes | Measured runs. |
+| `warmup_s` | number | yes | Seconds of unmeasured warmup. |
+| `endpoint` | string | no | Base URL of the server; empty uses the default port of the kind. |
 
 ### BenchmarkRun
 

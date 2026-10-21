@@ -164,10 +164,24 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 		Runs:   []bench.Run{{EnergyJ: 10, DurationS: 1, GeneratedTokens: 10, JPerToken: 1}, {EnergyJ: 11, DurationS: 1, GeneratedTokens: 10, JPerToken: 1.1}},
 		Energy: sum, JPerToken: sum, GeneratedTokens: 20}
 	var saved bench.Result
-	if err := json.Unmarshal(post("saveBenchmark", sock, "POST", api.PathBenchmarks, b), &saved); err != nil || saved.ID == 0 {
+	if err := json.Unmarshal(post("saveBenchmark", sock, "POST", api.PathBenchResults, b), &saved); err != nil || saved.ID == 0 {
 		t.Fatalf("benchmark not saved: %v", err)
 	}
-	post("saveBenchmark", sock, "POST", api.PathBenchmarks, map[string]any{"runs": []any{}})
+	post("saveBenchmark", sock, "POST", api.PathBenchResults, map[string]any{"runs": []any{}})
+
+	// The agent runs a benchmark of its own against a fake server.
+	up := benchServer(t)
+	get("benchmarkRun", sock, api.PathBenchRun)
+	post("cancelBenchmark", sock, "DELETE", api.PathBenchRun, nil)
+	post("startBenchmark", sock, "POST", api.PathBenchmarks, api.BenchmarkRequest{Kind: "ollama", Model: "qwen2.5:0.5b"})
+	req := api.BenchmarkRequest{Kind: "ollama", Endpoint: up.URL, Model: "qwen2.5:0.5b", Runs: 2, MaxTokens: 16}
+	post("startBenchmark", sock, "POST", api.PathBenchmarks, req)
+	post("startBenchmark", sock, "POST", api.PathBenchmarks, req)
+	run := waitBenchmark(t, sock)
+	if run.State != "done" || run.BenchmarkID == 0 {
+		t.Fatalf("benchmark run %+v", run)
+	}
+	get("benchmarkRun", sock, api.PathBenchRun)
 	get("benchmarks", sock, api.PathBenchmarks)
 	get("benchmarks", sock, api.PathBenchmarks+"?limit=0")
 	get("benchmark", sock, api.PathBenchmarks+"/"+strconv.FormatInt(saved.ID, 10))

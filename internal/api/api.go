@@ -31,6 +31,8 @@ const (
 	PathStream       = "/api/v1/stream"
 	PathBackends     = "/api/v1/backends"
 	PathBenchmarks   = "/api/v1/benchmarks"
+	PathBenchRun     = "/api/v1/benchmarks/run"
+	PathBenchResults = "/api/v1/benchmarks/results"
 	PathBackup       = "/api/v1/backup"
 	PathTokens       = "/api/v1/tokens" //nolint:gosec // a path, not a credential
 	PathAudit        = "/api/v1/audit"
@@ -343,4 +345,28 @@ type SessionCode struct {
 type Audit struct {
 	SchemaVersion int                `json:"schema_version"`
 	Entries       []store.AuditEntry `json:"entries"`
+}
+
+// BenchmarkRequest asks the agent to run a benchmark.
+type BenchmarkRequest struct {
+	Kind      string  `json:"kind"`
+	Endpoint  string  `json:"endpoint,omitempty"`
+	Model     string  `json:"model"`
+	Runs      int     `json:"runs"`
+	MaxTokens int     `json:"max_tokens"`
+	WarmupS   float64 `json:"warmup_s"`
+	MinRunS   float64 `json:"min_run_s"`
+}
+
+// BenchmarkJob is the state of the benchmark run by the agent.
+type BenchmarkJob struct {
+	SchemaVersion int               `json:"schema_version"`
+	State         string            `json:"state"`
+	Run           int               `json:"run"`
+	Runs          int               `json:"runs"`
+	Request       *BenchmarkRequest `json:"request,omitempty"`
+	StartedAt     *time.Time        `json:"started_at,omitempty"`
+	EndedAt       *time.Time        `json:"ended_at,omitempty"`
+	BenchmarkID   int64             `json:"benchmark_id,omitempty"`
+	Error         string            `json:"error,omitempty"`
 }

@@ -104,6 +104,7 @@ type Agent struct {
 	collectors *prometheus.Collectors
 
 	stream *stream
+	bjob   *benchJob
 	// stopping is closed when the agent shuts down, so live streams end
 	// instead of holding up the shutdown of the servers.
 	stopping chan struct{}
@@ -189,6 +190,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		// The statistics outlive the sampler, which a reload replaces.
 		collectors: prometheus.NewCollectors(),
 		stream:     newStream(),
+		bjob:       newBenchJob(),
 		stopping:   make(chan struct{}),
 		consumerJ:  map[string]float64{},
 		idle:       calibrate.NewIdleTracker(),
@@ -427,6 +429,7 @@ func (a *Agent) serve(ctx context.Context) error {
 	// The parent context is already canceled; closing still needs time.
 	shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownGrace)
 	defer cancel()
+	a.stopBenchmark(shutdown)
 	// The last, partial interval is stored too.
 	a.cutUsage(time.Now())
 	close(a.cuts)
@@ -585,7 +588,8 @@ func (a *Agent) step(ctx context.Context) {
 		a.mu.Unlock()
 		if ok {
 			a.accountSelf(s, busy)
-			a.accountBackends(s, busy)
+			got, ticks := a.accountBackends(s, busy)
+			a.bjob.observe(s, got, ticks, busy)
 		}
 	}
 	a.mu.Lock()

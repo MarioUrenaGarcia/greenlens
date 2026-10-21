@@ -17,7 +17,10 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/api/v1/backends` | viewer | Backends y modelos con su uso desde que inició el agente |
 | `GET` | `/api/v1/backup` | admin | Copia consistente de la base de datos |
 | `GET` | `/api/v1/benchmarks` | viewer | Benchmarks guardados, del más reciente al más antiguo |
-| `POST` | `/api/v1/benchmarks` | operator | Guarda el resultado de un benchmark |
+| `POST` | `/api/v1/benchmarks` | operator | Ejecuta un benchmark en el agente |
+| `POST` | `/api/v1/benchmarks/results` | operator | Guarda el resultado de un benchmark medido en otro lado, como hace greenlens bench |
+| `GET` | `/api/v1/benchmarks/run` | viewer | Estado del benchmark que ejecuta el agente |
+| `DELETE` | `/api/v1/benchmarks/run` | operator | Cancela el benchmark que ejecuta el agente |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | Un benchmark guardado |
 | `POST` | `/api/v1/calibrations` | operator | Guarda una calibración de la potencia en reposo y la aplica |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Mensajes de un idioma para la interfaz gráfica |
@@ -126,7 +129,25 @@ Rol: `viewer`
 
 ### POST /api/v1/benchmarks
 
-Guarda el resultado de un benchmark.
+Ejecuta un benchmark en el agente. El agente ejecuta un benchmark a la vez con el conjunto de prompts incluido, lo mide con sus propias muestras, lo guarda y lo registra en la auditoría. Su avance llega como eventos benchmark del flujo en vivo.
+
+Rol: `operator`
+
+**Documento**: [BenchmarkRequest](#benchmarkrequest)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `202` | El benchmark comenzó. | [BenchmarkJob](#benchmarkjob) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | Ya hay un benchmark en ejecución. | [Error](#error) |
+
+### POST /api/v1/benchmarks/results
+
+Guarda el resultado de un benchmark medido en otro lado, como hace greenlens bench.
 
 Rol: `operator`
 
@@ -141,6 +162,34 @@ Rol: `operator`
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
 | `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
 | `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### GET /api/v1/benchmarks/run
+
+Estado del benchmark que ejecuta el agente.
+
+Rol: `viewer`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El estado. | [BenchmarkJob](#benchmarkjob) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+
+### DELETE /api/v1/benchmarks/run
+
+Cancela el benchmark que ejecuta el agente.
+
+Rol: `operator`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `202` | El benchmark se está deteniendo. | [BenchmarkJob](#benchmarkjob) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | No hay ningún benchmark en ejecución. | [Error](#error) |
 
 ### GET /api/v1/benchmarks/{id}
 
@@ -314,7 +363,7 @@ Rol: `viewer`
 
 ### GET /api/v1/stream
 
-Potencia en vivo y uso de los backends como eventos enviados por el servidor. Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en uno con cada muestra, sigue a cada muestra del agente; un evento backends, cuyos datos son un documento Backends, sigue a cada intervalo de uso. Un comentario mantiene abierta la conexión cada 15 segundos. Un cliente que se reconecta con Last-Event-ID recibe las muestras que se perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que se atrasa se desconecta y continúa de la misma forma.
+Potencia en vivo y uso de los backends como eventos enviados por el servidor. Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en uno con cada muestra, sigue a cada muestra del agente; un evento backends, cuyos datos son un documento Backends, sigue a cada intervalo de uso; un evento benchmark, cuyos datos son un BenchmarkJob, sigue a cada cambio del benchmark que ejecuta el agente. Un comentario mantiene abierta la conexión cada 15 segundos. Un cliente que se reconecta con Last-Event-ID recibe las muestras que se perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que se atrasa se desconecta y continúa de la misma forma.
 
 Rol: `viewer`
 
@@ -585,6 +634,36 @@ Un benchmark reproducible de un modelo. Solo se guarda el hash de los prompts.
 | `target` | object | sí | El modelo y el servidor medidos. |
 | `causes` | lista de string | no | Causas probables cuando las corridas varían más del 10%. |
 | `id` | integer | no | Id asignado al guardarlo. |
+
+### BenchmarkJob
+
+El estado del benchmark que ejecuta el agente.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `run` | integer | sí | Corridas terminadas. |
+| `runs` | integer | sí | Corridas solicitadas. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `state` | `idle`, `running`, `done`, `failed`, `canceled` | sí | Estado. |
+| `benchmark_id` | integer | no | Id del benchmark guardado al terminar. |
+| `ended_at` | string (date-time) | no | Fin. |
+| `error` | string | no | Por qué falló. |
+| `request` | [BenchmarkRequest](#benchmarkrequest) | no | Un benchmark para que lo ejecute el agente, con los límites de greenlens bench. |
+| `started_at` | string (date-time) | no | Inicio. |
+
+### BenchmarkRequest
+
+Un benchmark para que lo ejecute el agente, con los límites de greenlens bench.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `kind` | string | sí | Tipo del servidor de inferencia. |
+| `max_tokens` | integer | sí | Tokens generados por prompt como máximo. |
+| `min_run_s` | number | sí | Corrida más corta en segundos. |
+| `model` | string | sí | Modelo a medir. |
+| `runs` | integer | sí | Corridas medidas. |
+| `warmup_s` | number | sí | Segundos de calentamiento sin medir. |
+| `endpoint` | string | no | URL base del servidor; vacía usa el puerto predeterminado del tipo. |
 
 ### BenchmarkRun
 

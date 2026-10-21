@@ -19,6 +19,7 @@ import {
 import { href, useRoute } from "./router";
 import { About, selfPower } from "./screens/about";
 import { BackendsScreen } from "./screens/backends";
+import { Benchmarks } from "./screens/benchmarks";
 import { Consumers } from "./screens/consumers";
 import { Login } from "./screens/login";
 import { Models } from "./screens/models";
@@ -37,6 +38,11 @@ const screens: Screen[] = [
   { id: "models", icon: icons.models, render: ({ path }) => <Models path={path} /> },
   { id: "backends", icon: icons.backends, render: () => <BackendsScreen /> },
   { id: "consumers", icon: icons.consumers, render: () => <Consumers /> },
+  {
+    id: "benchmarks",
+    icon: icons.benchmarks,
+    render: ({ status, session }) => <Benchmarks status={status} role={session.role} />,
+  },
   { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
   { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
 ];

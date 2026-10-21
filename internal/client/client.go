@@ -134,7 +134,7 @@ func (c *Client) SaveBenchmark(ctx context.Context, b bench.Result) (bench.Resul
 	if err != nil {
 		return b, err
 	}
-	u := url.URL{Scheme: "http", Host: "agent", Path: api.PathBenchmarks}
+	u := url.URL{Scheme: "http", Host: "agent", Path: api.PathBenchResults}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
 	if err != nil {
 		return b, err

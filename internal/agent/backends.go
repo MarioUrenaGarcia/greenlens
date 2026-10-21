@@ -99,8 +99,9 @@ func (a *Agent) refreshBackends(ctx context.Context) {
 // Linux fixes at 100 on every architecture.
 const clockTicks = 100
 
-// accountBackends adds the share of every backend in one sample.
-func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
+// accountBackends adds the share of every backend in one sample and
+// returns that share and the processor ticks of each backend.
+func (a *Agent) accountBackends(s sampler.Sample, busy uint64) (map[string]float64, map[string]uint64) {
 	ticks := a.tracker.Sample()
 	a.mu.RLock()
 	base := attribution.Baseline{}
@@ -188,6 +189,7 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 	if a.meter != nil {
 		a.meter.Tick(s.Time, s.Interval, got)
 	}
+	return got, ticks
 }
 
 // cutUsage closes a usage interval and hands it to the worker, which reads

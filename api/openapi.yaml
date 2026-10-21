@@ -268,7 +268,9 @@ paths:
       description: >-
         A sample event, whose data is a LivePoint and whose id grows by one with
         each sample, follows every sample of the agent; a backends event, whose
-        data is a Backends document, follows every usage interval. A comment
+        data is a Backends document, follows every usage interval; a benchmark
+        event, whose data is a BenchmarkJob, follows every change of the
+        benchmark run by the agent. A comment
         keeps the connection open every 15 seconds. A client that reconnects
         with Last-Event-ID receives the samples it missed while they are still
         in memory, at most 15 minutes. A client that falls behind is
@@ -277,7 +279,8 @@ paths:
         Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en
         uno con cada muestra, sigue a cada muestra del agente; un evento
         backends, cuyos datos son un documento Backends, sigue a cada intervalo
-        de uso. Un comentario mantiene abierta la conexión cada 15 segundos. Un
+        de uso; un evento benchmark, cuyos datos son un BenchmarkJob, sigue a
+        cada cambio del benchmark que ejecuta el agente. Un comentario mantiene abierta la conexión cada 15 segundos. Un
         cliente que se reconecta con Last-Event-ID recibe las muestras que se
         perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que
         se atrasa se desconecta y continúa de la misma forma.
@@ -354,10 +357,82 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "500": {$ref: "#/components/responses/ServerError"}
     post:
+      operationId: startBenchmark
+      tags: [benchmarks]
+      summary: Run a benchmark in the agent
+      x-summary-es: Ejecuta un benchmark en el agente
+      description: >-
+        The agent runs one benchmark at a time with the embedded prompt set, measures
+        it with its own samples, stores it and records it in the audit log. Its
+        progress comes as benchmark events of the live stream.
+      x-description-es: >-
+        El agente ejecuta un benchmark a la vez con el conjunto de prompts incluido,
+        lo mide con sus propias muestras, lo guarda y lo registra en la auditoría.
+        Su avance llega como eventos benchmark del flujo en vivo.
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/BenchmarkRequest"}
+      responses:
+        "202":
+          description: The benchmark started.
+          x-description-es: El benchmark comenzó.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BenchmarkJob"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: A benchmark is already running.
+          x-description-es: Ya hay un benchmark en ejecución.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /api/v1/benchmarks/run:
+    get:
+      operationId: benchmarkRun
+      tags: [benchmarks]
+      summary: State of the benchmark run by the agent
+      x-summary-es: Estado del benchmark que ejecuta el agente
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The state.
+          x-description-es: El estado.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BenchmarkJob"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    delete:
+      operationId: cancelBenchmark
+      tags: [benchmarks]
+      summary: Cancel the benchmark run by the agent
+      x-summary-es: Cancela el benchmark que ejecuta el agente
+      x-greenlens-role: operator
+      responses:
+        "202":
+          description: The benchmark is stopping.
+          x-description-es: El benchmark se está deteniendo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BenchmarkJob"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: No benchmark is running.
+          x-description-es: No hay ningún benchmark en ejecución.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /api/v1/benchmarks/results:
+    post:
       operationId: saveBenchmark
       tags: [benchmarks]
-      summary: Store the result of a benchmark
-      x-summary-es: Guarda el resultado de un benchmark
+      summary: Store the result of a benchmark measured elsewhere, as greenlens bench does
+      x-summary-es: Guarda el resultado de un benchmark medido en otro lado, como hace greenlens bench
       x-greenlens-role: operator
       requestBody:
         required: true
@@ -1225,6 +1300,38 @@ components:
           description: Likely causes when the runs vary by more than 10%.
           x-description-es: Causas probables cuando las corridas varían más del 10%.
           items: {type: string}
+
+    BenchmarkRequest:
+      type: object
+      description: A benchmark for the agent to run, with the limits of greenlens bench.
+      x-description-es: Un benchmark para que lo ejecute el agente, con los límites de greenlens bench.
+      additionalProperties: false
+      required: [kind, model, runs, max_tokens, warmup_s, min_run_s]
+      properties:
+        kind: {type: string, description: Kind of the inference server., x-description-es: Tipo del servidor de inferencia.}
+        endpoint: {type: string, description: Base URL of the server; empty uses the default port of the kind., x-description-es: URL base del servidor; vacía usa el puerto predeterminado del tipo.}
+        model: {type: string, description: Model to measure., x-description-es: Modelo a medir.}
+        runs: {type: integer, minimum: 2, maximum: 100, description: Measured runs., x-description-es: Corridas medidas.}
+        max_tokens: {type: integer, minimum: 1, maximum: 32768, description: Tokens generated per prompt at most., x-description-es: Tokens generados por prompt como máximo.}
+        warmup_s: {type: number, minimum: 0, maximum: 600, description: Seconds of unmeasured warmup., x-description-es: Segundos de calentamiento sin medir.}
+        min_run_s: {type: number, minimum: 0, maximum: 3600, description: Shortest run in seconds., x-description-es: Corrida más corta en segundos.}
+
+    BenchmarkJob:
+      type: object
+      description: The state of the benchmark run by the agent.
+      x-description-es: El estado del benchmark que ejecuta el agente.
+      additionalProperties: false
+      required: [schema_version, state, run, runs]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        state: {type: string, enum: [idle, running, done, failed, canceled], description: State., x-description-es: Estado.}
+        run: {type: integer, description: Runs finished., x-description-es: Corridas terminadas.}
+        runs: {type: integer, description: Runs asked for., x-description-es: Corridas solicitadas.}
+        request: {$ref: "#/components/schemas/BenchmarkRequest"}
+        started_at: {type: string, format: date-time, description: Start., x-description-es: Inicio.}
+        ended_at: {type: string, format: date-time, description: End., x-description-es: Fin.}
+        benchmark_id: {type: integer, description: Id of the stored benchmark once done., x-description-es: Id del benchmark guardado al terminar.}
+        error: {type: string, description: Why it failed., x-description-es: Por qué falló.}
 
     Benchmarks:
       type: object

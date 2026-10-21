@@ -6,17 +6,18 @@
 // received when the page is shown again.
 
 import { useEffect, useState } from "preact/hooks";
-import type { Backends, LivePoint } from "./types";
+import type { BenchmarkJob, Backends, LivePoint } from "./types";
 
 export const liveWindowMs = 15 * 60 * 1000;
 
 interface State {
   points: LivePoint[];
   backends: Backends | null;
+  benchmark: BenchmarkJob | null;
   connected: boolean;
 }
 
-let state: State = { points: [], backends: null, connected: false };
+let state: State = { points: [], backends: null, benchmark: null, connected: false };
 let lastId = 0;
 let source: EventSource | null = null;
 let throttle = 0;
@@ -62,6 +63,10 @@ function connect(): void {
   });
   es.addEventListener("backends", (e: MessageEvent<string>) => {
     state = { ...state, backends: JSON.parse(e.data) as Backends };
+    emit();
+  });
+  es.addEventListener("benchmark", (e: MessageEvent<string>) => {
+    state = { ...state, benchmark: JSON.parse(e.data) as BenchmarkJob };
     emit();
   });
 }

@@ -182,3 +182,59 @@ export interface BackendUsage {
 export interface ErrorBody {
   error: string;
 }
+
+export interface Summary {
+  n: number;
+  mean: number;
+  stddev: number;
+  cv: number;
+  ci95: number;
+}
+
+export interface Benchmark {
+  id?: number;
+  started_at: string;
+  ended_at: string;
+  target: { kind: string; endpoint: string; model: string };
+  params: {
+    max_tokens: number;
+    temperature: number;
+    seed: number;
+    runs: number;
+    warmup_s: number;
+    min_run_s: number;
+    passes: number;
+  };
+  prompt_set_sha256: string;
+  prompts: number;
+  context: { cpu?: string; gpus?: string[]; governor?: string; other_cpu_share: number; throttled?: boolean };
+  runs: { energy_j: number; duration_s: number; generated_tokens: number; j_per_generated_token: number }[];
+  basis: "backend" | "dynamic" | "total";
+  calibrated: boolean;
+  energy_j: Summary;
+  j_per_generated_token: Summary;
+  generated_tokens: number;
+  causes?: string[];
+}
+
+export interface BenchmarkRequest {
+  kind: string;
+  endpoint?: string;
+  model: string;
+  runs: number;
+  max_tokens: number;
+  warmup_s: number;
+  min_run_s: number;
+}
+
+export interface BenchmarkJob {
+  schema_version: number;
+  state: "idle" | "running" | "done" | "failed" | "canceled";
+  run: number;
+  runs: number;
+  request?: BenchmarkRequest;
+  started_at?: string;
+  ended_at?: string;
+  benchmark_id?: number;
+  error?: string;
+}
