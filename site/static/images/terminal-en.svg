@@ -3,58 +3,59 @@
 text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:14px;white-space:pre}
 .o{fill:#E8F7EF}.c{fill:#E8F7EF}.p{fill:#34D399}.e{fill:#F2A541}.m{fill:#9CC4AF}
 @keyframes cur{0%,49%{opacity:1}50%,100%{opacity:0}}.cur{animation:cur 1s steps(1) infinite}
-@keyframes s0{0%,3.556%{opacity:0}3.562%,96.438%{opacity:1}100%{opacity:0}}.s0{animation:s0 16845ms linear infinite}
-@keyframes t0{0%,3.562%{transform:translateX(0);animation-timing-function:steps(16,end)}8.786%,11.451%{transform:translateX(134.4px);opacity:1}11.457%,100%{transform:translateX(134.4px);opacity:0}}.t0{animation:t0 16845ms linear infinite}
-@keyframes s1{0%,11.451%{opacity:0}11.457%,96.438%{opacity:1}100%{opacity:0}}.s1{animation:s1 16845ms linear infinite}
-@keyframes s2{0%,11.659%{opacity:0}11.665%,96.438%{opacity:1}100%{opacity:0}}.s2{animation:s2 16845ms linear infinite}
-@keyframes s4{0%,12.075%{opacity:0}12.081%,96.438%{opacity:1}100%{opacity:0}}.s4{animation:s4 16845ms linear infinite}
-@keyframes s5{0%,12.283%{opacity:0}12.289%,96.438%{opacity:1}100%{opacity:0}}.s5{animation:s5 16845ms linear infinite}
-@keyframes s6{0%,12.490%{opacity:0}12.496%,96.438%{opacity:1}100%{opacity:0}}.s6{animation:s6 16845ms linear infinite}
-@keyframes s8{0%,12.906%{opacity:0}12.912%,96.438%{opacity:1}100%{opacity:0}}.s8{animation:s8 16845ms linear infinite}
-@keyframes s9{0%,13.114%{opacity:0}13.120%,96.438%{opacity:1}100%{opacity:0}}.s9{animation:s9 16845ms linear infinite}
-@keyframes s10{0%,13.321%{opacity:0}13.327%,96.438%{opacity:1}100%{opacity:0}}.s10{animation:s10 16845ms linear infinite}
-@keyframes s11{0%,13.529%{opacity:0}13.535%,96.438%{opacity:1}100%{opacity:0}}.s11{animation:s11 16845ms linear infinite}
-@keyframes s12{0%,13.737%{opacity:0}13.743%,96.438%{opacity:1}100%{opacity:0}}.s12{animation:s12 16845ms linear infinite}
-@keyframes s13{0%,13.945%{opacity:0}13.951%,96.438%{opacity:1}100%{opacity:0}}.s13{animation:s13 16845ms linear infinite}
-@keyframes s14{0%,14.153%{opacity:0}14.159%,96.438%{opacity:1}100%{opacity:0}}.s14{animation:s14 16845ms linear infinite}
-@keyframes s15{0%,14.360%{opacity:0}14.366%,96.438%{opacity:1}100%{opacity:0}}.s15{animation:s15 16845ms linear infinite}
-@keyframes s16{0%,14.568%{opacity:0}14.574%,96.438%{opacity:1}100%{opacity:0}}.s16{animation:s16 16845ms linear infinite}
-@keyframes s17{0%,14.776%{opacity:0}14.782%,96.438%{opacity:1}100%{opacity:0}}.s17{animation:s17 16845ms linear infinite}
-@keyframes s18{0%,14.984%{opacity:0}14.990%,96.438%{opacity:1}100%{opacity:0}}.s18{animation:s18 16845ms linear infinite}
-@keyframes s19{0%,15.191%{opacity:0}15.197%,96.438%{opacity:1}100%{opacity:0}}.s19{animation:s19 16845ms linear infinite}
-@keyframes s20{0%,15.399%{opacity:0}15.405%,96.438%{opacity:1}100%{opacity:0}}.s20{animation:s20 16845ms linear infinite}
-@keyframes s21{0%,15.607%{opacity:0}15.613%,96.438%{opacity:1}100%{opacity:0}}.s21{animation:s21 16845ms linear infinite}
-@keyframes s22{0%,15.815%{opacity:0}15.821%,96.438%{opacity:1}100%{opacity:0}}.s22{animation:s22 16845ms linear infinite}
-@keyframes s23{0%,16.023%{opacity:0}16.028%,96.438%{opacity:1}100%{opacity:0}}.s23{animation:s23 16845ms linear infinite}
-@keyframes s24{0%,16.230%{opacity:0}16.236%,96.438%{opacity:1}100%{opacity:0}}.s24{animation:s24 16845ms linear infinite}
-@keyframes s25{0%,16.438%{opacity:0}16.444%,96.438%{opacity:1}100%{opacity:0}}.s25{animation:s25 16845ms linear infinite}
-@keyframes s26{0%,16.646%{opacity:0}16.652%,96.438%{opacity:1}100%{opacity:0}}.s26{animation:s26 16845ms linear infinite}
-@keyframes s27{0%,16.854%{opacity:0}16.860%,96.438%{opacity:1}100%{opacity:0}}.s27{animation:s27 16845ms linear infinite}
-@keyframes s29{0%,17.269%{opacity:0}17.275%,96.438%{opacity:1}100%{opacity:0}}.s29{animation:s29 16845ms linear infinite}
-@keyframes s30{0%,17.477%{opacity:0}17.483%,96.438%{opacity:1}100%{opacity:0}}.s30{animation:s30 16845ms linear infinite}
-@keyframes s31{0%,17.685%{opacity:0}17.691%,96.438%{opacity:1}100%{opacity:0}}.s31{animation:s31 16845ms linear infinite}
-@keyframes s32{0%,17.893%{opacity:0}17.898%,96.438%{opacity:1}100%{opacity:0}}.s32{animation:s32 16845ms linear infinite}
-@keyframes s33{0%,18.100%{opacity:0}18.106%,96.438%{opacity:1}100%{opacity:0}}.s33{animation:s33 16845ms linear infinite}
-@keyframes s34{0%,18.308%{opacity:0}18.314%,96.438%{opacity:1}100%{opacity:0}}.s34{animation:s34 16845ms linear infinite}
-@keyframes s35{0%,18.516%{opacity:0}18.522%,96.438%{opacity:1}100%{opacity:0}}.s35{animation:s35 16845ms linear infinite}
-@keyframes s36{0%,18.724%{opacity:0}18.730%,96.438%{opacity:1}100%{opacity:0}}.s36{animation:s36 16845ms linear infinite}
-@keyframes s37{0%,18.931%{opacity:0}18.937%,96.438%{opacity:1}100%{opacity:0}}.s37{animation:s37 16845ms linear infinite}
-@keyframes s38{0%,19.139%{opacity:0}19.145%,96.438%{opacity:1}100%{opacity:0}}.s38{animation:s38 16845ms linear infinite}
-@keyframes s39{0%,19.347%{opacity:0}19.353%,96.438%{opacity:1}100%{opacity:0}}.s39{animation:s39 16845ms linear infinite}
-@keyframes s40{0%,19.555%{opacity:0}19.561%,96.438%{opacity:1}100%{opacity:0}}.s40{animation:s40 16845ms linear infinite}
-@keyframes s41{0%,19.763%{opacity:0}19.768%,96.438%{opacity:1}100%{opacity:0}}.s41{animation:s41 16845ms linear infinite}
-@keyframes s43{0%,20.178%{opacity:0}20.184%,96.438%{opacity:1}100%{opacity:0}}.s43{animation:s43 16845ms linear infinite}
-@keyframes s45{0%,33.446%{opacity:0}33.452%,96.438%{opacity:1}100%{opacity:0}}.s45{animation:s45 16845ms linear infinite}
-@keyframes t45{0%,33.452%{transform:translateX(0);animation-timing-function:steps(16,end)}38.676%,41.342%{transform:translateX(134.4px);opacity:1}41.348%,100%{transform:translateX(134.4px);opacity:0}}.t45{animation:t45 16845ms linear infinite}
-@keyframes s46{0%,41.342%{opacity:0}41.348%,96.438%{opacity:1}100%{opacity:0}}.s46{animation:s46 16845ms linear infinite}
-@keyframes s47{0%,41.549%{opacity:0}41.555%,96.438%{opacity:1}100%{opacity:0}}.s47{animation:s47 16845ms linear infinite}
-@keyframes s48{0%,41.757%{opacity:0}41.763%,96.438%{opacity:1}100%{opacity:0}}.s48{animation:s48 16845ms linear infinite}
-@keyframes s50{0%,55.025%{opacity:0}55.031%,96.438%{opacity:1}100%{opacity:0}}.s50{animation:s50 16845ms linear infinite}
-@keyframes t50{0%,55.031%{transform:translateX(0);animation-timing-function:steps(24,end)}62.867%,65.533%{transform:translateX(201.6px);opacity:1}65.539%,100%{transform:translateX(201.6px);opacity:0}}.t50{animation:t50 16845ms linear infinite}
-@keyframes s51{0%,65.533%{opacity:0}65.539%,96.438%{opacity:1}100%{opacity:0}}.s51{animation:s51 16845ms linear infinite}
-@keyframes s52{0%,65.741%{opacity:0}65.747%,96.438%{opacity:1}100%{opacity:0}}.s52{animation:s52 16845ms linear infinite}
-@keyframes s53{0%,65.948%{opacity:0}65.954%,96.438%{opacity:1}100%{opacity:0}}.s53{animation:s53 16845ms linear infinite}
-@keyframes scroll{0%{transform:translateY(0)}14.277%{transform:translateY(-0.0px)}14.990%{transform:translateY(-20.0px)}15.197%{transform:translateY(-40.0px)}15.405%{transform:translateY(-60.0px)}15.613%{transform:translateY(-80.0px)}15.821%{transform:translateY(-100.0px)}16.028%{transform:translateY(-120.0px)}16.236%{transform:translateY(-140.0px)}16.444%{transform:translateY(-160.0px)}16.652%{transform:translateY(-180.0px)}16.860%{transform:translateY(-200.0px)}17.067%{transform:translateY(-220.0px)}17.275%{transform:translateY(-240.0px)}17.483%{transform:translateY(-260.0px)}17.691%{transform:translateY(-280.0px)}17.898%{transform:translateY(-300.0px)}18.106%{transform:translateY(-320.0px)}18.314%{transform:translateY(-340.0px)}18.522%{transform:translateY(-360.0px)}18.730%{transform:translateY(-380.0px)}18.937%{transform:translateY(-400.0px)}19.145%{transform:translateY(-420.0px)}19.353%{transform:translateY(-440.0px)}19.561%{transform:translateY(-460.0px)}19.768%{transform:translateY(-480.0px)}19.976%{transform:translateY(-500.0px)}20.184%{transform:translateY(-520.0px)}20.392%{transform:translateY(-540.0px)}32.740%{transform:translateY(-540.0px)}33.452%{transform:translateY(-560.0px)}40.635%{transform:translateY(-560.0px)}41.348%{transform:translateY(-580.0px)}41.555%{transform:translateY(-600.0px)}41.763%{transform:translateY(-620.0px)}41.971%{transform:translateY(-640.0px)}54.319%{transform:translateY(-640.0px)}55.031%{transform:translateY(-660.0px)}64.826%{transform:translateY(-660.0px)}65.539%{transform:translateY(-680.0px)}65.747%{transform:translateY(-700.0px)}65.954%{transform:translateY(-720.0px)}66.162%{transform:translateY(-740.0px)}96.438%{transform:translateY(-740.0px)}100%{transform:translateY(-740.0px)}}.scroll{animation:scroll 16845ms linear infinite}
+@keyframes s0{0%,3.549%{opacity:0}3.555%,96.445%{opacity:1}100%{opacity:0}}.s0{animation:s0 16880ms linear infinite}
+@keyframes t0{0%,3.555%{transform:translateX(0);animation-timing-function:steps(16,end)}8.768%,11.428%{transform:translateX(134.4px);opacity:1}11.434%,100%{transform:translateX(134.4px);opacity:0}}.t0{animation:t0 16880ms linear infinite}
+@keyframes s1{0%,11.428%{opacity:0}11.434%,96.445%{opacity:1}100%{opacity:0}}.s1{animation:s1 16880ms linear infinite}
+@keyframes s2{0%,11.635%{opacity:0}11.641%,96.445%{opacity:1}100%{opacity:0}}.s2{animation:s2 16880ms linear infinite}
+@keyframes s4{0%,12.050%{opacity:0}12.056%,96.445%{opacity:1}100%{opacity:0}}.s4{animation:s4 16880ms linear infinite}
+@keyframes s5{0%,12.257%{opacity:0}12.263%,96.445%{opacity:1}100%{opacity:0}}.s5{animation:s5 16880ms linear infinite}
+@keyframes s6{0%,12.464%{opacity:0}12.470%,96.445%{opacity:1}100%{opacity:0}}.s6{animation:s6 16880ms linear infinite}
+@keyframes s8{0%,12.879%{opacity:0}12.885%,96.445%{opacity:1}100%{opacity:0}}.s8{animation:s8 16880ms linear infinite}
+@keyframes s9{0%,13.086%{opacity:0}13.092%,96.445%{opacity:1}100%{opacity:0}}.s9{animation:s9 16880ms linear infinite}
+@keyframes s10{0%,13.294%{opacity:0}13.300%,96.445%{opacity:1}100%{opacity:0}}.s10{animation:s10 16880ms linear infinite}
+@keyframes s11{0%,13.501%{opacity:0}13.507%,96.445%{opacity:1}100%{opacity:0}}.s11{animation:s11 16880ms linear infinite}
+@keyframes s12{0%,13.709%{opacity:0}13.714%,96.445%{opacity:1}100%{opacity:0}}.s12{animation:s12 16880ms linear infinite}
+@keyframes s13{0%,13.916%{opacity:0}13.922%,96.445%{opacity:1}100%{opacity:0}}.s13{animation:s13 16880ms linear infinite}
+@keyframes s14{0%,14.123%{opacity:0}14.129%,96.445%{opacity:1}100%{opacity:0}}.s14{animation:s14 16880ms linear infinite}
+@keyframes s15{0%,14.331%{opacity:0}14.336%,96.445%{opacity:1}100%{opacity:0}}.s15{animation:s15 16880ms linear infinite}
+@keyframes s16{0%,14.538%{opacity:0}14.544%,96.445%{opacity:1}100%{opacity:0}}.s16{animation:s16 16880ms linear infinite}
+@keyframes s17{0%,14.745%{opacity:0}14.751%,96.445%{opacity:1}100%{opacity:0}}.s17{animation:s17 16880ms linear infinite}
+@keyframes s18{0%,14.953%{opacity:0}14.959%,96.445%{opacity:1}100%{opacity:0}}.s18{animation:s18 16880ms linear infinite}
+@keyframes s19{0%,15.160%{opacity:0}15.166%,96.445%{opacity:1}100%{opacity:0}}.s19{animation:s19 16880ms linear infinite}
+@keyframes s20{0%,15.367%{opacity:0}15.373%,96.445%{opacity:1}100%{opacity:0}}.s20{animation:s20 16880ms linear infinite}
+@keyframes s21{0%,15.575%{opacity:0}15.581%,96.445%{opacity:1}100%{opacity:0}}.s21{animation:s21 16880ms linear infinite}
+@keyframes s22{0%,15.782%{opacity:0}15.788%,96.445%{opacity:1}100%{opacity:0}}.s22{animation:s22 16880ms linear infinite}
+@keyframes s23{0%,15.989%{opacity:0}15.995%,96.445%{opacity:1}100%{opacity:0}}.s23{animation:s23 16880ms linear infinite}
+@keyframes s24{0%,16.197%{opacity:0}16.203%,96.445%{opacity:1}100%{opacity:0}}.s24{animation:s24 16880ms linear infinite}
+@keyframes s25{0%,16.404%{opacity:0}16.410%,96.445%{opacity:1}100%{opacity:0}}.s25{animation:s25 16880ms linear infinite}
+@keyframes s26{0%,16.611%{opacity:0}16.617%,96.445%{opacity:1}100%{opacity:0}}.s26{animation:s26 16880ms linear infinite}
+@keyframes s27{0%,16.819%{opacity:0}16.825%,96.445%{opacity:1}100%{opacity:0}}.s27{animation:s27 16880ms linear infinite}
+@keyframes s28{0%,17.026%{opacity:0}17.032%,96.445%{opacity:1}100%{opacity:0}}.s28{animation:s28 16880ms linear infinite}
+@keyframes s30{0%,17.441%{opacity:0}17.447%,96.445%{opacity:1}100%{opacity:0}}.s30{animation:s30 16880ms linear infinite}
+@keyframes s31{0%,17.648%{opacity:0}17.654%,96.445%{opacity:1}100%{opacity:0}}.s31{animation:s31 16880ms linear infinite}
+@keyframes s32{0%,17.855%{opacity:0}17.861%,96.445%{opacity:1}100%{opacity:0}}.s32{animation:s32 16880ms linear infinite}
+@keyframes s33{0%,18.063%{opacity:0}18.069%,96.445%{opacity:1}100%{opacity:0}}.s33{animation:s33 16880ms linear infinite}
+@keyframes s34{0%,18.270%{opacity:0}18.276%,96.445%{opacity:1}100%{opacity:0}}.s34{animation:s34 16880ms linear infinite}
+@keyframes s35{0%,18.477%{opacity:0}18.483%,96.445%{opacity:1}100%{opacity:0}}.s35{animation:s35 16880ms linear infinite}
+@keyframes s36{0%,18.685%{opacity:0}18.691%,96.445%{opacity:1}100%{opacity:0}}.s36{animation:s36 16880ms linear infinite}
+@keyframes s37{0%,18.892%{opacity:0}18.898%,96.445%{opacity:1}100%{opacity:0}}.s37{animation:s37 16880ms linear infinite}
+@keyframes s38{0%,19.100%{opacity:0}19.105%,96.445%{opacity:1}100%{opacity:0}}.s38{animation:s38 16880ms linear infinite}
+@keyframes s39{0%,19.307%{opacity:0}19.313%,96.445%{opacity:1}100%{opacity:0}}.s39{animation:s39 16880ms linear infinite}
+@keyframes s40{0%,19.514%{opacity:0}19.520%,96.445%{opacity:1}100%{opacity:0}}.s40{animation:s40 16880ms linear infinite}
+@keyframes s41{0%,19.722%{opacity:0}19.727%,96.445%{opacity:1}100%{opacity:0}}.s41{animation:s41 16880ms linear infinite}
+@keyframes s42{0%,19.929%{opacity:0}19.935%,96.445%{opacity:1}100%{opacity:0}}.s42{animation:s42 16880ms linear infinite}
+@keyframes s44{0%,20.344%{opacity:0}20.350%,96.445%{opacity:1}100%{opacity:0}}.s44{animation:s44 16880ms linear infinite}
+@keyframes s46{0%,33.584%{opacity:0}33.590%,96.445%{opacity:1}100%{opacity:0}}.s46{animation:s46 16880ms linear infinite}
+@keyframes t46{0%,33.590%{transform:translateX(0);animation-timing-function:steps(16,end)}38.803%,41.463%{transform:translateX(134.4px);opacity:1}41.469%,100%{transform:translateX(134.4px);opacity:0}}.t46{animation:t46 16880ms linear infinite}
+@keyframes s47{0%,41.463%{opacity:0}41.469%,96.445%{opacity:1}100%{opacity:0}}.s47{animation:s47 16880ms linear infinite}
+@keyframes s48{0%,41.671%{opacity:0}41.677%,96.445%{opacity:1}100%{opacity:0}}.s48{animation:s48 16880ms linear infinite}
+@keyframes s49{0%,41.878%{opacity:0}41.884%,96.445%{opacity:1}100%{opacity:0}}.s49{animation:s49 16880ms linear infinite}
+@keyframes s51{0%,55.118%{opacity:0}55.124%,96.445%{opacity:1}100%{opacity:0}}.s51{animation:s51 16880ms linear infinite}
+@keyframes t51{0%,55.124%{transform:translateX(0);animation-timing-function:steps(24,end)}62.944%,65.604%{transform:translateX(201.6px);opacity:1}65.610%,100%{transform:translateX(201.6px);opacity:0}}.t51{animation:t51 16880ms linear infinite}
+@keyframes s52{0%,65.604%{opacity:0}65.610%,96.445%{opacity:1}100%{opacity:0}}.s52{animation:s52 16880ms linear infinite}
+@keyframes s53{0%,65.812%{opacity:0}65.818%,96.445%{opacity:1}100%{opacity:0}}.s53{animation:s53 16880ms linear infinite}
+@keyframes s54{0%,66.019%{opacity:0}66.025%,96.445%{opacity:1}100%{opacity:0}}.s54{animation:s54 16880ms linear infinite}
+@keyframes scroll{0%{transform:translateY(0)}14.248%{transform:translateY(-0.0px)}14.959%{transform:translateY(-20.0px)}15.166%{transform:translateY(-40.0px)}15.373%{transform:translateY(-60.0px)}15.581%{transform:translateY(-80.0px)}15.788%{transform:translateY(-100.0px)}15.995%{transform:translateY(-120.0px)}16.203%{transform:translateY(-140.0px)}16.410%{transform:translateY(-160.0px)}16.617%{transform:translateY(-180.0px)}16.825%{transform:translateY(-200.0px)}17.032%{transform:translateY(-220.0px)}17.239%{transform:translateY(-240.0px)}17.447%{transform:translateY(-260.0px)}17.654%{transform:translateY(-280.0px)}17.861%{transform:translateY(-300.0px)}18.069%{transform:translateY(-320.0px)}18.276%{transform:translateY(-340.0px)}18.483%{transform:translateY(-360.0px)}18.691%{transform:translateY(-380.0px)}18.898%{transform:translateY(-400.0px)}19.105%{transform:translateY(-420.0px)}19.313%{transform:translateY(-440.0px)}19.520%{transform:translateY(-460.0px)}19.727%{transform:translateY(-480.0px)}19.935%{transform:translateY(-500.0px)}20.142%{transform:translateY(-520.0px)}20.350%{transform:translateY(-540.0px)}20.557%{transform:translateY(-560.0px)}32.879%{transform:translateY(-560.0px)}33.590%{transform:translateY(-580.0px)}40.758%{transform:translateY(-580.0px)}41.469%{transform:translateY(-600.0px)}41.677%{transform:translateY(-620.0px)}41.884%{transform:translateY(-640.0px)}42.091%{transform:translateY(-660.0px)}54.414%{transform:translateY(-660.0px)}55.124%{transform:translateY(-680.0px)}64.899%{transform:translateY(-680.0px)}65.610%{transform:translateY(-700.0px)}65.818%{transform:translateY(-720.0px)}66.025%{transform:translateY(-740.0px)}66.232%{transform:translateY(-760.0px)}96.445%{transform:translateY(-760.0px)}100%{transform:translateY(-760.0px)}}.scroll{animation:scroll 16880ms linear infinite}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 <rect width="775" height="436" rx="12" fill="#0A1F17"/>
@@ -82,37 +83,38 @@ text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mon
 <text x="22.0" y="368.0" class="o s15" textLength="462.0" lengthAdjust="spacingAndGlyphs">  config            Validate and show the configuration</text>
 <text x="22.0" y="388.0" class="o s16" textLength="512.4" lengthAdjust="spacingAndGlyphs">  doctor            Diagnose the energy sources and the setup</text>
 <text x="22.0" y="408.0" class="o s17" textLength="445.2" lengthAdjust="spacingAndGlyphs">  explain           Explain a value GreenLens reports</text>
-<text x="22.0" y="428.0" class="o s18" textLength="361.2" lengthAdjust="spacingAndGlyphs">  help              Show help for a command</text>
-<text x="22.0" y="448.0" class="o s19" textLength="537.6" lengthAdjust="spacingAndGlyphs">  license           Show the license and the third-party notices</text>
-<text x="22.0" y="468.0" class="o s20" textLength="672.0" lengthAdjust="spacingAndGlyphs">  measure           Measure the energy of a command, a process or a systemd unit</text>
-<text x="22.0" y="488.0" class="o s21" textLength="520.8" lengthAdjust="spacingAndGlyphs">  proxy             Show the state of the token-counting proxy</text>
-<text x="22.0" y="508.0" class="o s22" textLength="579.6" lengthAdjust="spacingAndGlyphs">  report            Report the energy, emissions and cost of a period</text>
-<text x="22.0" y="528.0" class="o s23" textLength="453.6" lengthAdjust="spacingAndGlyphs">  restore           Replace the database with a backup</text>
-<text x="22.0" y="548.0" class="o s24" textLength="588.0" lengthAdjust="spacingAndGlyphs">  setup-permissions Let the agent read the energy sensors without root</text>
-<text x="22.0" y="568.0" class="o s25" textLength="546.0" lengthAdjust="spacingAndGlyphs">  status            Show the power and state of the running agent</text>
-<text x="22.0" y="588.0" class="o s26" textLength="571.2" lengthAdjust="spacingAndGlyphs">  top               Show the power of the node and its backends live</text>
-<text x="22.0" y="608.0" class="o s27" textLength="453.6" lengthAdjust="spacingAndGlyphs">  version           Show version and build information</text>
-<text x="22.0" y="648.0" class="o s29" textLength="50.4" lengthAdjust="spacingAndGlyphs">Flags:</text>
-<text x="22.0" y="668.0" class="o s30" textLength="462.0" lengthAdjust="spacingAndGlyphs">      --config file     Configuration file. Defaults to</text>
-<text x="22.0" y="688.0" class="o s31" textLength="596.4" lengthAdjust="spacingAndGlyphs">                        /etc/greenlens/greenlens.yaml, then the file of</text>
-<text x="22.0" y="708.0" class="o s32" textLength="268.8" lengthAdjust="spacingAndGlyphs">                        the user</text>
-<text x="22.0" y="728.0" class="o s33" textLength="394.8" lengthAdjust="spacingAndGlyphs">  -h, --help            Show help for greenlens</text>
-<text x="22.0" y="748.0" class="o s34" textLength="604.8" lengthAdjust="spacingAndGlyphs">      --lang code       Language for messages (code: en or es). Defaults</text>
-<text x="22.0" y="768.0" class="o s35" textLength="369.6" lengthAdjust="spacingAndGlyphs">                        to the system locale</text>
-<text x="22.0" y="788.0" class="o s36" textLength="646.8" lengthAdjust="spacingAndGlyphs">      --no-color        Do not color the output; NO_COLOR has the same effect</text>
-<text x="22.0" y="808.0" class="o s37" textLength="604.8" lengthAdjust="spacingAndGlyphs">  -o, --output format   Output format (format: table, json, csv or yaml)</text>
-<text x="22.0" y="828.0" class="o s38" textLength="344.4" lengthAdjust="spacingAndGlyphs">                        (default &#34;table&#34;)</text>
-<text x="22.0" y="848.0" class="o s39" textLength="613.2" lengthAdjust="spacingAndGlyphs">  -q, --quiet           Print only the result, without progress or advice</text>
-<text x="22.0" y="868.0" class="o s40" textLength="663.6" lengthAdjust="spacingAndGlyphs">      --raw             Show values in base units (J, W, g) with full precision</text>
-<text x="22.0" y="888.0" class="o s41" textLength="663.6" lengthAdjust="spacingAndGlyphs">  -v, --verbose         Print details of every step, such as sensor read errors</text>
-<text x="22.0" y="928.0" class="o s43" textLength="588.0" lengthAdjust="spacingAndGlyphs">Run &#39;greenlens [command] --help&#39; for more information about a command.</text>
-<g class="s45"><text x="22.0" y="968.0" class="p">$</text><text x="38.8" y="968.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens verson</text><g class="t45"><rect x="38.8" y="954.0" width="151.2" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="956.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
-<text x="22.0" y="988.0" class="e s46" textLength="319.2" lengthAdjust="spacingAndGlyphs">error GL0002: unknown command &#39;verson&#39;</text>
-<text x="22.0" y="1008.0" class="m s47" textLength="411.6" lengthAdjust="spacingAndGlyphs">  cause: &#39;verson&#39; is not a command of &#39;greenlens&#39;</text>
-<text x="22.0" y="1028.0" class="m s48" textLength="722.4" lengthAdjust="spacingAndGlyphs">  fix:   did you mean &#39;version&#39;? Run &#39;greenlens --help&#39; to list the available commands</text>
-<g class="s50"><text x="22.0" y="1068.0" class="p">$</text><text x="38.8" y="1068.0" class="c" textLength="201.6" lengthAdjust="spacingAndGlyphs">greenlens version --nope</text><g class="t50"><rect x="38.8" y="1054.0" width="218.4" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="1056.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
-<text x="22.0" y="1088.0" class="e s51" textLength="294.0" lengthAdjust="spacingAndGlyphs">error GL0003: unknown flag &#39;--nope&#39;</text>
-<text x="22.0" y="1108.0" class="m s52" textLength="520.8" lengthAdjust="spacingAndGlyphs">  cause: &#39;greenlens version&#39; does not accept the flag &#39;--nope&#39;</text>
-<text x="22.0" y="1128.0" class="m s53" textLength="554.4" lengthAdjust="spacingAndGlyphs">  fix:   run &#39;greenlens version --help&#39; to list the accepted flags</text>
+<text x="22.0" y="428.0" class="o s18" textLength="453.6" lengthAdjust="spacingAndGlyphs">  export            Export measurements as CSV or JSON</text>
+<text x="22.0" y="448.0" class="o s19" textLength="361.2" lengthAdjust="spacingAndGlyphs">  help              Show help for a command</text>
+<text x="22.0" y="468.0" class="o s20" textLength="537.6" lengthAdjust="spacingAndGlyphs">  license           Show the license and the third-party notices</text>
+<text x="22.0" y="488.0" class="o s21" textLength="672.0" lengthAdjust="spacingAndGlyphs">  measure           Measure the energy of a command, a process or a systemd unit</text>
+<text x="22.0" y="508.0" class="o s22" textLength="520.8" lengthAdjust="spacingAndGlyphs">  proxy             Show the state of the token-counting proxy</text>
+<text x="22.0" y="528.0" class="o s23" textLength="579.6" lengthAdjust="spacingAndGlyphs">  report            Report the energy, emissions and cost of a period</text>
+<text x="22.0" y="548.0" class="o s24" textLength="453.6" lengthAdjust="spacingAndGlyphs">  restore           Replace the database with a backup</text>
+<text x="22.0" y="568.0" class="o s25" textLength="588.0" lengthAdjust="spacingAndGlyphs">  setup-permissions Let the agent read the energy sensors without root</text>
+<text x="22.0" y="588.0" class="o s26" textLength="546.0" lengthAdjust="spacingAndGlyphs">  status            Show the power and state of the running agent</text>
+<text x="22.0" y="608.0" class="o s27" textLength="571.2" lengthAdjust="spacingAndGlyphs">  top               Show the power of the node and its backends live</text>
+<text x="22.0" y="628.0" class="o s28" textLength="453.6" lengthAdjust="spacingAndGlyphs">  version           Show version and build information</text>
+<text x="22.0" y="668.0" class="o s30" textLength="50.4" lengthAdjust="spacingAndGlyphs">Flags:</text>
+<text x="22.0" y="688.0" class="o s31" textLength="462.0" lengthAdjust="spacingAndGlyphs">      --config file     Configuration file. Defaults to</text>
+<text x="22.0" y="708.0" class="o s32" textLength="596.4" lengthAdjust="spacingAndGlyphs">                        /etc/greenlens/greenlens.yaml, then the file of</text>
+<text x="22.0" y="728.0" class="o s33" textLength="268.8" lengthAdjust="spacingAndGlyphs">                        the user</text>
+<text x="22.0" y="748.0" class="o s34" textLength="394.8" lengthAdjust="spacingAndGlyphs">  -h, --help            Show help for greenlens</text>
+<text x="22.0" y="768.0" class="o s35" textLength="604.8" lengthAdjust="spacingAndGlyphs">      --lang code       Language for messages (code: en or es). Defaults</text>
+<text x="22.0" y="788.0" class="o s36" textLength="369.6" lengthAdjust="spacingAndGlyphs">                        to the system locale</text>
+<text x="22.0" y="808.0" class="o s37" textLength="646.8" lengthAdjust="spacingAndGlyphs">      --no-color        Do not color the output; NO_COLOR has the same effect</text>
+<text x="22.0" y="828.0" class="o s38" textLength="604.8" lengthAdjust="spacingAndGlyphs">  -o, --output format   Output format (format: table, json, csv or yaml)</text>
+<text x="22.0" y="848.0" class="o s39" textLength="344.4" lengthAdjust="spacingAndGlyphs">                        (default &#34;table&#34;)</text>
+<text x="22.0" y="868.0" class="o s40" textLength="613.2" lengthAdjust="spacingAndGlyphs">  -q, --quiet           Print only the result, without progress or advice</text>
+<text x="22.0" y="888.0" class="o s41" textLength="663.6" lengthAdjust="spacingAndGlyphs">      --raw             Show values in base units (J, W, g) with full precision</text>
+<text x="22.0" y="908.0" class="o s42" textLength="663.6" lengthAdjust="spacingAndGlyphs">  -v, --verbose         Print details of every step, such as sensor read errors</text>
+<text x="22.0" y="948.0" class="o s44" textLength="588.0" lengthAdjust="spacingAndGlyphs">Run &#39;greenlens [command] --help&#39; for more information about a command.</text>
+<g class="s46"><text x="22.0" y="988.0" class="p">$</text><text x="38.8" y="988.0" class="c" textLength="134.4" lengthAdjust="spacingAndGlyphs">greenlens verson</text><g class="t46"><rect x="38.8" y="974.0" width="151.2" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="976.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
+<text x="22.0" y="1008.0" class="e s47" textLength="319.2" lengthAdjust="spacingAndGlyphs">error GL0002: unknown command &#39;verson&#39;</text>
+<text x="22.0" y="1028.0" class="m s48" textLength="411.6" lengthAdjust="spacingAndGlyphs">  cause: &#39;verson&#39; is not a command of &#39;greenlens&#39;</text>
+<text x="22.0" y="1048.0" class="m s49" textLength="722.4" lengthAdjust="spacingAndGlyphs">  fix:   did you mean &#39;version&#39;? Run &#39;greenlens --help&#39; to list the available commands</text>
+<g class="s51"><text x="22.0" y="1088.0" class="p">$</text><text x="38.8" y="1088.0" class="c" textLength="201.6" lengthAdjust="spacingAndGlyphs">greenlens version --nope</text><g class="t51"><rect x="38.8" y="1074.0" width="218.4" height="20.0" fill="#0A1F17"/><rect class="cur" x="38.8" y="1076.0" width="8.4" height="16.0" fill="#E8F7EF" fill-opacity=".8"/></g></g>
+<text x="22.0" y="1108.0" class="e s52" textLength="294.0" lengthAdjust="spacingAndGlyphs">error GL0003: unknown flag &#39;--nope&#39;</text>
+<text x="22.0" y="1128.0" class="m s53" textLength="520.8" lengthAdjust="spacingAndGlyphs">  cause: &#39;greenlens version&#39; does not accept the flag &#39;--nope&#39;</text>
+<text x="22.0" y="1148.0" class="m s54" textLength="554.4" lengthAdjust="spacingAndGlyphs">  fix:   run &#39;greenlens version --help&#39; to list the accepted flags</text>
 </g></g>
 </svg>

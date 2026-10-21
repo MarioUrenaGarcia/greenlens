@@ -428,6 +428,27 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if code, _, errOut := runWith(t, hooks{}, nil, "compare", "--config", cfgPath, "llama3.2", "qwen"); code != 2 || !strings.Contains(errOut, "GL0005") {
 		t.Fatalf("unknown models: %d %s", code, errOut)
 	}
+	code, out, errOut = runWith(t, hooks{}, nil, "export", "energy", "--config", cfgPath, "--from", "1h", "--bucket", "1m")
+	if lines := strings.Split(strings.TrimSpace(out), "\n"); code != 0 || lines[0] != "bucket_start,channel,source,domain,quality,energy_j,samples" || len(lines) < 2 {
+		t.Fatalf("export energy: %d %s %s", code, out, errOut)
+	}
+	code, out, errOut = runWith(t, hooks{}, nil, "export", "usage", "--config", cfgPath, "--from", "1h", "--bucket", "10m", "--group", "backend", "-o", "json")
+	var ue UsageExport
+	if code != 0 || json.Unmarshal([]byte(out), &ue) != nil || ue.GroupBy != "backend" || ue.BucketMS != 600_000 || ue.Rows == nil {
+		t.Fatalf("export usage: %d %s %s", code, out, errOut)
+	}
+	code, out, errOut = runWith(t, hooks{}, nil, "export", "benchmarks", "--config", cfgPath)
+	if lines := strings.Split(strings.TrimSpace(out), "\n"); code != 0 || len(lines) != 3 || !strings.HasPrefix(lines[0], "id,started_at") {
+		t.Fatalf("export benchmarks: %d %s %s", code, out, errOut)
+	}
+	for _, args := range [][]string{{"usage", "--bucket", "30s"}, {"usage", "--from", "30d", "--bucket", "1m"}, {"usage", "--group", "team"}, {"benchmarks", "--limit", "0"}} {
+		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"export", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
+			t.Fatalf("export %v: %d %s", args, code, errOut)
+		}
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "export", "--config", cfgPath, "models"); code != 2 || !strings.Contains(errOut, "GL0002") {
+		t.Fatalf("export of an unknown dataset: %d %s", code, errOut)
+	}
 	// The agent makes the backup while it keeps measuring, and refuses to
 	// have its database replaced.
 	backup := filepath.Join(dir, "backup.db")

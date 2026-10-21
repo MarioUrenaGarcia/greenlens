@@ -605,6 +605,27 @@ start = "Start the agent again to use the restored data."
 database = "Replace this database file instead of the one of the configuration"
 no_keep = "Do not keep a copy of the current database"
 
+[cli.export]
+short = "Export measurements as CSV or JSON"
+long = "Export stored measurements for other tools: node energy per channel, usage per backend, model or consumer, and benchmarks. The output is CSV unless --output json or yaml is given; columns and fields keep the same names in every language, and values are in base units."
+
+[cli.export.energy]
+short = "Export the energy of every channel"
+long = "Export the energy of every measured channel in buckets of the period, with its source, domain, quality and number of samples, in joules."
+
+[cli.export.usage]
+short = "Export usage by backend, model or consumer"
+long = "Export the energy attributed to each backend, model or consumer, with its tokens and requests, as one total for the period or one row per bucket."
+
+[cli.export.benchmarks]
+short = "Export the stored benchmarks"
+long = "Export the stored benchmarks, newest first, with their energy per generated token, standard deviation, coefficient of variation and 95% confidence interval. The JSON output keeps every run."
+
+[cli.export.flag]
+bucket = "Size of each bucket, such as 1m, 1h or 24h, or none for one total"
+group = "Group by backend, model or consumer"
+limit = "Most benchmarks to export, up to 1000"
+
 [config.doc]
 agent_sample_interval = "How often energy is sampled, from 50ms to 60s."
 agent_data_dir = "Directory of the database. Empty: /var/lib/greenlens for the system service, $XDG_DATA_HOME/greenlens for a user."

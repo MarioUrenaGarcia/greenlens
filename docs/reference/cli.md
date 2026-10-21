@@ -291,6 +291,95 @@ greenlens explain
 greenlens explain joules_per_token
 ```
 
+## greenlens export
+
+Export stored measurements for other tools: node energy per channel, usage per backend, model or consumer, and benchmarks. The output is CSV unless --output json or yaml is given; columns and fields keep the same names in every language, and values are in base units.
+
+**Usage**
+
+```text
+greenlens export [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+## greenlens export benchmarks
+
+Export the stored benchmarks, newest first, with their energy per generated token, standard deviation, coefficient of variation and 95% confidence interval. The JSON output keeps every run.
+
+**Usage**
+
+```text
+greenlens export benchmarks [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--limit` | Most benchmarks to export, up to 1000 | `1000` |
+
+**Examples**
+
+```bash
+greenlens export benchmarks > benchmarks.csv
+greenlens export benchmarks --limit 10 --output json
+```
+
+## greenlens export energy
+
+Export the energy of every measured channel in buckets of the period, with its source, domain, quality and number of samples, in joules.
+
+**Usage**
+
+```text
+greenlens export energy [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--bucket` | Size of each bucket, such as 1m, 1h or 24h, or none for one total | `1h` |
+| `--from` | Start of the period | `24h` |
+| `--to` | End of the period | `now` |
+
+**Examples**
+
+```bash
+greenlens export energy --from 7d > energy.csv
+greenlens export energy --from 2026-10-01 --to 2026-11-01 --bucket 1m --output json
+```
+
+## greenlens export usage
+
+Export the energy attributed to each backend, model or consumer, with its tokens and requests, as one total for the period or one row per bucket.
+
+**Usage**
+
+```text
+greenlens export usage [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--bucket` | Size of each bucket, such as 1m, 1h or 24h, or none for one total | `none` |
+| `--from` | Start of the period | `24h` |
+| `--group` | Group by backend, model or consumer | `model` |
+| `--to` | End of the period | `now` |
+
+**Examples**
+
+```bash
+greenlens export usage --from 30d --group consumer > consumers.csv
+greenlens export usage --from 7d --bucket 24h --group model --output json
+```
+
 ## greenlens license
 
 Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component.

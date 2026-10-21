@@ -605,6 +605,27 @@ start = "Vuelve a iniciar el agente para usar los datos restaurados."
 database = "Reemplaza este archivo de base de datos en lugar del de la configuración"
 no_keep = "No guarda una copia de la base de datos actual"
 
+[cli.export]
+short = "Exporta mediciones en CSV o JSON"
+long = "Exporta las mediciones guardadas para otras herramientas: energía del nodo por canal, consumo por backend, modelo o consumidor, y benchmarks. La salida es CSV salvo con --output json o yaml; las columnas y los campos conservan los mismos nombres en todos los idiomas y los valores están en unidades base."
+
+[cli.export.energy]
+short = "Exporta la energía de cada canal"
+long = "Exporta la energía de cada canal medido en intervalos del periodo, con su fuente, dominio, calidad y número de muestras, en joules."
+
+[cli.export.usage]
+short = "Exporta el consumo por backend, modelo o consumidor"
+long = "Exporta la energía atribuida a cada backend, modelo o consumidor, con sus tokens y solicitudes, como un total del periodo o una fila por intervalo."
+
+[cli.export.benchmarks]
+short = "Exporta los benchmarks guardados"
+long = "Exporta los benchmarks guardados, del más reciente al más antiguo, con su energía por token generado, desviación estándar, coeficiente de variación e intervalo de confianza al 95%. La salida JSON conserva cada corrida."
+
+[cli.export.flag]
+bucket = "Tamaño de cada intervalo, como 1m, 1h o 24h, o none para un solo total"
+group = "Agrupa por backend, modelo o consumidor"
+limit = "Máximo de benchmarks a exportar, hasta 1000"
+
 [config.doc]
 agent_sample_interval = "Cada cuánto se muestrea la energía, de 50ms a 60s."
 agent_data_dir = "Directorio de la base de datos. Vacío: /var/lib/greenlens para el servicio del sistema, $XDG_DATA_HOME/greenlens para un usuario."

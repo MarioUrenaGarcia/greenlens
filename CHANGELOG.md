@@ -51,6 +51,8 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the SQLite backup interface, made by the running agent or from the file;
   a restore checks the backup first, refuses while the agent runs, keeps the
   previous database and updates older schemas.
+- `greenlens export energy`, `usage` and `benchmarks`: CSV, JSON or YAML with
+  the same column names in every language and values in base units.
 - `greenlens license`: the license, the source code of the running version
   as section 13 of the AGPL asks, and the third-party components, with their
   full texts on request.
