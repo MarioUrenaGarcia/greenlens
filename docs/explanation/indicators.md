@@ -63,7 +63,12 @@ gCO2e.
 1.0 means none. There is no default tariff, because electricity prices vary
 by tariff, region, month and hour; set `indicators.tariff.price_per_kwh` from
 your bill to see costs. Water is reported only when `indicators.wue_l_per_kwh`
-is set.
+is set. WUE relates the water of the site to the energy of the IT equipment,
+so it applies to the energy of the components without the PUE.
+
+For example, with a PUE of 1.5, a price of 2.5 per kWh and a WUE of 1.8
+L/kWh, 2 kWh of components give 2 x 444 x 1.5 = 1,332 gCO2e, a cost of 2 x
+2.5 x 1.5 = 7.50 and 2 x 1.8 = 3.6 L of water.
 
 ## Time-of-use prices
 

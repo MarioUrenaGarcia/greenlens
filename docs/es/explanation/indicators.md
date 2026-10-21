@@ -65,6 +65,12 @@ enfriamiento; 1.0 significa ninguna. No hay tarifa predeterminada, porque
 los precios de la electricidad varían por tarifa, región, mes y hora; define
 `indicators.tariff.price_per_kwh` a partir de tu recibo para ver los costos.
 El agua solo se reporta cuando se define `indicators.wue_l_per_kwh`.
+El WUE relaciona el agua del sitio con la energía del equipo de TI, así que
+se aplica a la energía de los componentes, sin el PUE.
+
+Por ejemplo, con un PUE de 1.5, un precio de 2.5 por kWh y un WUE de 1.8
+L/kWh, 2 kWh de componentes dan 2 x 444 x 1.5 = 1,332 gCO2e, un costo de
+2 x 2.5 x 1.5 = 7.50 y 2 x 1.8 = 3.6 L de agua.
 
 ## Precios por horario
 

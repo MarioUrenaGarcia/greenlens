@@ -8,7 +8,10 @@ import (
 	"testing"
 )
 
+// The case is worked by hand in the explanation of the indicators.
 func TestCompute(t *testing.T) {
+	// 2 kWh with PUE 1.5: 2 x 444 x 1.5 = 1,332 g, 2 x 2.5 x 1.5 = 7.50 of
+	// cost, and 2 x 1.8 = 3.6 L of water, without the PUE.
 	tariff, wue := 2.5, 1.8
 	f := Factors{EmissionGPerKWh: 444, PUE: 1.5, TariffPerKWh: &tariff, WUELPerKWh: &wue}
 	v := f.Compute(7.2e6) // 2 kWh

@@ -4,6 +4,7 @@
 package indicators
 
 import (
+	"math"
 	"slices"
 	"testing"
 	"time"
@@ -40,6 +41,13 @@ func TestSCIWorkedCases(t *testing.T) {
 	mm := e.Grams(24*time.Hour, 0.6, 0.9)
 	if !near(*mm, (720_000+270_000)*24/35064.0) {
 		t.Fatalf("model M = %v", *mm)
+	}
+	// Its 1.71 kWh give O = 1.71 x 1.2 x 444 = 911.09 g, and its 40,000
+	// tokens SCI = (911.09 + 677.62) / 40 = 39.72 g per 1,000 tokens.
+	om := f.Compute(1.71 * JoulesPerKWh).CO2eG
+	if sm := ComputeSCI(UnitGeneratedTokens, UnitsOf(UnitGeneratedTokens, 40_000, 0, 1), om, mm); !near(om, 911.088) ||
+		sm.Units != 40 || !near(*sm.GPerUnit, (911.088+*mm)/40) || math.Round(*sm.GPerUnit*100) != 3972 {
+		t.Fatalf("model O = %v, SCI %+v", om, sm)
 	}
 	// Per request: 900 requests.
 	if s := ComputeSCI(UnitRequest, UnitsOf(UnitRequest, 50_000, 900, 3), o, m); s.Units != 900 || !near(*s.GPerUnit, (o+*m)/900) {
