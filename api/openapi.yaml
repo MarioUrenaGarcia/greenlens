@@ -94,6 +94,29 @@ paths:
           content:
             text/plain:
               schema: {type: string}
+  /api/v1/catalogs/{lang}:
+    get:
+      operationId: catalog
+      tags: [health]
+      summary: Messages of one language for the graphical interface
+      x-summary-es: Mensajes de un idioma para la interfaz gráfica
+      x-greenlens-role: public
+      security: []
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          description: Language, such as en or es.
+          x-description-es: Idioma, como en o es.
+          schema: {type: string}
+      responses:
+        "200":
+          description: The messages.
+          x-description-es: Los mensajes.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Catalog"}
+        "404": {$ref: "#/components/responses/NotFound"}
   /api/v1/openapi.yaml:
     get:
       operationId: openapi
@@ -249,6 +272,11 @@ paths:
           in: header
           description: Id of the last sample received.
           x-description-es: Id de la última muestra recibida.
+          schema: {type: integer, minimum: 0}
+        - name: last_event_id
+          in: query
+          description: Id of the last sample received, for clients that cannot set headers.
+          x-description-es: Id de la última muestra recibida, para clientes que no pueden poner cabeceras.
           schema: {type: integer, minimum: 0}
       responses:
         "200":
@@ -640,7 +668,7 @@ components:
       description: State of the node.
       x-description-es: Estado del nodo.
       additionalProperties: false
-      required: [schema_version, version, started_at, interval_ms, sample_time, samples, estimated, domains, channels, self, idle_policy]
+      required: [schema_version, version, started_at, interval_ms, sample_time, samples, estimated, domains, channels, self, idle_policy, factors]
       properties:
         schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
         version: {type: string, description: Version of the agent., x-description-es: Versión del agente.}
@@ -667,12 +695,47 @@ components:
         calibration: {$ref: "#/components/schemas/CalibrationSummary"}
         self: {$ref: "#/components/schemas/Self"}
         idle_policy: {type: string, enum: [dynamic, proportional, full, wall], description: How idle power is shared., x-description-es: Cómo se reparte la potencia en reposo.}
+        factors: {$ref: "#/components/schemas/Factors"}
         backends:
           type: array
           description: Backends of the node.
           x-description-es: Backends del nodo.
           items: {$ref: "#/components/schemas/Backend"}
         proxy: {$ref: "#/components/schemas/Proxy"}
+
+    Factors:
+      type: object
+      description: Conversion factors in force, to turn energy into emissions, cost and water as the agent does.
+      x-description-es: Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente.
+      additionalProperties: false
+      required: [emission_g_per_kwh, emission_source, pue, currency]
+      properties:
+        emission_g_per_kwh: {type: number, description: Grid emission factor in gCO2e per kWh., x-description-es: Factor de emisión de la red en gCO2e por kWh.}
+        emission_source: {type: string, description: Where the emission factor comes from., x-description-es: De dónde viene el factor de emisión.}
+        pue: {type: number, description: Power usage effectiveness of the facility., x-description-es: Eficiencia en el uso de energía de la instalación.}
+        tariff_per_kwh: {type: number, description: Price of a kWh; absent when no tariff is configured., x-description-es: Precio de un kWh; ausente si no hay tarifa configurada.}
+        currency: {type: string, description: ISO 4217 code of the tariff., x-description-es: Código ISO 4217 de la tarifa.}
+        wue_l_per_kwh: {type: number, description: Water in liters per kWh; absent when not configured., x-description-es: Agua en litros por kWh; ausente si no está configurada.}
+
+    Catalog:
+      type: object
+      description: Messages of one language for the graphical interface, with placeholders written as {name}.
+      x-description-es: Mensajes de un idioma para la interfaz gráfica, con marcadores escritos como {name}.
+      additionalProperties: false
+      required: [schema_version, lang, languages, messages]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        lang: {type: string, description: Language of the messages., x-description-es: Idioma de los mensajes.}
+        languages:
+          type: array
+          description: Every language available.
+          x-description-es: Todos los idiomas disponibles.
+          items: {type: string}
+        messages:
+          type: object
+          description: Messages by key.
+          x-description-es: Mensajes por clave.
+          additionalProperties: {type: string}
 
     Domain:
       type: object

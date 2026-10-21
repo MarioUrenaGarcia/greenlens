@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -27,6 +28,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
+	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
@@ -120,6 +122,7 @@ func (a *Agent) routes() []route {
 		{pattern: "GET " + api.PathAudit, role: auth.Admin, h: a.handleAudit},
 		{pattern: "GET " + api.PathSession, h: a.handleSession},
 		{pattern: "POST " + api.PathSessionCodes, role: auth.Admin, socketOnly: true, h: a.handleSessionCode},
+		{pattern: "GET " + api.PathCatalogs + "/{lang}", h: handleCatalog},
 		{pattern: "GET " + api.PathOpenAPI, h: func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/yaml")
 			_, _ = w.Write(greenlens.OpenAPI)
@@ -294,6 +297,9 @@ func (a *Agent) Status() api.Status {
 		Domains:       []api.Domain{},
 		Channels:      []api.Channel{},
 	}
+	f := a.cfg.Factors()
+	st.Factors = api.Factors{EmissionGPerKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, PUE: f.PUE,
+		TariffPerKWh: f.TariffPerKWh, Currency: f.Currency, WUELPerKWh: f.WUELPerKWh}
 	quality := map[source.Domain]source.Quality{}
 	for _, c := range a.sel.Channels {
 		quality[c.Domain] = c.Quality
@@ -515,4 +521,30 @@ func (a *Agent) handleBackup(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, f); err != nil {
 		a.log.Warn("backup not delivered", "error", err)
 	}
+}
+
+// catalogPrefixes are the parts of the translation catalogs the graphical
+// interface uses: its own texts and those of the values and errors it shows.
+var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason."}
+
+// handleCatalog serves the messages of one language. It is public, since
+// the sign-in page needs it.
+func handleCatalog(w http.ResponseWriter, r *http.Request) {
+	lang := r.PathValue("lang")
+	msgs, err := i18n.Catalog(lang)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "unsupported language; available: "+strings.Join(i18n.Supported, ", "))
+		return
+	}
+	out := api.Catalog{SchemaVersion: api.SchemaVersion, Lang: lang, Languages: i18n.Supported, Messages: map[string]string{}}
+	for k, v := range msgs {
+		for _, p := range catalogPrefixes {
+			if strings.HasPrefix(k, p) {
+				out.Messages[k] = v
+				break
+			}
+		}
+	}
+	w.Header().Set("Cache-Control", "no-cache")
+	writeJSON(w, http.StatusOK, out)
 }

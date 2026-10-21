@@ -19,6 +19,7 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `POST` | `/api/v1/benchmarks` | operator | Guarda el resultado de un benchmark |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | Un benchmark guardado |
 | `POST` | `/api/v1/calibrations` | operator | Guarda una calibración de la potencia en reposo y la aplica |
+| `GET` | `/api/v1/catalogs/{lang}` | public | Mensajes de un idioma para la interfaz gráfica |
 | `GET` | `/api/v1/live` | viewer | Potencia de cada dominio en los últimos minutos |
 | `GET` | `/api/v1/openapi.yaml` | public | Esta descripción de la API |
 | `GET` | `/api/v1/session` | public | Quién envía la solicitud, y el token CSRF de una sesión |
@@ -167,6 +168,25 @@ Rol: `operator`
 | `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
 | `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
 
+### GET /api/v1/catalogs/{lang}
+
+Mensajes de un idioma para la interfaz gráfica.
+
+Rol: `public`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `lang` | path | string | sí | Idioma, como en o es. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | Los mensajes. | [Catalog](#catalog) |
+| `404` | Nada tiene este id. | [Error](#error) |
+
 ### GET /api/v1/live
 
 Potencia de cada dominio en los últimos minutos.
@@ -289,6 +309,7 @@ Rol: `viewer`
 | Nombre | En | Tipo | Obligatorio | Descripción |
 |---|---|---|---|---|
 | `Last-Event-ID` | header | integer | no | Id de la última muestra recibida. |
+| `last_event_id` | query | integer | no | Id de la última muestra recibida, para clientes que no pueden poner cabeceras. |
 
 **Respuestas**
 
@@ -594,6 +615,17 @@ La línea base en reposo vigente.
 | `drift` | number | no | Diferencia relativa entre idle_now_w y la calibración. |
 | `idle_now_w` | number | no | Estimación actual de la potencia en reposo del paquete |
 
+### Catalog
+
+Mensajes de un idioma para la interfaz gráfica, con marcadores escritos como {name}.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `lang` | string | sí | Idioma de los mensajes. |
+| `languages` | lista de string | sí | Todos los idiomas disponibles. |
+| `messages` | mapa de string | sí | Mensajes por clave. |
+| `schema_version` | integer | sí | Versión del documento. |
+
 ### Channel
 
 Un canal probado por el agente y la decisión sobre él.
@@ -664,6 +696,19 @@ Se devuelve con cada estado de error.
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `error` | string | sí | Qué salió mal. |
+
+### Factors
+
+Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `currency` | string | sí | Código ISO 4217 de la tarifa. |
+| `emission_g_per_kwh` | number | sí | Factor de emisión de la red en gCO2e por kWh. |
+| `emission_source` | string | sí | De dónde viene el factor de emisión. |
+| `pue` | number | sí | Eficiencia en el uso de energía de la instalación. |
+| `tariff_per_kwh` | number | no | Precio de un kWh; ausente si no hay tarifa configurada. |
+| `wue_l_per_kwh` | number | no | Agua en litros por kWh; ausente si no está configurada. |
 
 ### Live
 
@@ -803,6 +848,7 @@ Estado del nodo.
 | `channels` | lista de [Channel](#channel) | sí | Cada canal probado con la decisión sobre él. |
 | `domains` | lista de [Domain](#domain) | sí | Potencia y energía de cada dominio. |
 | `estimated` | boolean | sí | Si la energía del procesador es estimada en lugar de medida. |
+| `factors` | [Factors](#factors) | sí | Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente. |
 | `idle_policy` | `dynamic`, `proportional`, `full`, `wall` | sí | Cómo se reparte la potencia en reposo. |
 | `interval_ms` | integer | sí | Intervalo de muestreo en milisegundos. |
 | `sample_time` | string (date-time) | sí | Hora de la última muestra. |

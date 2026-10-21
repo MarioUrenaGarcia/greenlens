@@ -19,6 +19,7 @@ Energy measurements of the node, its inference backends and models, served by th
 | `POST` | `/api/v1/benchmarks` | operator | Store the result of a benchmark |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | One stored benchmark |
 | `POST` | `/api/v1/calibrations` | operator | Store a calibration of the idle power and apply it |
+| `GET` | `/api/v1/catalogs/{lang}` | public | Messages of one language for the graphical interface |
 | `GET` | `/api/v1/live` | viewer | Power of every domain over the last minutes |
 | `GET` | `/api/v1/openapi.yaml` | public | This description of the API |
 | `GET` | `/api/v1/session` | public | Who sends the request, and the CSRF token of a session |
@@ -167,6 +168,25 @@ Role: `operator`
 | `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
 | `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
 
+### GET /api/v1/catalogs/{lang}
+
+Messages of one language for the graphical interface.
+
+Role: `public`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `lang` | path | string | yes | Language, such as en or es. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The messages. | [Catalog](#catalog) |
+| `404` | Nothing has this id. | [Error](#error) |
+
 ### GET /api/v1/live
 
 Power of every domain over the last minutes.
@@ -289,6 +309,7 @@ Role: `viewer`
 | Name | In | Type | Required | Description |
 |---|---|---|---|---|
 | `Last-Event-ID` | header | integer | no | Id of the last sample received. |
+| `last_event_id` | query | integer | no | Id of the last sample received, for clients that cannot set headers. |
 
 **Responses**
 
@@ -594,6 +615,17 @@ The idle baseline in force.
 | `drift` | number | no | Relative difference between idle_now_w and the calibration. |
 | `idle_now_w` | number | no | Current estimate of the idle power of the package |
 
+### Catalog
+
+Messages of one language for the graphical interface, with placeholders written as {name}.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `lang` | string | yes | Language of the messages. |
+| `languages` | list of string | yes | Every language available. |
+| `messages` | map of string | yes | Messages by key. |
+| `schema_version` | integer | yes | Version of the document. |
+
 ### Channel
 
 A channel probed by the agent and the decision about it.
@@ -664,6 +696,19 @@ Returned with every error status.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `error` | string | yes | What went wrong. |
+
+### Factors
+
+Conversion factors in force, to turn energy into emissions, cost and water as the agent does.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `currency` | string | yes | ISO 4217 code of the tariff. |
+| `emission_g_per_kwh` | number | yes | Grid emission factor in gCO2e per kWh. |
+| `emission_source` | string | yes | Where the emission factor comes from. |
+| `pue` | number | yes | Power usage effectiveness of the facility. |
+| `tariff_per_kwh` | number | no | Price of a kWh; absent when no tariff is configured. |
+| `wue_l_per_kwh` | number | no | Water in liters per kWh; absent when not configured. |
 
 ### Live
 
@@ -803,6 +848,7 @@ State of the node.
 | `channels` | list of [Channel](#channel) | yes | Every probed channel with the decision about it. |
 | `domains` | list of [Domain](#domain) | yes | Power and energy of every domain. |
 | `estimated` | boolean | yes | Whether processor energy is estimated rather than measured. |
+| `factors` | [Factors](#factors) | yes | Conversion factors in force, to turn energy into emissions, cost and water as the agent does. |
 | `idle_policy` | `dynamic`, `proportional`, `full`, `wall` | yes | How idle power is shared. |
 | `interval_ms` | integer | yes | Sampling interval in milliseconds. |
 | `sample_time` | string (date-time) | yes | Time of the latest sample. |

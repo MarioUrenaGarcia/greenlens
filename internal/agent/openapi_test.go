@@ -126,6 +126,11 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	}
 	get("status", sock, api.PathStatus)
 	get("status", anon, api.PathStatus)
+	var cat api.Catalog
+	if err := json.Unmarshal(get("catalog", anon, api.PathCatalogs+"/es"), &cat); err != nil || cat.Messages["domain.package"] == "" || cat.Messages["cli.root.short"] != "" {
+		t.Errorf("catalog: %v %d messages", err, len(cat.Messages))
+	}
+	get("catalog", anon, api.PathCatalogs+"/xx")
 	get("sources", sock, api.PathSources)
 	get("backends", sock, api.PathBackends)
 	get("live", sock, api.PathLive)

@@ -39,6 +39,7 @@ const (
 	PathLogin        = "/login"
 	PathMetrics      = "/metrics"
 	PathOpenAPI      = "/api/v1/openapi.yaml"
+	PathCatalogs     = "/api/v1/catalogs"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -126,6 +127,25 @@ type Self struct {
 	RSSBytes   uint64  `json:"rss_bytes"`
 }
 
+// Factors are the conversion factors in force, so clients can turn energy
+// into emissions, cost and water as the agent does.
+type Factors struct {
+	EmissionGPerKWh float64  `json:"emission_g_per_kwh"`
+	EmissionSource  string   `json:"emission_source"`
+	PUE             float64  `json:"pue"`
+	TariffPerKWh    *float64 `json:"tariff_per_kwh,omitempty"`
+	Currency        string   `json:"currency"`
+	WUELPerKWh      *float64 `json:"wue_l_per_kwh,omitempty"`
+}
+
+// Catalog holds the messages of one language for the graphical interface.
+type Catalog struct {
+	SchemaVersion int               `json:"schema_version"`
+	Lang          string            `json:"lang"`
+	Languages     []string          `json:"languages"`
+	Messages      map[string]string `json:"messages"`
+}
+
 // Status is the document of PathStatus.
 type Status struct {
 	SchemaVersion int          `json:"schema_version"`
@@ -141,6 +161,7 @@ type Status struct {
 	Calibration   *Calibration `json:"calibration,omitempty"`
 	Self          Self         `json:"self"`
 	IdlePolicy    string       `json:"idle_policy"`
+	Factors       Factors      `json:"factors"`
 	Backends      []Backend    `json:"backends,omitempty"`
 	Proxy         *Proxy       `json:"proxy,omitempty"`
 }

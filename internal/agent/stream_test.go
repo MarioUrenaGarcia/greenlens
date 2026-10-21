@@ -119,6 +119,22 @@ func TestStream(t *testing.T) {
 	if len(evs) != 1 || evs[0].id != from+1 {
 		t.Fatalf("resumed at %+v, want id %d", evs, from+1)
 	}
+	// A page that reopens the stream passes the id in the query.
+	ctx, stop := context.WithTimeout(context.Background(), 10*time.Second)
+	defer stop()
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://agent"+api.PathStream+"?last_event_id="+strconv.FormatUint(from, 10), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := socketClient(r.socket).Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = q.Body.Close() }()
+	evs = readEvents(t, q.Body, func(e sse) bool { return e.name == eventSample })
+	if len(evs) != 1 || evs[0].id != from+1 {
+		t.Fatalf("resumed from the query at %+v", evs)
+	}
 }
 
 func TestStreamDropsSlowClients(t *testing.T) {

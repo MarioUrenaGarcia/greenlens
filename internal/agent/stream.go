@@ -158,7 +158,14 @@ func (a *Agent) handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	last, _ := strconv.ParseUint(r.Header.Get("Last-Event-ID"), 10, 64)
+	// EventSource sends Last-Event-ID when it reconnects by itself; a page
+	// that opens the stream again passes the id in the query instead, since
+	// it cannot set headers.
+	resume := r.Header.Get("Last-Event-ID")
+	if resume == "" {
+		resume = r.URL.Query().Get("last_event_id")
+	}
+	last, _ := strconv.ParseUint(resume, 10, 64)
 	a.mu.RLock()
 	samples, n := a.ring.all(), a.samples
 	a.mu.RUnlock()
