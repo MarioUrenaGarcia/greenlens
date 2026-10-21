@@ -95,6 +95,10 @@ func (a *Agent) refreshBackends(ctx context.Context) {
 	}
 }
 
+// clockTicks is USER_HZ, the unit of the processor times in /proc, which
+// Linux fixes at 100 on every architecture.
+const clockTicks = 100
+
 // accountBackends adds the share of every backend in one sample.
 func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 	ticks := a.tracker.Sample()
@@ -162,8 +166,24 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 	if wall && node.HasPlatform {
 		total = node.PlatformJ
 	}
+	// The energy of a busy processor second, averaged over about a minute,
+	// lets clients estimate the energy of their own processing. With a
+	// calibration, idle power is left out, so it is the energy the work
+	// adds.
+	busyS := float64(busy) / clockTicks
 	a.mu.Lock()
 	a.unattributedJ += max(0, total-given)
+	if busyS > 0.01 {
+		dyn := cpuJ
+		if base.CPUW > 0 {
+			dyn = max(0, cpuJ-base.CPUW*s.Interval.Seconds())
+		}
+		alpha := min(1, s.Interval.Seconds()/60)
+		if a.cpuJPerBusyS == 0 {
+			alpha = 1
+		}
+		a.cpuJPerBusyS += alpha * (dyn/busyS - a.cpuJPerBusyS)
+	}
 	a.mu.Unlock()
 	if a.meter != nil {
 		a.meter.Tick(s.Time, s.Interval, got)

@@ -40,6 +40,7 @@ const (
 	PathMetrics      = "/metrics"
 	PathOpenAPI      = "/api/v1/openapi.yaml"
 	PathCatalogs     = "/api/v1/catalogs"
+	PathAbout        = "/api/v1/about"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -162,8 +163,11 @@ type Status struct {
 	Self          Self         `json:"self"`
 	IdlePolicy    string       `json:"idle_policy"`
 	Factors       Factors      `json:"factors"`
-	Backends      []Backend    `json:"backends,omitempty"`
-	Proxy         *Proxy       `json:"proxy,omitempty"`
+	// CPUJPerBusyS is the energy of one busy processor second over about
+	// the last minute, without idle power when the node is calibrated.
+	CPUJPerBusyS float64   `json:"cpu_joules_per_busy_second"`
+	Backends     []Backend `json:"backends,omitempty"`
+	Proxy        *Proxy    `json:"proxy,omitempty"`
 }
 
 // Usage is the document of PathUsage.

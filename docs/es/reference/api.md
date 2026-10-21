@@ -12,6 +12,7 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 
 | Método | Ruta | Rol | Resumen |
 |---|---|---|---|
+| `GET` | `/api/v1/about` | viewer | Versión, licencia y código fuente del agente en ejecución |
 | `GET` | `/api/v1/audit` | admin | Acciones de operadores y administradores, de la más reciente a la más antigua |
 | `GET` | `/api/v1/backends` | viewer | Backends y modelos con su uso desde que inició el agente |
 | `GET` | `/api/v1/backup` | admin | Copia consistente de la base de datos |
@@ -37,6 +38,19 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/login` | public | Usa un enlace de inicio de sesión de un solo uso |
 | `GET` | `/metrics` | public | Métricas de Prometheus |
 | `GET` | `/readyz` | public | Comprueba que el agente ya tomó una muestra |
+
+### GET /api/v1/about
+
+Versión, licencia y código fuente del agente en ejecución.
+
+Rol: `viewer`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | La descripción de la versión en ejecución. | [About](#about) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
 
 ### GET /api/v1/audit
 
@@ -454,6 +468,22 @@ Rol: `public`
 
 ## Documentos
 
+### About
+
+La versión en ejecución, su licencia y su código fuente.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `commercial_contact` | string | sí | Dónde pedir la licencia comercial. |
+| `copyright` | string | sí | Aviso de derechos de autor. |
+| `license` | string | sí | Identificador SPDX de la licencia. |
+| `modified` | boolean | sí | Si se compiló a partir de código fuente modificado. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `source_url` | string | sí | Código fuente de esta versión. |
+| `third_party` | lista de object | sí | Componentes de terceros incluidos. |
+| `version` | string | sí | Versión del agente. |
+| `revision` | string | no | Commit desde el que se compiló el agente. |
+
 ### Audit
 
 El registro de auditoría.
@@ -846,6 +876,7 @@ Estado del nodo.
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `channels` | lista de [Channel](#channel) | sí | Cada canal probado con la decisión sobre él. |
+| `cpu_joules_per_busy_second` | number | sí | Energía de un segundo de procesador ocupado en aproximadamente el último minuto; sin la potencia en reposo cuando el nodo está calibrado. |
 | `domains` | lista de [Domain](#domain) | sí | Potencia y energía de cada dominio. |
 | `estimated` | boolean | sí | Si la energía del procesador es estimada en lugar de medida. |
 | `factors` | [Factors](#factors) | sí | Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente. |

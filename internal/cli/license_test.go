@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/about"
 	"github.com/MarioUrenaGarcia/greenlens/internal/version"
 )
 
@@ -55,11 +56,11 @@ func TestSourceURL(t *testing.T) {
 		{version.Info{Version: "devel", Revision: "abc123"}, repo + "/tree/abc123"},
 		{version.Info{Version: "devel"}, repo},
 	} {
-		if got := sourceURL(tt.info); got != tt.want {
+		if got := about.SourceURL(tt.info); got != tt.want {
 			t.Errorf("%+v: %s, want %s", tt.info, got, tt.want)
 		}
 	}
-	if !licenseReport(version.Info{Version: "v0.0.0-20261020194759-6763d05a1b2c+dirty"}, "").Modified {
+	if !about.For(version.Info{Version: "v0.0.0-20261020194759-6763d05a1b2c+dirty"}, "").Modified {
 		t.Error("a dirty build is not reported as modified")
 	}
 }

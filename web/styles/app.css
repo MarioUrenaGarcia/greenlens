@@ -570,6 +570,15 @@ textarea.input {
   color: var(--critical-text);
 }
 
+.problems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .empty {
   padding: var(--space-5);
   text-align: center;

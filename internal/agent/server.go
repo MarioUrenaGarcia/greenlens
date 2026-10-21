@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/MarioUrenaGarcia/greenlens"
+	"github.com/MarioUrenaGarcia/greenlens/internal/about"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
@@ -123,6 +124,9 @@ func (a *Agent) routes() []route {
 		{pattern: "GET " + api.PathSession, h: a.handleSession},
 		{pattern: "POST " + api.PathSessionCodes, role: auth.Admin, socketOnly: true, h: a.handleSessionCode},
 		{pattern: "GET " + api.PathCatalogs + "/{lang}", h: handleCatalog},
+		{pattern: "GET " + api.PathAbout, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, about.Get())
+		}},
 		{pattern: "GET " + api.PathOpenAPI, h: func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/yaml")
 			_, _ = w.Write(greenlens.OpenAPI)
@@ -297,6 +301,7 @@ func (a *Agent) Status() api.Status {
 		Domains:       []api.Domain{},
 		Channels:      []api.Channel{},
 	}
+	st.CPUJPerBusyS = a.cpuJPerBusyS
 	f := a.cfg.Factors()
 	st.Factors = api.Factors{EmissionGPerKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, PUE: f.PUE,
 		TariffPerKWh: f.TariffPerKWh, Currency: f.Currency, WUELPerKWh: f.WUELPerKWh}
@@ -525,7 +530,7 @@ func (a *Agent) handleBackup(w http.ResponseWriter, r *http.Request) {
 
 // catalogPrefixes are the parts of the translation catalogs the graphical
 // interface uses: its own texts and those of the values and errors it shows.
-var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason."}
+var catalogPrefixes = []string{"gui.", "errors.", "domain.", "quality.", "level.", "explain.", "selector.reason.", "cli.license."}
 
 // handleCatalog serves the messages of one language. It is public, since
 // the sign-in page needs it.

@@ -94,6 +94,21 @@ paths:
           content:
             text/plain:
               schema: {type: string}
+  /api/v1/about:
+    get:
+      operationId: about
+      tags: [health]
+      summary: Version, license and source code of the running agent
+      x-summary-es: Versión, licencia y código fuente del agente en ejecución
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The description of the running version.
+          x-description-es: La descripción de la versión en ejecución.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/About"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
   /api/v1/catalogs/{lang}:
     get:
       operationId: catalog
@@ -668,7 +683,7 @@ components:
       description: State of the node.
       x-description-es: Estado del nodo.
       additionalProperties: false
-      required: [schema_version, version, started_at, interval_ms, sample_time, samples, estimated, domains, channels, self, idle_policy, factors]
+      required: [schema_version, version, started_at, interval_ms, sample_time, samples, estimated, domains, channels, self, idle_policy, factors, cpu_joules_per_busy_second]
       properties:
         schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
         version: {type: string, description: Version of the agent., x-description-es: Versión del agente.}
@@ -696,6 +711,7 @@ components:
         self: {$ref: "#/components/schemas/Self"}
         idle_policy: {type: string, enum: [dynamic, proportional, full, wall], description: How idle power is shared., x-description-es: Cómo se reparte la potencia en reposo.}
         factors: {$ref: "#/components/schemas/Factors"}
+        cpu_joules_per_busy_second: {type: number, description: Energy of one busy processor second over about the last minute; without idle power when the node is calibrated., x-description-es: Energía de un segundo de procesador ocupado en aproximadamente el último minuto; sin la potencia en reposo cuando el nodo está calibrado.}
         backends:
           type: array
           description: Backends of the node.
@@ -716,6 +732,35 @@ components:
         tariff_per_kwh: {type: number, description: Price of a kWh; absent when no tariff is configured., x-description-es: Precio de un kWh; ausente si no hay tarifa configurada.}
         currency: {type: string, description: ISO 4217 code of the tariff., x-description-es: Código ISO 4217 de la tarifa.}
         wue_l_per_kwh: {type: number, description: Water in liters per kWh; absent when not configured., x-description-es: Agua en litros por kWh; ausente si no está configurada.}
+
+    About:
+      type: object
+      description: The running version, its license and its source code.
+      x-description-es: La versión en ejecución, su licencia y su código fuente.
+      additionalProperties: false
+      required: [schema_version, license, copyright, version, source_url, modified, commercial_contact, third_party]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        license: {type: string, description: SPDX identifier of the license., x-description-es: Identificador SPDX de la licencia.}
+        copyright: {type: string, description: Copyright notice., x-description-es: Aviso de derechos de autor.}
+        version: {type: string, description: Version of the agent., x-description-es: Versión del agente.}
+        revision: {type: string, description: Commit the agent was built from., x-description-es: Commit desde el que se compiló el agente.}
+        source_url: {type: string, description: Source code of this version., x-description-es: Código fuente de esta versión.}
+        modified: {type: boolean, description: Whether it was built from modified source code., x-description-es: Si se compiló a partir de código fuente modificado.}
+        commercial_contact: {type: string, description: Where to ask for the commercial license., x-description-es: Dónde pedir la licencia comercial.}
+        third_party:
+          type: array
+          description: Third-party components included.
+          x-description-es: Componentes de terceros incluidos.
+          items:
+            type: object
+            description: A component and its version.
+            x-description-es: Un componente y su versión.
+            additionalProperties: false
+            required: [name, version]
+            properties:
+              name: {type: string, description: Name of the component., x-description-es: Nombre del componente.}
+              version: {type: string, description: Version of the component., x-description-es: Versión del componente.}
 
     Catalog:
       type: object

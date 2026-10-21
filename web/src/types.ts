@@ -126,6 +126,7 @@ export interface Status {
   self: { energy_j: number; cpu_seconds: number; rss_bytes: number };
   idle_policy: string;
   factors: Factors;
+  cpu_joules_per_busy_second: number;
   backends?: Backend[];
 }
 

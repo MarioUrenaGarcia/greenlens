@@ -131,6 +131,7 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 		t.Errorf("catalog: %v %d messages", err, len(cat.Messages))
 	}
 	get("catalog", anon, api.PathCatalogs+"/xx")
+	get("about", sock, api.PathAbout)
 	get("sources", sock, api.PathSources)
 	get("backends", sock, api.PathBackends)
 	get("live", sock, api.PathLive)

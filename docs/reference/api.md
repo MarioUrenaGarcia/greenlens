@@ -12,6 +12,7 @@ Energy measurements of the node, its inference backends and models, served by th
 
 | Method | Path | Role | Summary |
 |---|---|---|---|
+| `GET` | `/api/v1/about` | viewer | Version, license and source code of the running agent |
 | `GET` | `/api/v1/audit` | admin | Actions of operators and administrators, newest first |
 | `GET` | `/api/v1/backends` | viewer | Backends and models with their use since the agent started |
 | `GET` | `/api/v1/backup` | admin | Consistent copy of the database |
@@ -37,6 +38,19 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/login` | public | Redeem a one-time sign-in link |
 | `GET` | `/metrics` | public | Prometheus metrics |
 | `GET` | `/readyz` | public | Check that the agent has taken a sample |
+
+### GET /api/v1/about
+
+Version, license and source code of the running agent.
+
+Role: `viewer`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The description of the running version. | [About](#about) |
+| `401` | No valid session or token. | [Error](#error) |
 
 ### GET /api/v1/audit
 
@@ -454,6 +468,22 @@ Role: `public`
 
 ## Documents
 
+### About
+
+The running version, its license and its source code.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `commercial_contact` | string | yes | Where to ask for the commercial license. |
+| `copyright` | string | yes | Copyright notice. |
+| `license` | string | yes | SPDX identifier of the license. |
+| `modified` | boolean | yes | Whether it was built from modified source code. |
+| `schema_version` | integer | yes | Version of the document. |
+| `source_url` | string | yes | Source code of this version. |
+| `third_party` | list of object | yes | Third-party components included. |
+| `version` | string | yes | Version of the agent. |
+| `revision` | string | no | Commit the agent was built from. |
+
 ### Audit
 
 The audit log.
@@ -846,6 +876,7 @@ State of the node.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `channels` | list of [Channel](#channel) | yes | Every probed channel with the decision about it. |
+| `cpu_joules_per_busy_second` | number | yes | Energy of one busy processor second over about the last minute; without idle power when the node is calibrated. |
 | `domains` | list of [Domain](#domain) | yes | Power and energy of every domain. |
 | `estimated` | boolean | yes | Whether processor energy is estimated rather than measured. |
 | `factors` | [Factors](#factors) | yes | Conversion factors in force, to turn energy into emissions, cost and water as the agent does. |

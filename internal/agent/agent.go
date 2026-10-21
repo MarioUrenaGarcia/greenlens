@@ -150,6 +150,7 @@ type Agent struct {
 	chanW      map[string]float64
 	// unattributedJ is the energy no backend received.
 	unattributedJ float64
+	cpuJPerBusyS  float64
 	selfJ         float64
 	selfTicks     uint64
 	selfPrev      uint64

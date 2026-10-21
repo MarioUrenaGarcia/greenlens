@@ -17,7 +17,9 @@ import {
   type ThemeChoice,
 } from "./prefs";
 import { href, useRoute } from "./router";
+import { About, selfPower } from "./screens/about";
 import { Login } from "./screens/login";
+import { Sources } from "./screens/sources";
 import { Summary } from "./screens/summary";
 import type { Session, Status } from "./types";
 
@@ -29,7 +31,13 @@ interface Screen {
 
 const screens: Screen[] = [
   { id: "summary", icon: icons.summary, render: ({ status }) => <Summary status={status} /> },
+  { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
+  { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
 ];
+
+// selfLimitW is the estimated power of the interface above which the
+// automatic efficient mode turns on.
+const selfLimitW = 1;
 
 interface Battery {
   charging: boolean;
@@ -37,9 +45,15 @@ interface Battery {
 }
 
 // useEfficient decides whether the efficient mode is on: by the choice of
-// the user, or, in automatic mode, while this device runs on battery.
-function useEfficient(choice: EfficientChoice): boolean {
+// the user, or, in automatic mode, while this device runs on battery or the
+// interface itself is estimated to draw more than selfLimitW.
+function useEfficient(choice: EfficientChoice, status: Status): boolean {
   const [onBattery, setOnBattery] = useState(false);
+  const [heavy, setHeavy] = useState(false);
+  useEffect(() => {
+    const id = window.setInterval(() => setHeavy(selfPower(status) > selfLimitW), 10000);
+    return () => window.clearInterval(id);
+  }, [status]);
   useEffect(() => {
     const nav = navigator as Navigator & { getBattery?: () => Promise<Battery> };
     nav
@@ -50,7 +64,7 @@ function useEfficient(choice: EfficientChoice): boolean {
       })
       .catch(() => setOnBattery(false));
   }, []);
-  const on = choice === "on" || (choice === "auto" && onBattery);
+  const on = choice === "on" || (choice === "auto" && (onBattery || heavy));
   useEffect(() => {
     applyEfficient(on);
     // The efficient mode redraws every five seconds instead of with every
@@ -69,7 +83,7 @@ function Shell(props: {
   const route = useRoute();
   const [theme, setTheme] = useState<ThemeChoice>(prefs.theme());
   const [efficient, setEfficient] = useState<EfficientChoice>(prefs.efficient());
-  const effective = useEfficient(efficient);
+  const effective = useEfficient(efficient, props.status);
   useEffect(() => {
     applyTheme(theme);
     onSystemTheme(() => applyTheme(prefs.theme()));
