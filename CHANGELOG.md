@@ -86,6 +86,16 @@ All notable changes to GreenLens are recorded in this file. The format follows
   interval for backends, models and the metrics, and returns them with
   every row of `/api/v1/usage`; `report`, `top`, `measure` and the
   interface use them, so they always follow the configuration of the agent.
+- The Software Carbon Intensity of ISO/IEC 21031: `greenlens sci` and
+  `GET /api/v1/reports?kind=sci`, for the node and each backend, model or
+  consumer, per 1,000 generated tokens, request or consumer. Operational
+  emissions follow the hourly factors; the embodied carbon of the server
+  and the GPU (`indicators.sci.embodied`, without defaults) is spread over
+  their lifetime by energy share, and the report says when it is missing.
+  The models screen shows the SCI of each model, and the metrics add
+  `greenlens_sci_grams_co2e_per_unit` and the embodied scope of
+  `greenlens_emissions_grams_co2e_total`. Usage rollups keep their GPU
+  part for that share.
 - Queries of long periods read every whole hour that falls inside one
   bucket from the hourly rollups and every whole minute from the minute
   rollups, with new indexes by resolution, so a query of 30 days reads

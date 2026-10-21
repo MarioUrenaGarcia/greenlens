@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Mario Ureña García
 
-import type { BackendUsage, Backends, ErrorBody, Session, Status, Usage } from "./types";
+import type { BackendUsage, Backends, ErrorBody, SCIReport, Session, Status, Usage } from "./types";
 
 // ApiError carries the status and the message of a refused request.
 export class ApiError extends Error {
@@ -75,6 +75,11 @@ export const api = {
     const q = new URLSearchParams({ from: iso(from), to: iso(to), group_by: groupBy });
     if (bucket) q.set("bucket", bucket);
     return request<BackendUsage>("GET", `/api/v1/usage?${q}`);
+  },
+  sci: (from: Date, to: Date, groupBy?: "backend" | "model" | "consumer") => {
+    const q = new URLSearchParams({ kind: "sci", from: iso(from), to: iso(to) });
+    if (groupBy) q.set("group_by", groupBy);
+    return request<SCIReport>("GET", `/api/v1/reports?${q}`);
   },
   request,
 };

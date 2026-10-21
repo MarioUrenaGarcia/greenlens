@@ -263,3 +263,41 @@ export interface CalibrationJob {
   result?: { samples: number; domains: Record<string, { p10_w: number; p50_w: number; p90_w: number }> };
   error?: string;
 }
+
+// SCI is the Software Carbon Intensity of one scope, (O + M) / R.
+export interface SCI {
+  functional_unit: string;
+  units: number;
+  operational_g: number;
+  embodied_g?: number;
+  g_per_unit?: number;
+}
+
+export interface SCIRow {
+  backend?: string;
+  kind?: string;
+  model?: string;
+  consumer?: string;
+  energy_j: number;
+  server_energy_j: number;
+  gpu_energy_j: number;
+  server_share: number;
+  gpu_share: number;
+  generated_tokens: number;
+  requests: number;
+  consumers: number;
+  indicators: Indicators;
+  sci: SCI;
+}
+
+export interface SCIReport {
+  schema_version: number;
+  from: string;
+  to: string;
+  group_by?: string;
+  functional_unit: string;
+  factors: Factors;
+  missing: string[];
+  node: SCIRow;
+  rows: SCIRow[];
+}

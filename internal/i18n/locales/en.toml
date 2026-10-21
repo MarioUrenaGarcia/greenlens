@@ -1254,6 +1254,15 @@ base = "Power not explained by tokens"
 ci = "plus or minus {value} at 95% confidence"
 r2 = "R2 {r2} over {n} intervals of the last day"
 
+[gui.sci]
+column = "SCI, {unit}"
+without_embodied = "The SCI leaves out embodied carbon until indicators.sci.embodied is configured."
+
+[gui.sci.unit]
+1k_generated_tokens = "per 1k tokens"
+request = "per request"
+consumer = "per consumer"
+
 [gui.consumers]
 title = "Consumers"
 intro = "Energy of each team or application that the proxy tells apart, for showback."
