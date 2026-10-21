@@ -150,6 +150,10 @@ func TestAgentEndToEnd(t *testing.T) {
 	if err != nil || st.Calibration == nil || st.Calibration.Baseline.CPUW != 2 {
 		t.Fatalf("calibration not applied: %+v %v", st.Calibration, err)
 	}
+	// Seconds of samples are no estimate of idle power to compare.
+	if st.Calibration.Drift != 0 || st.Calibration.IdleNowW != 0 {
+		t.Errorf("drift reported after %s: %+v", time.Since(st.StartedAt), st.Calibration)
+	}
 	bad := cal
 	bad.Samples = 0
 	if err := r.client.SaveCalibration(ctx, bad); help.As(err).Code != help.GL4006 {

@@ -259,7 +259,9 @@ func (a *Agent) Status() api.Status {
 	}
 	if a.calib != nil {
 		c := &api.Calibration{At: a.calib.StartedAt, Baseline: a.calib.Baseline()}
-		if p5, ok := a.idle.P5(time.Now()); ok {
+		// The idle estimate needs an hour of samples, as the hourly
+		// check of the agent does, before it is compared.
+		if p5, ok := a.idle.P5(time.Now()); ok && time.Since(a.started) >= driftAfter {
 			c.IdleNowW = p5
 			c.Drift = calibrate.Drift(p5, c.Baseline.CPUW)
 		}

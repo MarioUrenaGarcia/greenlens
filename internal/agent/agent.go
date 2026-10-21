@@ -49,6 +49,10 @@ import (
 // LiveWindow is how much recent data is kept in memory.
 const LiveWindow = 15 * time.Minute
 
+// driftAfter is how long the agent samples before its idle estimate is
+// compared with the calibration.
+const driftAfter = time.Hour
+
 // shutdownGrace bounds the time spent closing, well under the 5 seconds a
 // service manager waits after SIGTERM.
 const shutdownGrace = 3 * time.Second
@@ -477,7 +481,7 @@ func (a *Agent) hourly(ctx context.Context, lastCheck *time.Time) {
 	calib := a.calib
 	a.mu.RUnlock()
 	if calib != nil {
-		if p5, ok := a.idle.P5(time.Now()); ok && time.Since(a.started) >= time.Hour {
+		if p5, ok := a.idle.P5(time.Now()); ok && time.Since(a.started) >= driftAfter {
 			if d := calibrate.Drift(p5, calib.Baseline().CPUW); d > 0.2 {
 				a.log.Warn("idle power differs from the calibration", "idle_now_w", p5, "calibrated_w", calib.Baseline().CPUW, "drift", d)
 			}
