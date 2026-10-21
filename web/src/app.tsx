@@ -23,6 +23,7 @@ import { Benchmarks } from "./screens/benchmarks";
 import { Consumers } from "./screens/consumers";
 import { Login } from "./screens/login";
 import { Models } from "./screens/models";
+import { Reports } from "./screens/reports";
 import { Sources } from "./screens/sources";
 import { Summary } from "./screens/summary";
 import type { Session, Status } from "./types";
@@ -38,6 +39,7 @@ const screens: Screen[] = [
   { id: "models", icon: icons.models, render: ({ path }) => <Models path={path} /> },
   { id: "backends", icon: icons.backends, render: () => <BackendsScreen /> },
   { id: "consumers", icon: icons.consumers, render: () => <Consumers /> },
+  { id: "reports", icon: icons.reports, render: ({ status }) => <Reports status={status} /> },
   {
     id: "benchmarks",
     icon: icons.benchmarks,

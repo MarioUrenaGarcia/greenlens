@@ -87,6 +87,9 @@ All notable changes to GreenLens are recorded in this file. The format follows
   tokens, and exports them as CSV or JSON. `POST /api/v1/benchmarks` now
   starts a benchmark; results measured by `greenlens bench` go to
   `/api/v1/benchmarks/results`.
+- Energy reports in the interface: energy, emissions, cost and water of a
+  period, by domain per day or hour and by backend, model or consumer,
+  printable from the browser and exported as CSV or JSON.
 - A live stream of server-sent events on `/api/v1/stream`: the power of
   every domain with each sample and the use of the backends with each
   usage interval, resumable with `Last-Event-ID` from the last 15 minutes.

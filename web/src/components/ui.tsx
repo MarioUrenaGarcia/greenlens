@@ -81,20 +81,25 @@ export function Segmented<T extends string>(props: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  // showLabel shows the label above the buttons instead of only to
+  // assistive technology.
+  showLabel?: boolean;
 }) {
   return (
-    <fieldset class="segmented">
-      <legend class="visually-hidden">{props.label}</legend>
-      {props.options.map((o) => (
-        <button
-          type="button"
-          key={o.value}
-          aria-pressed={o.value === props.value}
-          onClick={() => props.onChange(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
+    <fieldset class="segmented-field">
+      <legend class={props.showLabel ? "field-label" : "visually-hidden"}>{props.label}</legend>
+      <div class="segmented">
+        {props.options.map((o) => (
+          <button
+            type="button"
+            key={o.value}
+            aria-pressed={o.value === props.value}
+            onClick={() => props.onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </fieldset>
   );
 }

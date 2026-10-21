@@ -516,6 +516,19 @@ th button:focus-visible {
   font-size: var(--step--1);
 }
 
+.field-label {
+  font-weight: 600;
+  font-size: var(--step--1);
+  padding: 0 0 var(--space-1);
+}
+
+.segmented-field {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+
 .field .hint {
   color: var(--ink-muted);
   font-size: var(--step--1);
@@ -533,9 +546,7 @@ textarea.input {
 
 .segmented {
   display: inline-flex;
-  margin: 0;
-  padding: 0;
-  min-width: 0;
+  flex-wrap: wrap;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-control);
   overflow: hidden;
