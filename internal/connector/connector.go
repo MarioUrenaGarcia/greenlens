@@ -46,6 +46,9 @@ type Snapshot struct {
 	// reports it.
 	Active float64  `json:"active"`
 	Loaded []string `json:"loaded,omitempty"`
+	// Digests identify the files of the loaded models, when the engine
+	// reports them, so a model replaced under the same name is noticed.
+	Digests map[string]string `json:"digests,omitempty"`
 	// TokenCounters is false for engines that do not count tokens, such
 	// as Ollama, whose tokens come from the proxy.
 	TokenCounters bool `json:"token_counters"`
@@ -330,7 +333,8 @@ func scrapeOllama(ctx context.Context, c *http.Client, endpoint string) (Snapsho
 	}
 	var ps struct {
 		Models []struct {
-			Name string `json:"name"`
+			Name   string `json:"name"`
+			Digest string `json:"digest"`
 		} `json:"models"`
 	}
 	if err := getJSON(ctx, c, endpoint, "/api/ps", &ps); err != nil {
@@ -339,6 +343,12 @@ func scrapeOllama(ctx context.Context, c *http.Client, endpoint string) (Snapsho
 	snap := Snapshot{Version: v.Version}
 	for _, m := range ps.Models {
 		snap.Loaded = append(snap.Loaded, m.Name)
+		if m.Digest != "" {
+			if snap.Digests == nil {
+				snap.Digests = map[string]string{}
+			}
+			snap.Digests[m.Name] = m.Digest
+		}
 	}
 	return snap, nil
 }

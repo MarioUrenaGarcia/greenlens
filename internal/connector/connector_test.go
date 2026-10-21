@@ -171,7 +171,8 @@ func TestLlamaCppRecorded(t *testing.T) {
 func TestOllamaRecordedWithAModel(t *testing.T) {
 	url := serve(t, map[string][]byte{"/api/version": fixture(t, "ollama", "0.40.6", "api_version.json"), "/api/ps": fixture(t, "ollama", "0.40.6", "api_ps_loaded.json")})
 	s, err := Scrape(context.Background(), Client(), discovery.Ollama, url)
-	if err != nil || s.Version != "0.40.6" || !slices.Equal(s.Loaded, []string{"qwen2.5:0.5b"}) || s.TokenCounters {
+	if err != nil || s.Version != "0.40.6" || !slices.Equal(s.Loaded, []string{"qwen2.5:0.5b"}) || s.TokenCounters ||
+		s.Digests["qwen2.5:0.5b"] != "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67" {
 		t.Fatalf("snapshot %+v err %v", s, err)
 	}
 }
