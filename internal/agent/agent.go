@@ -31,6 +31,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/drmfdinfo"
+	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/prometheus"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/hostfs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
@@ -100,6 +101,8 @@ type Agent struct {
 	started  time.Time
 	ready    atomic.Bool
 
+	collectors *prometheus.Collectors
+
 	tokens   *auth.Tokens
 	sessions *auth.Sessions
 	codes    *auth.Codes
@@ -123,6 +126,7 @@ type Agent struct {
 	bmu         sync.Mutex
 	bs          []backends.Backend
 	bstate      map[string]*backendState
+	consumerJ   map[string]float64
 	lastRegress time.Time
 
 	mu         sync.RWMutex
@@ -137,13 +141,17 @@ type Agent struct {
 	last       sampler.Sample
 	samples    uint64
 	energy     map[source.Domain]float64
-	selfJ      float64
-	selfTicks  uint64
-	selfPrev   uint64
-	sysPrev    procfs.CPUTimes
-	haveSys    bool
-	haveSelf   bool
-	lastLog    map[string]time.Time
+	chanJ      map[string]float64
+	chanW      map[string]float64
+	// unattributedJ is the energy no backend received.
+	unattributedJ float64
+	selfJ         float64
+	selfTicks     uint64
+	selfPrev      uint64
+	sysPrev       procfs.CPUTimes
+	haveSys       bool
+	haveSelf      bool
+	lastLog       map[string]time.Time
 }
 
 // Run runs the agent until ctx is canceled.
@@ -170,12 +178,17 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		selfFS:  hostfs.Root("/"),
 		started: time.Now(),
 		energy:  map[source.Domain]float64{},
-		idle:    calibrate.NewIdleTracker(),
-		lastLog: map[string]time.Time{},
-		bstate:  map[string]*backendState{},
-		reader:  backends.NewReader(),
-		cuts:    make(chan usage.Cut, 4),
-		split:   usage.NewSplitter(o.Config.Attribution.MaxModelsPerBackend),
+		chanJ:   map[string]float64{},
+		chanW:   map[string]float64{},
+		// The statistics outlive the sampler, which a reload replaces.
+		collectors: prometheus.NewCollectors(),
+		consumerJ:  map[string]float64{},
+		idle:       calibrate.NewIdleTracker(),
+		lastLog:    map[string]time.Time{},
+		bstate:     map[string]*backendState{},
+		reader:     backends.NewReader(),
+		cuts:       make(chan usage.Cut, 4),
+		split:      usage.NewSplitter(o.Config.Attribution.MaxModelsPerBackend),
 	}
 	if a.hostFS == nil {
 		a.hostFS = hostfs.Root(o.Config.Agent.HostRoot)
@@ -248,6 +261,7 @@ func (a *Agent) selectSources(ctx context.Context) error {
 		return err
 	}
 	smp := sampler.New(sel, a.srcs)
+	smp.Observe(func(id string, d time.Duration, err error) { a.collectors.Observe("source:"+id, d, err) })
 	if err := smp.Prime(ctx); err != nil {
 		a.log.Warn("first reading failed", "error", err)
 	}
@@ -568,8 +582,11 @@ func (a *Agent) step(ctx context.Context) {
 	a.mu.Lock()
 	a.last = s
 	a.samples++
+	clear(a.chanW)
 	for _, c := range s.Channels {
 		a.energy[c.Domain] += c.EnergyJ
+		a.chanJ[c.Channel] += c.EnergyJ
+		a.chanW[c.Channel] = c.PowerW
 	}
 	a.ring.add(s)
 	a.mu.Unlock()

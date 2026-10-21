@@ -61,6 +61,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
   and managed with `greenlens token`, browser sessions with CSRF
   protection, an audit log, security headers, rate limits and optional TLS.
   The agent refuses to listen beyond loopback while no token exists.
+- Prometheus metrics on `/metrics`: node energy and power by domain, source
+  and quality, idle and unattributed energy, energy of each backend, model
+  and consumer, tokens, energy per generated token, emissions, cost and
+  water when configured, the state of every source and the errors and
+  durations of every collector.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

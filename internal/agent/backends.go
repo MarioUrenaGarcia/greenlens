@@ -16,6 +16,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/connector"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/procfs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sampler"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -38,7 +39,16 @@ type backendState struct {
 	read      bool
 	total     usage.Energy
 	powerW    float64
+	method    string
 	models    map[string]*api.Model
+	// ind holds the indicators of each model, added up interval by
+	// interval with the factors in force, so they never decrease.
+	ind map[string]*modelIndicators
+}
+
+type modelIndicators struct {
+	co2eG, cost, waterL float64
+	costSet, waterSet   bool
 }
 
 // refreshBackends finds the backends and their processes again.
@@ -96,6 +106,7 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 	chans := a.smp.Channels()
 	quality := a.pkgQuality
 	users := a.gpuUsers
+	wall := a.cfg.Attribution.IdlePolicy == string(attribution.Wall)
 	a.mu.RUnlock()
 
 	cpuJ, _ := s.DomainEnergy(source.DomainPackage)
@@ -139,6 +150,21 @@ func (a *Agent) accountBackends(s sampler.Sample, busy uint64) {
 		gpus = append(gpus, g)
 	}
 	got := a.acc.Add(usage.Sample{Node: node, Ticks: ticks, GPUs: gpus, Quality: quality})
+	// What no backend received: the components, or the platform under the
+	// wall policy. Taken sample by sample, the total never decreases.
+	total, given := cpuJ+dramJ, 0.0
+	for _, g := range gpus {
+		total += g.EnergyJ
+	}
+	for _, j := range got {
+		given += j
+	}
+	if wall && node.HasPlatform {
+		total = node.PlatformJ
+	}
+	a.mu.Lock()
+	a.unattributedJ += max(0, total-given)
+	a.mu.Unlock()
 	if a.meter != nil {
 		a.meter.Tick(s.Time, s.Interval, got)
 	}
@@ -162,11 +188,17 @@ func (a *Agent) usageWorker(ctx context.Context) {
 	for c := range a.cuts {
 		a.mu.RLock()
 		maxModels, maxConsumers := a.cfg.Attribution.MaxModelsPerBackend, a.cfg.Attribution.MaxConsumers
+		factors := a.cfg.Factors()
 		a.mu.RUnlock()
 		a.bmu.Lock()
 		bs := slices.Clone(a.bs)
 		a.bmu.Unlock()
 		readings := a.reader.Read(ctx, bs)
+		for _, b := range bs {
+			if rd, ok := readings[b.Name]; ok {
+				a.collectors.Observe("backend:"+string(b.Kind), rd.Took, rd.Err)
+			}
+		}
 		a.withProxy(readings)
 		a.split.SetMaxModels(maxModels)
 		a.split.SetMaxConsumers(maxConsumers)
@@ -178,7 +210,7 @@ func (a *Agent) usageWorker(ctx context.Context) {
 		if err := a.st.InsertUsage(ctx, rows, info, time.Now()); err != nil {
 			a.limited("usage-insert", "storing usage failed", "error", err)
 		}
-		a.recordUsage(c, readings, rows)
+		a.recordUsage(c, readings, rows, factors)
 		every := regressionEvery
 		if a.o.RegressionEvery > 0 {
 			every = a.o.RegressionEvery
@@ -240,7 +272,7 @@ func (a *Agent) regress(ctx context.Context) {
 	}
 }
 
-func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, rows []usage.Row) {
+func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, rows []usage.Row, f indicators.Factors) {
 	a.bmu.Lock()
 	defer a.bmu.Unlock()
 	for name, rd := range readings {
@@ -263,11 +295,33 @@ func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, r
 		st.total.DRAMJ += r.DRAMJ
 		st.total.GPUJ += r.GPUJ
 		st.total.PlatformJ += r.PlatformJ
+		if r.Method != "" {
+			st.method = r.Method
+		}
 		if interval > 0 {
 			power[r.Backend] += r.TotalJ() / interval
 		}
+		if r.Consumer != "" {
+			a.consumerJ[r.Consumer] += r.TotalJ()
+		}
 		if r.Model == "" {
 			continue
+		}
+		if st.ind == nil {
+			st.ind = map[string]*modelIndicators{}
+		}
+		mi, ok := st.ind[r.Model]
+		if !ok {
+			mi = &modelIndicators{}
+			st.ind[r.Model] = mi
+		}
+		v := f.Compute(r.TotalJ())
+		mi.co2eG += v.CO2eG
+		if v.Cost != nil {
+			mi.cost, mi.costSet = mi.cost+*v.Cost, true
+		}
+		if v.WaterL != nil {
+			mi.waterL, mi.waterSet = mi.waterL+*v.WaterL, true
 		}
 		m, ok := st.models[r.Model]
 		if !ok {

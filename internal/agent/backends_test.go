@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -184,4 +185,26 @@ func TestBackendEnergyAndTokens(t *testing.T) {
 		t.Fatalf("usage %+v, %v", u, err)
 	}
 
+	// The same use appears in the Prometheus metrics.
+	resp, body := call{t: t, c: socketClient(cfg.Agent.Socket), base: "http://agent"}.do("GET", api.PathMetrics, nil)
+	if resp.code != 200 {
+		t.Fatalf("metrics: %d", resp.code)
+	}
+	checkExposition(t, string(body))
+	series := `{backend="` + name + `",model="` + m.Name + `"`
+	for _, want := range []string{
+		`greenlens_backend_energy_joules_total{backend="` + name + `",kind="llamacpp",component="cpu",method="attributed_cpu_share"} `,
+		`greenlens_model_energy_joules_total` + series + `,method="attributed_cpu_share"} `,
+		`greenlens_model_tokens_total` + series + `,type="generated"} `,
+		`greenlens_model_joules_per_token` + series + `,window="since_start"} `,
+		`greenlens_emissions_grams_co2e_total` + series + `,scope="operational"} `,
+		`greenlens_collector_errors_total{collector="backend:llamacpp"} 0`,
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("metrics lack %s\n%s", want, body)
+		}
+	}
+	if strings.Contains(string(body), "greenlens_energy_cost_total") {
+		t.Error("a cost is reported without a tariff")
+	}
 }

@@ -36,6 +36,7 @@ const (
 	PathSession      = "/api/v1/session"
 	PathSessionCodes = "/api/v1/session/codes"
 	PathLogin        = "/login"
+	PathMetrics      = "/metrics"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )

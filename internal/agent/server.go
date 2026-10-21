@@ -124,6 +124,7 @@ func (a *Agent) routes() []route {
 // group of the agent, trusted like an administrator of the node.
 func (a *Agent) handler() http.Handler {
 	mux := a.mux(true)
+	mux.HandleFunc("GET "+api.PathMetrics, a.handleMetrics)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := auth.Principal{Role: auth.Admin, Actor: peerActor(r), Via: auth.ViaSocket}
 		mux.ServeHTTP(w, r.WithContext(auth.WithPrincipal(r.Context(), p)))

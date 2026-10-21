@@ -93,6 +93,14 @@ func (a *Agent) httpHandler() http.Handler {
 	mux.HandleFunc("GET "+api.PathSession, a.handleSession)
 	mux.HandleFunc("POST "+api.PathSession, a.handleTokenLogin)
 	mux.HandleFunc("DELETE "+api.PathSession, a.handleLogout)
+	a.mu.RLock()
+	metricsAuth := a.cfg.Server.MetricsAuth
+	a.mu.RUnlock()
+	if metricsAuth {
+		mux.Handle("GET "+api.PathMetrics, require(auth.Viewer, a.handleMetrics))
+	} else {
+		mux.HandleFunc("GET "+api.PathMetrics, a.handleMetrics)
+	}
 	requests := newLimiter(requestRate, requestBurst)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()

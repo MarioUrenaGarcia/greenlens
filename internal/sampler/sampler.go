@@ -87,6 +87,15 @@ type Sampler struct {
 	maxPower map[string]float64
 	now      func() time.Time
 	errs     map[string]error
+	observe  func(source string, d time.Duration, err error)
+}
+
+// Observe sets a function called after each read of a source, with its
+// duration and error, for the metrics of the agent.
+func (s *Sampler) Observe(f func(source string, d time.Duration, err error)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.observe = f
 }
 
 // New returns a sampler for the selected channels. sources must include
@@ -188,7 +197,11 @@ func (s *Sampler) readAll(ctx context.Context) ([]source.Reading, error) {
 	var out []source.Reading
 	var errs []error
 	for _, src := range s.sources {
+		start := time.Now()
 		rs, err := src.Read(ctx)
+		if s.observe != nil {
+			s.observe(src.ID(), time.Since(start), err)
+		}
 		out = append(out, rs...)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", src.ID(), err))

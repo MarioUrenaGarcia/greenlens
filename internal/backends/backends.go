@@ -119,7 +119,9 @@ func Roots(bs []Backend) map[string][]int {
 
 // Reading is the result of reading the counters of one backend.
 type Reading struct {
-	At       time.Time
+	At time.Time
+	// Took is how long the read lasted.
+	Took     time.Duration
 	Snapshot connector.Snapshot
 	Err      error
 }
@@ -147,9 +149,11 @@ func (r *Reader) Read(ctx context.Context, bs []Backend) map[string]Reading {
 			continue
 		}
 		wg.Go(func() {
+			start := r.now()
 			snap, err := r.scrape(ctx, r.client, b.Kind, b.Endpoint)
+			at := r.now()
 			mu.Lock()
-			out[b.Name] = Reading{At: r.now(), Snapshot: snap, Err: err}
+			out[b.Name] = Reading{At: at, Took: at.Sub(start), Snapshot: snap, Err: err}
 			mu.Unlock()
 		})
 	}

@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -229,6 +231,26 @@ func TestHTTPAPI(t *testing.T) {
 		}
 	}
 
+	waitSamples(t, r, 3)
+	resp, body = anon.do("GET", api.PathMetrics, nil)
+	if resp.code != 200 || !strings.HasPrefix(resp.header.Get("Content-Type"), "text/plain; version=0.0.4") {
+		t.Fatalf("metrics: %d %v", resp.code, resp.header)
+	}
+	checkExposition(t, string(body))
+	for _, want := range []string{
+		`greenlens_node_energy_joules_total{domain="package",source="fake",quality="measured"} `,
+		`greenlens_node_power_watts{domain="platform",source="fake",quality="platform"} 3`,
+		`greenlens_source_up{source="fake"} 1`,
+		`greenlens_collector_duration_seconds_count{collector="source:fake"} `,
+		`greenlens_build_info{version="test",`,
+		`greenlens_node_unattributed_energy_joules_total `,
+		`greenlens_self_energy_joules_total `,
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("metrics lack %s", want)
+		}
+	}
+
 	// One address cannot flood the API.
 	limited := false
 	for range requestBurst + 20 {
@@ -296,5 +318,63 @@ func TestLoginURL(t *testing.T) {
 	}
 	if u, err := url.Parse(loginURL(config.Server{Listen: "127.0.0.1:1"}, "a+b/c")); err != nil || u.Query().Get("code") != "a+b/c" {
 		t.Errorf("code not escaped: %v", u)
+	}
+}
+
+var (
+	sampleLine = regexp.MustCompile(`^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{([a-zA-Z_][a-zA-Z0-9_]*="([^"\\]|\\.)*",?)*\})? (\S+)$`)
+	metaLine   = regexp.MustCompile(`^# (HELP|TYPE) ([a-zA-Z_:][a-zA-Z0-9_:]*) .+$`)
+)
+
+// checkExposition checks the text format: every sample belongs to a family
+// declared before it with HELP and TYPE, values parse, and no series
+// appears twice.
+func checkExposition(t *testing.T, text string) {
+	t.Helper()
+	declared := map[string]string{}
+	seen := map[string]bool{}
+	for _, line := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
+		if m := metaLine.FindStringSubmatch(line); m != nil {
+			if m[1] == "TYPE" {
+				declared[m[2]] = strings.Fields(line)[3]
+			}
+			continue
+		}
+		m := sampleLine.FindStringSubmatch(line)
+		if m == nil {
+			t.Errorf("malformed line %q", line)
+			continue
+		}
+		name := m[1]
+		base := name
+		for _, sfx := range []string{"_bucket", "_sum", "_count"} {
+			if b, ok := strings.CutSuffix(name, sfx); ok && declared[b] == "histogram" {
+				base = b
+			}
+		}
+		if declared[base] == "" {
+			t.Errorf("%s has no TYPE before it", name)
+		}
+		if _, err := strconv.ParseFloat(strings.TrimPrefix(m[len(m)-1], "+"), 64); err != nil {
+			t.Errorf("bad value in %q", line)
+		}
+		series := strings.TrimSuffix(line, " "+m[len(m)-1])
+		if seen[series] {
+			t.Errorf("series %s appears twice", series)
+		}
+		seen[series] = true
+	}
+}
+
+func TestMetricsCanNeedAToken(t *testing.T) {
+	listen := freePort(t)
+	startAgentWith(t, "", func(c *config.Config) {
+		c.Server.Enabled = true
+		c.Server.Listen = listen
+		c.Server.MetricsAuth = true
+	})
+	anon := call{t: t, c: http.DefaultClient, base: "http://" + listen}
+	if resp, _ := anon.do("GET", api.PathMetrics, nil); resp.code != http.StatusUnauthorized {
+		t.Fatalf("metrics without a token: %d", resp.code)
 	}
 }
