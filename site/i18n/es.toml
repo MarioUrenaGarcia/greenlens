@@ -6,18 +6,14 @@ other = "Código fuente"
 other = "Saltar al contenido"
 [language]
 other = "Idioma"
-[status]
-other = "GreenLens mide la energía de CPU, memoria y GPU, la atribuye a backends de inferencia, modelos, consumidores y procesos, y hace benchmarks de modelos, desde la línea de comandos y una API local."
 [cta_start]
 other = "Empezar"
 [cta_repo]
-other = "Ver en GitHub"
-[features_title]
-other = "Qué hace GreenLens"
+other = "Ver el código en GitHub"
 [f_measure_title]
 other = "Mide"
 [f_measure_body]
-other = "Lee los contadores de energía de CPU, memoria y GPU desde el kernel de Linux y declara la calidad de cada valor: medido, atribuido o estimado."
+other = "Lee los contadores de energía de CPU, memoria y GPU desde el kernel de Linux y los controladores de GPU. greenlens doctor encuentra cada fuente y explica cómo arreglar las que fallan."
 [f_attribute_title]
 other = "Atribuye"
 [f_attribute_body]
@@ -25,25 +21,23 @@ other = "Reparte la energía del nodo entre backends de inferencia, modelos y eq
 [f_report_title]
 other = "Reporta"
 [f_report_body]
-other = "Convierte la energía en kWh, gCO2e y costo por backend, modelo y token generado, y proyecta el ahorro de cambiar de modelo."
+other = "Convierte la energía en kWh, gCO2e y costo por backend, modelo y token generado, y calcula la Intensidad de Carbono del Software de ISO/IEC 21031:2024."
 [principles_title]
-other = "Principios de diseño"
+other = "Hecho para ser confiable"
 [p_local]
-other = "Local primero: cada valor se calcula y se guarda en tu equipo."
+other = "Cada valor se calcula y se guarda en tu equipo."
 [p_telemetry]
-other = "Sin telemetría ni conexiones salientes por defecto."
+other = "Sin conexiones salientes por defecto."
 [p_privacy]
-other = "Los prompts y las respuestas nunca se guardan ni se registran; el proxy solo lee sus conteos de tokens."
+other = "Los prompts y las respuestas nunca se guardan ni se registran. El proxy opcional solo lee sus conteos de tokens."
 [p_root]
 other = "El agente corre sin root y limita su propio acceso a archivos con Landlock."
 [p_honest]
 other = "Cada número viene con su unidad, método y calidad."
-[p_core]
-other = "Un núcleo, tres interfaces: línea de comandos, interfaz de terminal e interfaz gráfica."
 [arch_title]
 other = "Arquitectura"
 [demo_title]
-other = "Pruébalo"
+other = "Errores que te dicen qué hacer"
 [quick_title]
 other = "Compilar desde el código fuente"
 [license_title]
@@ -56,3 +50,79 @@ other = "Secciones"
 other = "En esta sección"
 [edit]
 other = "Editar esta página"
+[hero_title]
+other = "Conoce el costo energético de cada modelo que ejecutas."
+[hero_lede]
+other = "GreenLens lee los contadores de energía de tus CPU, memoria y GPU, reparte esa energía entre los modelos de IA que corren en el equipo y reporta kWh, gCO2e, costo y SCI. Funciona localmente en Linux, desde una laptop hasta una flota de servidores."
+[meter_node]
+other = "Potencia del nodo"
+[meter_window]
+other = "Últimos 90 segundos, una muestra por segundo"
+[meter_now]
+other = "ahora"
+[meter_note]
+other = "Datos de ejemplo, simulados en tu navegador. En un equipo real, el agente lee estos valores de RAPL, hwmon y los controladores de GPU."
+[meter_split]
+other = "Reparto por backend"
+[meter_idle]
+other = "Reposo"
+[meter_energy]
+other = "Energía en la ventana"
+[meter_emissions]
+other = "Emisiones"
+[meter_factor]
+other = "Factor de la red, FESEN 2024"
+[q_measured]
+other = "medido"
+[q_attributed]
+other = "atribuido"
+[q_estimated]
+other = "estimado"
+[flow_title]
+other = "Del kernel a un reporte"
+[flow_body]
+other = "El agente toma una muestra cada segundo, guarda los datos en SQLite en tu equipo y sirve la línea de comandos, las interfaces de terminal y gráfica, Prometheus y OpenTelemetry."
+[quality_title]
+other = "Cada número dice cómo se obtuvo"
+[quality_body]
+other = "GreenLens nunca mezcla una lectura de sensor con una suposición. Cada valor lleva su unidad, su método y uno de tres niveles de calidad."
+[quality_value]
+other = "Valor"
+[quality_example]
+other = "Ejemplo"
+[quality_level]
+other = "Calidad"
+[row_cpu]
+other = "Energía del paquete de la CPU"
+[row_cpu_how]
+other = "Leída directamente del contador RAPL"
+[row_model]
+other = "Energía de un modelo de Ollama"
+[row_model_how]
+other = "Energía del nodo repartida por tiempo de CPU y uso de GPU"
+[row_tokens]
+other = "Energía por cada 1000 tokens generados"
+[row_tokens_how]
+other = "Energía atribuida dividida entre el conteo de tokens del proxy"
+[row_co2]
+other = "Emisiones del periodo"
+[row_co2_how]
+other = "Energía por el factor de emisión de la red"
+[quality_note]
+other = "Los valores de esta tabla son ejemplos."
+[demo_body]
+other = "Cada mensaje está en inglés y en español, y cada error tiene un código, una causa y una solución."
+[demo_alt]
+other = "Sesión de terminal con greenlens: ayuda, una sugerencia de comando y un error con su causa y su solución"
+[p_local_title]
+other = "Local primero"
+[p_telemetry_title]
+other = "Sin telemetría"
+[p_privacy_title]
+other = "Privado"
+[p_root_title]
+other = "Mínimo privilegio"
+[p_honest_title]
+other = "Honesto"
+[quick_req]
+other = "Linux en amd64 o arm64 con kernel 4.19 o posterior. El binario está enlazado estáticamente y no tiene dependencias en tiempo de ejecución. Para compilarlo necesitas Go, git y make."

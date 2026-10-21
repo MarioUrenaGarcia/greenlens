@@ -6,18 +6,14 @@ other = "Source code"
 other = "Skip to content"
 [language]
 other = "Language"
-[status]
-other = "GreenLens measures the energy of CPUs, memory and GPUs, attributes it to inference backends, models, consumers and processes, and benchmarks models, from the command line and a local API."
 [cta_start]
 other = "Get started"
 [cta_repo]
-other = "View on GitHub"
-[features_title]
-other = "What GreenLens does"
+other = "View the source on GitHub"
 [f_measure_title]
 other = "Measure"
 [f_measure_body]
-other = "Reads the energy counters of CPUs, memory and GPUs from the Linux kernel and declares the quality of every value: measured, attributed or estimated."
+other = "Reads the energy counters of CPUs, memory and GPUs from the Linux kernel and the GPU drivers. greenlens doctor finds every source and explains how to fix the ones that fail."
 [f_attribute_title]
 other = "Attribute"
 [f_attribute_body]
@@ -25,25 +21,23 @@ other = "Splits the energy of the node between inference backends, models and te
 [f_report_title]
 other = "Report"
 [f_report_body]
-other = "Turns energy into kWh, gCO2e and cost per backend, model and generated token, and projects the savings of switching models."
+other = "Turns energy into kWh, gCO2e and cost per backend, model and generated token, and computes the Software Carbon Intensity of ISO/IEC 21031:2024."
 [principles_title]
-other = "Design principles"
+other = "Built to be trusted"
 [p_local]
-other = "Local first: every value is computed and stored on your machine."
+other = "Every value is computed and stored on your machine."
 [p_telemetry]
-other = "No telemetry and no outbound connections by default."
+other = "No outbound connections by default."
 [p_privacy]
-other = "Prompts and responses are never stored or logged; the proxy reads only their token counts."
+other = "Prompts and responses are never stored or logged. The optional proxy reads only their token counts."
 [p_root]
 other = "The agent runs without root and confines its own file access with Landlock."
 [p_honest]
 other = "Every number comes with its unit, method and quality."
-[p_core]
-other = "One core, three interfaces: command line, terminal interface and graphical interface."
 [arch_title]
 other = "Architecture"
 [demo_title]
-other = "Try it"
+other = "Errors that tell you what to do"
 [quick_title]
 other = "Build from source"
 [license_title]
@@ -56,3 +50,79 @@ other = "Sections"
 other = "In this section"
 [edit]
 other = "Edit this page"
+[hero_title]
+other = "Know the energy cost of every model you run."
+[hero_lede]
+other = "GreenLens reads the energy counters of your CPUs, memory and GPUs, splits that energy between the AI models running on the machine, and reports kWh, gCO2e, cost and SCI. It runs locally on Linux, from a laptop to a fleet of servers."
+[meter_node]
+other = "Node power"
+[meter_window]
+other = "Last 90 seconds, sampled every second"
+[meter_now]
+other = "now"
+[meter_note]
+other = "Example data, simulated in your browser. On a real machine the agent reads these values from RAPL, hwmon and the GPU drivers."
+[meter_split]
+other = "Split by backend"
+[meter_idle]
+other = "Idle"
+[meter_energy]
+other = "Energy in the window"
+[meter_emissions]
+other = "Emissions"
+[meter_factor]
+other = "Grid factor, FESEN 2024"
+[q_measured]
+other = "measured"
+[q_attributed]
+other = "attributed"
+[q_estimated]
+other = "estimated"
+[flow_title]
+other = "From the kernel to a report"
+[flow_body]
+other = "The agent samples every second, stores the data in SQLite on your machine and serves the command line, the terminal and graphical interfaces, Prometheus and OpenTelemetry."
+[quality_title]
+other = "Every number says how it was obtained"
+[quality_body]
+other = "GreenLens never mixes a sensor reading with a guess. Each value carries its unit, its method and one of three quality levels."
+[quality_value]
+other = "Value"
+[quality_example]
+other = "Example"
+[quality_level]
+other = "Quality"
+[row_cpu]
+other = "Package energy of the CPU"
+[row_cpu_how]
+other = "Read directly from the RAPL counter"
+[row_model]
+other = "Energy of one Ollama model"
+[row_model_how]
+other = "Node energy split by CPU time and GPU usage"
+[row_tokens]
+other = "Energy per 1,000 generated tokens"
+[row_tokens_how]
+other = "Attributed energy divided by the token count of the proxy"
+[row_co2]
+other = "Emissions of the period"
+[row_co2_how]
+other = "Energy times the emission factor of the grid"
+[quality_note]
+other = "The values in this table are examples."
+[demo_body]
+other = "Every message is available in English and Spanish, and every error has a code, a cause and a fix."
+[demo_alt]
+other = "Terminal session with greenlens: help, a command suggestion and an error with its cause and fix"
+[p_local_title]
+other = "Local first"
+[p_telemetry_title]
+other = "No telemetry"
+[p_privacy_title]
+other = "Private"
+[p_root_title]
+other = "Least privilege"
+[p_honest_title]
+other = "Honest"
+[quick_req]
+other = "Linux on amd64 or arm64 with kernel 4.19 or later. The binary is statically linked and has no runtime dependencies. To build it you need Go, git and make."
