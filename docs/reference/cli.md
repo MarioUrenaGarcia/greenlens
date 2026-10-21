@@ -268,6 +268,31 @@ greenlens explain
 greenlens explain joules_per_token
 ```
 
+## greenlens license
+
+Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component.
+
+**Usage**
+
+```text
+greenlens license [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--full` | Print the complete text of the license |  |
+| `--third-party` | Print the license of every third-party component |  |
+
+**Examples**
+
+```bash
+greenlens license
+greenlens license --full | less
+greenlens license --third-party > notices.md
+```
+
 ## greenlens measure
 
 Measure the energy used while a command runs, while a process and its children run, or while a systemd unit runs, and attribute to it the share of CPU and memory energy that matches its CPU time. With a command, its exit code becomes the exit code of measure and the report goes to standard error.

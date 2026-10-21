@@ -77,6 +77,8 @@ energy = "Energía"
 kind = "Tipo"
 tokens = "Tokens entrada/salida"
 joules_per_token = "J por token generado"
+component = "Componente"
+version = "Versión"
 
 [domain]
 package = "Paquete de CPU"
@@ -564,6 +566,21 @@ from = "Inicio del periodo"
 to = "Fin del periodo"
 by = "Agrupa por none, hour o day"
 group = "Reporta por backend, model o consumer en lugar de por dominio"
+
+[cli.license]
+short = "Muestra la licencia y los avisos de terceros"
+long = "Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente."
+notice = "GreenLens es software libre: puedes redistribuirlo y modificarlo bajo los términos de la Licencia Pública General Affero de GNU, solo la versión 3, publicada por la Free Software Foundation. Se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA; ni siquiera la garantía implícita de COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. El texto de la licencia, en inglés, tiene los detalles."
+network = "Según la sección 13 de la licencia, si modificas GreenLens y permites que otros usuarios interactúen con él a través de una red, debes ofrecerles el código fuente de tu versión."
+source = "Código fuente de esta versión: {url}"
+modified = "Este binario se compiló a partir de código fuente modificado; quien te lo entregó debe ofrecerte ese código fuente."
+commercial = "Hay una licencia comercial para organizaciones que no pueden cumplir los términos de la AGPL: {contact}"
+third_party = "Componentes de terceros ({count}):"
+more = "Ejecuta 'greenlens license --full' para el texto de la licencia y 'greenlens license --third-party' para las licencias de los componentes."
+
+[cli.license.flag]
+full = "Imprime el texto completo de la licencia"
+third_party = "Imprime la licencia de cada componente de terceros"
 
 [config.doc]
 agent_sample_interval = "Cada cuánto se muestrea la energía, de 50ms a 60s."

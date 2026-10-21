@@ -77,6 +77,8 @@ energy = "Energy"
 kind = "Kind"
 tokens = "Tokens in/out"
 joules_per_token = "J per generated token"
+component = "Component"
+version = "Version"
 
 [domain]
 package = "CPU package"
@@ -564,6 +566,21 @@ from = "Start of the period"
 to = "End of the period"
 by = "Group by none, hour or day"
 group = "Report by backend, model or consumer instead of by domain"
+
+[cli.license]
+short = "Show the license and the third-party notices"
+long = "Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component."
+notice = "GreenLens is free software: you can redistribute it and modify it under the terms of the GNU Affero General Public License, version 3 only, as published by the Free Software Foundation. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the license text for details."
+network = "Under section 13 of the license, if you modify GreenLens and let users interact with it over a network, you must offer those users the source code of your version."
+source = "Source code of this version: {url}"
+modified = "This binary was built from modified source code; whoever gave it to you must offer you that source code."
+commercial = "A commercial license is available for organizations that cannot meet the terms of the AGPL: {contact}"
+third_party = "Third-party components ({count}):"
+more = "Run 'greenlens license --full' for the license text and 'greenlens license --third-party' for the licenses of the components."
+
+[cli.license.flag]
+full = "Print the complete text of the license"
+third_party = "Print the license of every third-party component"
 
 [config.doc]
 agent_sample_interval = "How often energy is sampled, from 50ms to 60s."

@@ -268,6 +268,31 @@ greenlens explain
 greenlens explain joules_per_token
 ```
 
+## greenlens license
+
+Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente.
+
+**Uso**
+
+```text
+greenlens license [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--full` | Imprime el texto completo de la licencia |  |
+| `--third-party` | Imprime la licencia de cada componente de terceros |  |
+
+**Ejemplos**
+
+```bash
+greenlens license
+greenlens license --full | less
+greenlens license --third-party > notices.md
+```
+
 ## greenlens measure
 
 Mide la energía usada mientras corre un comando, mientras corren un proceso y sus hijos, o mientras corre una unidad de systemd, y le atribuye la parte de la energía de CPU y memoria que corresponde a su tiempo de CPU. Con un comando, su código de salida pasa a ser el de measure y el reporte va a la salida de error.
