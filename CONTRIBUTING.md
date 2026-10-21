@@ -18,6 +18,9 @@ last section. Security problems are reported privately, as described in
 - Go, at the version declared in `go.mod`.
 - git, make and a C compiler (gcc). The compiler is only needed by the race
   detector used in tests; release binaries are built without cgo.
+- Chromium or Google Chrome for the end-to-end tests of the interface.
+  Without one they are skipped; `GREENLENS_CHROME` names the browser when
+  it is not on the `PATH`.
 
 Install the pinned development tools into `$(go env GOPATH)/bin` and enable
 the git hooks:
@@ -36,10 +39,12 @@ make check
 ```
 
 It runs, in order: `go mod tidy` verification, `go vet`, golangci-lint, the
-tests with the race detector, govulncheck, gitleaks, the typography, license
-header and translation checks, the tests of those checks, the dependency
-license check and the verification that `THIRD_PARTY_NOTICES.md` is current.
-CI runs the same target on every pull request.
+type check and lint of the interface, the tests with the race detector,
+govulncheck, gitleaks, the typography, license header and translation
+checks, the tests of those checks, the dependency license check, the
+verification that `THIRD_PARTY_NOTICES.md`, the generated reference pages,
+the terminal demos and the icons are current, and the end-to-end tests of
+the interface. CI runs the same target on every pull request.
 
 ## Rules for changes
 
@@ -103,6 +108,15 @@ scripts/vendor-npm.sh <package> <version> <file inside the package>...
 
 The script records the license and the SHA-256 of every file in
 `web/third_party/manifest.json`, and the tests verify them.
+
+`make e2e` drives the interface in a headless Chromium through the DevTools
+protocol, against an agent with a simulated energy source: sign-in, every
+screen in both themes, the keyboard, a benchmark, the efficient mode, the
+languages, the budgets of the first visit and the installed window without
+the agent. On every screen it checks the contrast of the text and of the
+focus indicator, the accessible names of the controls, the headings and the
+width at 375 px. The browser is started with its network features off, and
+the tests reach only the agent on loopback.
 
 ## Documentation
 

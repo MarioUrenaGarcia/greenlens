@@ -37,7 +37,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 
 .DEFAULT_GOAL := build
 
-.PHONY: build static-check test vet lint vuln secrets typography headers i18n check-scripts \
+.PHONY: build static-check test vet lint e2e vuln secrets typography headers i18n check-scripts \
         licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check icons icons-check man \
         site hugo tools hooks check clean
 
@@ -56,11 +56,19 @@ static-check:
 test:
 	CGO_ENABLED=1 $(GO) test -race -count=1 ./...
 
+# The e2e tag adds the tests that drive a browser, so they are checked too.
 vet:
-	$(GO) vet ./...
+	$(GO) vet -tags e2e ./...
 
 lint:
-	$(GOBIN)/golangci-lint run ./...
+	$(GOBIN)/golangci-lint run --build-tags e2e ./...
+
+# End-to-end and accessibility tests of the interface in a headless
+# Chromium. Without a browser they are skipped, unless GREENLENS_CHROME
+# names one.
+e2e:
+	$(GO) test -tags e2e -count=1 ./internal/webtest/...
+	$(GO) test -tags e2e -count=1 -run TestInterfaceEndToEnd ./internal/agent/
 
 vuln:
 	$(GOBIN)/govulncheck ./...
@@ -172,7 +180,7 @@ hooks:
 	$(GOBIN)/lefthook install
 
 check: tidy-check static-check vet lint web-check test vuln secrets typography headers i18n check-scripts licenses \
-       notices-check docs-check demo-check icons-check
+       notices-check docs-check demo-check icons-check e2e
 
 clean:
 	rm -rf bin site/public site/resources

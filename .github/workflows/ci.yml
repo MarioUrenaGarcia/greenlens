@@ -22,6 +22,13 @@ jobs:
           go-version-file: go.mod
       - name: Install tools
         run: make tools
+      # The end-to-end tests of the interface use the Chrome of the runner
+      # and fail instead of being skipped when it is missing.
+      - name: Find the browser
+        run: |
+          chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$chrome" || { echo "no Chromium or Chrome on the runner"; exit 1; }
+          echo "GREENLENS_CHROME=$chrome" >> "$GITHUB_ENV"
       - name: Check
         run: make check
       - name: Build
