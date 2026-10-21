@@ -596,7 +596,7 @@ Rol: `viewer`
 |---|---|---|---|---|
 | `from` | query | string (date-time) | sí | Inicio del periodo, RFC 3339. |
 | `to` | query | string (date-time) | sí | Fin del periodo, RFC 3339, a lo sumo tres años después de from. |
-| `bucket` | query | string | no | Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total. |
+| `bucket` | query | string | no | Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total. Los intervalos se cuentan desde from; cuando from cae en una hora exacta y el intervalo es un número entero de horas, cada intervalo se lee de los rollups horarios, lo que mantiene rápidos los periodos largos. |
 | `group_by` | query | `backend`, `model`, `consumer` | no | Agrupa por backend, modelo o consumidor en lugar de por canal. |
 
 **Respuestas**

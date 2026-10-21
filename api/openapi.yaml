@@ -208,8 +208,8 @@ paths:
           schema: {type: string, format: date-time}
         - name: bucket
           in: query
-          description: Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total.
-          x-description-es: Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total.
+          description: Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total. Buckets count from from; when from falls on the hour and the bucket is a whole number of hours, every bucket is read from the hourly rollups, which keeps long periods fast.
+          x-description-es: Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total. Los intervalos se cuentan desde from; cuando from cae en una hora exacta y el intervalo es un número entero de horas, cada intervalo se lee de los rollups horarios, lo que mantiene rápidos los periodos largos.
           schema: {type: string}
         - name: group_by
           in: query

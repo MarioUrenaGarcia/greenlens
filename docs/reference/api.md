@@ -596,7 +596,7 @@ Role: `viewer`
 |---|---|---|---|---|
 | `from` | query | string (date-time) | yes | Start of the period, RFC 3339. |
 | `to` | query | string (date-time) | yes | End of the period, RFC 3339, at most three years after from. |
-| `bucket` | query | string | no | Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total. |
+| `bucket` | query | string | no | Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total. Buckets count from from; when from falls on the hour and the bucket is a whole number of hours, every bucket is read from the hourly rollups, which keeps long periods fast. |
 | `group_by` | query | `backend`, `model`, `consumer` | no | Group by backend, model or consumer instead of by channel. |
 
 **Responses**

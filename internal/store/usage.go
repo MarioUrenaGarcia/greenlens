@@ -266,34 +266,21 @@ const (
 	ByConsumer = "consumer"
 )
 
-// Usage sums the usage in [from, to) by backend, model or consumer, from
-// the finest resolution kept for from plus the rows not folded yet. A
-// positive bucket splits the period in buckets that start at from.
+// Usage sums the usage in [from, to) by backend, model or consumer. A
+// positive bucket splits the period in buckets that start at from. As for
+// NodeEnergy, the resolution returned is the finest kept for from.
 func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, bucket time.Duration, now time.Time, r Retention) ([]UsageEnergy, string, error) {
-	res := Resolution1h
-	switch {
-	case !from.Before(now.Add(-r.Raw)):
-		res = ResolutionRaw
-	case !from.Before(now.Add(-r.Rollup1m)):
-		res = Resolution1m
+	res := finest(from, now, r)
+	done1m, done1h, err := s.folded(ctx, usage1m, usage1h)
+	if err != nil {
+		return nil, res, err
 	}
-	raw := `SELECT ts_ms AS t, backend_id, model_id, consumer_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
-		FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`
-	q := raw
-	args := []any{from.UnixMilli(), to.UnixMilli()}
-	if res != ResolutionRaw {
-		mark := usage1m
-		if res == Resolution1h {
-			mark = usage1h
-		}
-		var done int64
-		if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, mark).Scan(&done); err != nil {
-			return nil, res, err
-		}
-		q = `SELECT bucket_start_ms AS t, backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
-			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ? UNION ALL ` + raw
-		args = []any{res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli()}
-	}
+	plan := planRead(from.UnixMilli(), to.UnixMilli(), done1m, done1h, bucket.Milliseconds(), res)
+	q, args := plan.union(
+		`SELECT bucket_start_ms AS t, backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`,
+		`SELECT ts_ms AS t, backend_id, model_id, consumer_id, `+energyExpr+` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+			FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`)
 	group, model, consumer := `b.id`, `''`, `''`
 	switch by {
 	case ByModel:

@@ -383,17 +383,12 @@ type ChannelEnergy struct {
 }
 
 // NodeEnergy sums the energy of every channel in [from, to), grouped in
-// buckets of the given size (zero for a single total). It reads the finest
-// resolution still kept for from, and adds the raw samples not yet folded
-// into that resolution.
+// buckets of the given size (zero for a single total). The resolution it
+// returns is the finest still kept for from, which decides how exact the
+// edges of the period and of its buckets are; the whole hours and minutes
+// in between come from the rollups.
 func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.Duration, now time.Time, r Retention) ([]ChannelEnergy, string, error) {
-	res := Resolution1h
-	switch {
-	case !from.Before(now.Add(-r.Raw)):
-		res = ResolutionRaw
-	case !from.Before(now.Add(-r.Rollup1m)):
-		res = Resolution1m
-	}
+	res := finest(from, now, r)
 	bucketMS := bucket.Milliseconds()
 	if bucketMS <= 0 {
 		bucketMS = to.UnixMilli() - from.UnixMilli() + 1
@@ -401,22 +396,15 @@ func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.
 	group := func(col string) string {
 		return fmt.Sprintf("(%s - %d) / %d * %d + %d", col, from.UnixMilli(), bucketMS, bucketMS, from.UnixMilli())
 	}
-	var queries []string
-	var args []any
-	raw := `SELECT ` + group("ts_ms") + ` AS b, source_id, energy_j, 1 AS n FROM node_samples WHERE ts_ms >= ? AND ts_ms < ?`
-	if res == ResolutionRaw {
-		queries = append(queries, raw)
-		args = append(args, from.UnixMilli(), to.UnixMilli())
-	} else {
-		var done int64
-		if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, res).Scan(&done); err != nil {
-			return nil, res, err
-		}
-		queries = append(queries, `SELECT `+group("bucket_start_ms")+` AS b, source_id, energy_j, samples AS n FROM node_rollups
-			WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`, raw)
-		args = append(args, res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli())
+	done1m, done1h, err := s.folded(ctx, Resolution1m, Resolution1h)
+	if err != nil {
+		return nil, res, err
 	}
-	union := strings.Join(queries, " UNION ALL ")
+	plan := planRead(from.UnixMilli(), to.UnixMilli(), done1m, done1h, bucket.Milliseconds(), res)
+	union, args := plan.union(
+		`SELECT `+group("bucket_start_ms")+` AS b, source_id, energy_j, samples AS n FROM node_rollups
+			WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`,
+		`SELECT `+group("ts_ms")+` AS b, source_id, energy_j, 1 AS n FROM node_samples WHERE ts_ms >= ? AND ts_ms < ?`)
 	// The subqueries are constants of this function with only integers
 	// formatted into them; every value goes through placeholders.
 	//nolint:gosec // constant subqueries, see above
@@ -440,6 +428,16 @@ func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.
 		out = append(out, ce)
 	}
 	return out, res, rows.Err()
+}
+
+// folded returns how far the data of two resolutions has been folded,
+// named by their marks in rollup_state.
+func (s *Store) folded(ctx context.Context, fine, coarse string) (int64, int64, error) {
+	var a, b int64
+	err := s.db.QueryRowContext(ctx, `SELECT
+		coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0),
+		coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, fine, coarse).Scan(&a, &b)
+	return a, b, err
 }
 
 // Tables lists the tables of the database, for diagnostics.

@@ -79,6 +79,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the energy of each team or application for showback.
 - `/api/v1/usage` splits the use by backend, model or consumer in buckets,
   and the backends carry their root processes.
+- Queries of long periods read every whole hour that falls inside one
+  bucket from the hourly rollups and every whole minute from the minute
+  rollups, with new indexes by resolution, so a query of 30 days reads
+  about 720 rows per series instead of 43,200 and returns the same sums as
+  the raw rows.
 - Benchmarks from the interface: the agent runs one at a time with the
   defaults of `greenlens bench`, measures it with its own samples and the
   energy it attributes to the backend, reports its progress on the live
