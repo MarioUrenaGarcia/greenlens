@@ -156,6 +156,17 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	cal := calibrate.Result{StartedAt: now.Add(-time.Minute), Duration: time.Minute, Samples: 60,
 		Domains: map[source.Domain]calibrate.Stats{source.DomainPackage: {P10: 1, P50: 2, P90: 3}},
 		Quality: map[source.Domain]string{source.DomainPackage: "measured"}}
+	get("calibrationRun", sock, api.PathCalibRun)
+	post("cancelCalibration", sock, "DELETE", api.PathCalibRun, nil)
+	post("startCalibration", sock, "POST", api.PathCalibRun, api.CalibrationRequest{DurationS: 1})
+	minCalibration = 100 * time.Millisecond
+	post("startCalibration", sock, "POST", api.PathCalibRun, api.CalibrationRequest{DurationS: 0.3})
+	post("startCalibration", sock, "POST", api.PathCalibRun, api.CalibrationRequest{DurationS: 0.3})
+	if job := waitCalibration(t, sock); job.State != "done" {
+		t.Fatalf("calibration %+v", job)
+	}
+	minCalibration = 10 * time.Second
+	get("calibrationRun", sock, api.PathCalibRun)
 	post("saveCalibration", sock, "POST", api.PathCalibrations, cal)
 	post("saveCalibration", sock, "POST", api.PathCalibrations, map[string]any{"samples": 0})
 	get("status", sock, api.PathStatus)

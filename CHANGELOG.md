@@ -92,6 +92,13 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the resulting file, and applying it when the agent can write its file,
   keeping its comments and reloading it. The system service, whose file
   is read-only, gets the file to download and the commands to install it.
+- First steps in the interface, opened once on a node without a
+  calibration and skippable at every step: the sources found and their
+  quality, an idle calibration that the agent measures with its own
+  samples, and the emission factor and the tariff.
+  `POST /api/v1/calibrations/run` starts that calibration, which GET and
+  DELETE follow and cancel; it is refused while a benchmark runs, and
+  the other way around.
 - Help in the interface: the documentation of the site, in English and
   Spanish, is embedded in the binary, rendered without raw HTML and
   searchable, and every panel links to its page; links between pages and

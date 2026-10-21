@@ -270,7 +270,8 @@ paths:
         each sample, follows every sample of the agent; a backends event, whose
         data is a Backends document, follows every usage interval; a benchmark
         event, whose data is a BenchmarkJob, follows every change of the
-        benchmark run by the agent. A comment
+        benchmark run by the agent, and a calibration event, whose data is a
+        CalibrationJob, the start and end of a calibration. A comment
         keeps the connection open every 15 seconds. A client that reconnects
         with Last-Event-ID receives the samples it missed while they are still
         in memory, at most 15 minutes. A client that falls behind is
@@ -280,7 +281,9 @@ paths:
         uno con cada muestra, sigue a cada muestra del agente; un evento
         backends, cuyos datos son un documento Backends, sigue a cada intervalo
         de uso; un evento benchmark, cuyos datos son un BenchmarkJob, sigue a
-        cada cambio del benchmark que ejecuta el agente. Un comentario mantiene abierta la conexión cada 15 segundos. Un
+        cada cambio del benchmark que ejecuta el agente, y un evento
+        calibration, cuyos datos son un CalibrationJob, al inicio y al fin de una
+        calibración. Un comentario mantiene abierta la conexión cada 15 segundos. Un
         cliente que se reconecta con Last-Event-ID recibe las muestras que se
         perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que
         se atrasa se desconecta y continúa de la misma forma.
@@ -333,6 +336,78 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/calibrations/run:
+    get:
+      operationId: calibrationRun
+      tags: [measurements]
+      summary: State of the calibration run by the agent
+      x-summary-es: Estado de la calibración que ejecuta el agente
+      x-greenlens-role: viewer
+      responses:
+        "200":
+          description: The state.
+          x-description-es: El estado.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CalibrationJob"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    post:
+      operationId: startCalibration
+      tags: [measurements]
+      summary: Measure idle power with the samples of the agent
+      x-summary-es: Mide la potencia en reposo con las muestras del agente
+      description: >-
+        The machine should stay idle meanwhile. The result is stored, applied at
+        once and recorded in the audit log; calibration events of the live stream
+        report its start and end. Refused while a benchmark runs.
+      x-description-es: >-
+        La máquina debe quedarse en reposo mientras tanto. El resultado se guarda,
+        se aplica de inmediato y queda en la auditoría; los eventos calibration del
+        flujo en vivo avisan de su inicio y su fin. Se rechaza mientras corre un
+        benchmark.
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CalibrationRequest"}
+      responses:
+        "202":
+          description: The calibration started.
+          x-description-es: La calibración comenzó.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CalibrationJob"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: A calibration or a benchmark is running.
+          x-description-es: Hay una calibración o un benchmark en ejecución.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    delete:
+      operationId: cancelCalibration
+      tags: [measurements]
+      summary: Cancel the calibration run by the agent
+      x-summary-es: Cancela la calibración que ejecuta el agente
+      x-greenlens-role: operator
+      responses:
+        "202":
+          description: The calibration is stopping.
+          x-description-es: La calibración se está deteniendo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CalibrationJob"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: No calibration is running.
+          x-description-es: No hay ninguna calibración en ejecución.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
   /api/v1/benchmarks:
     get:
       operationId: benchmarks
@@ -1445,6 +1520,29 @@ components:
           description: Samples, oldest first.
           x-description-es: Muestras, de la más antigua a la más reciente.
           items: {$ref: "#/components/schemas/LivePoint"}
+
+    CalibrationRequest:
+      type: object
+      description: A calibration for the agent to run.
+      x-description-es: Una calibración para que la ejecute el agente.
+      additionalProperties: false
+      properties:
+        duration_s: {type: number, minimum: 0, maximum: 600, description: Seconds to measure, at least 10; zero is 60., x-description-es: Segundos a medir, al menos 10; cero es 60.}
+
+    CalibrationJob:
+      type: object
+      description: The state of the calibration run by the agent.
+      x-description-es: El estado de la calibración que ejecuta el agente.
+      additionalProperties: false
+      required: [schema_version, state, duration_s]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        state: {type: string, enum: [idle, running, done, failed, canceled], description: State., x-description-es: Estado.}
+        duration_s: {type: number, description: Seconds measured., x-description-es: Segundos medidos.}
+        started_at: {type: string, format: date-time, description: Start., x-description-es: Inicio.}
+        ended_at: {type: string, format: date-time, description: End., x-description-es: Fin.}
+        result: {$ref: "#/components/schemas/Calibration"}
+        error: {type: string, description: Why it failed., x-description-es: Por qué falló.}
 
     CalibrationStats:
       type: object

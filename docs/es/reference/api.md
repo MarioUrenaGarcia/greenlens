@@ -23,6 +23,9 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `DELETE` | `/api/v1/benchmarks/run` | operator | Cancela el benchmark que ejecuta el agente |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | Un benchmark guardado |
 | `POST` | `/api/v1/calibrations` | operator | Guarda una calibración de la potencia en reposo y la aplica |
+| `GET` | `/api/v1/calibrations/run` | viewer | Estado de la calibración que ejecuta el agente |
+| `POST` | `/api/v1/calibrations/run` | operator | Mide la potencia en reposo con las muestras del agente |
+| `DELETE` | `/api/v1/calibrations/run` | operator | Cancela la calibración que ejecuta el agente |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Mensajes de un idioma para la interfaz gráfica |
 | `GET` | `/api/v1/config` | admin | La configuración vigente y su archivo |
 | `PUT` | `/api/v1/config` | admin | Cambia el archivo de configuración y lo recarga |
@@ -235,6 +238,52 @@ Rol: `operator`
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
 | `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
 | `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### GET /api/v1/calibrations/run
+
+Estado de la calibración que ejecuta el agente.
+
+Rol: `viewer`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El estado. | [CalibrationJob](#calibrationjob) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+
+### POST /api/v1/calibrations/run
+
+Mide la potencia en reposo con las muestras del agente. La máquina debe quedarse en reposo mientras tanto. El resultado se guarda, se aplica de inmediato y queda en la auditoría; los eventos calibration del flujo en vivo avisan de su inicio y su fin. Se rechaza mientras corre un benchmark.
+
+Rol: `operator`
+
+**Documento**: [CalibrationRequest](#calibrationrequest)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `202` | La calibración comenzó. | [CalibrationJob](#calibrationjob) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | Hay una calibración o un benchmark en ejecución. | [Error](#error) |
+
+### DELETE /api/v1/calibrations/run
+
+Cancela la calibración que ejecuta el agente.
+
+Rol: `operator`
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `202` | La calibración se está deteniendo. | [CalibrationJob](#calibrationjob) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | No hay ninguna calibración en ejecución. | [Error](#error) |
 
 ### GET /api/v1/catalogs/{lang}
 
@@ -462,7 +511,7 @@ Rol: `viewer`
 
 ### GET /api/v1/stream
 
-Potencia en vivo y uso de los backends como eventos enviados por el servidor. Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en uno con cada muestra, sigue a cada muestra del agente; un evento backends, cuyos datos son un documento Backends, sigue a cada intervalo de uso; un evento benchmark, cuyos datos son un BenchmarkJob, sigue a cada cambio del benchmark que ejecuta el agente. Un comentario mantiene abierta la conexión cada 15 segundos. Un cliente que se reconecta con Last-Event-ID recibe las muestras que se perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que se atrasa se desconecta y continúa de la misma forma.
+Potencia en vivo y uso de los backends como eventos enviados por el servidor. Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en uno con cada muestra, sigue a cada muestra del agente; un evento backends, cuyos datos son un documento Backends, sigue a cada intervalo de uso; un evento benchmark, cuyos datos son un BenchmarkJob, sigue a cada cambio del benchmark que ejecuta el agente, y un evento calibration, cuyos datos son un CalibrationJob, al inicio y al fin de una calibración. Un comentario mantiene abierta la conexión cada 15 segundos. Un cliente que se reconecta con Last-Event-ID recibe las muestras que se perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que se atrasa se desconecta y continúa de la misma forma.
 
 Rol: `viewer`
 
@@ -803,6 +852,28 @@ Una medición de la potencia en reposo, como la hace greenlens calibrate.
 | `governor` | string | no | Gobernador de frecuencia. |
 | `gpus` | mapa de [CalibrationStats](#calibrationstats) | no | Estadísticas por dirección PCI de GPU. |
 | `temperature_c` | number | no | Temperatura del procesador. |
+
+### CalibrationJob
+
+El estado de la calibración que ejecuta el agente.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `duration_s` | number | sí | Segundos medidos. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `state` | `idle`, `running`, `done`, `failed`, `canceled` | sí | Estado. |
+| `ended_at` | string (date-time) | no | Fin. |
+| `error` | string | no | Por qué falló. |
+| `result` | [Calibration](#calibration) | no | Una medición de la potencia en reposo, como la hace greenlens calibrate. |
+| `started_at` | string (date-time) | no | Inicio. |
+
+### CalibrationRequest
+
+Una calibración para que la ejecute el agente.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `duration_s` | number | no | Segundos a medir |
 
 ### CalibrationStats
 

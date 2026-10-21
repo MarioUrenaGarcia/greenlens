@@ -113,7 +113,9 @@ export function Sources(props: { status: Status }) {
             ) : null}
           </div>
         ) : (
-          <p>{t("gui.sources.not_calibrated")}</p>
+          <p>
+            {t("gui.sources.not_calibrated")} <a href={href("welcome")}>{t("gui.sources.first_steps")}</a>
+          </p>
         )}
       </Panel>
       <Panel title={t("gui.sources.agent")}>

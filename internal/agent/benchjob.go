@@ -171,6 +171,10 @@ func (a *Agent) handleStartBenchmark(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if a.cjob.status().State == benchRunning {
+		writeError(w, http.StatusConflict, "a calibration is running; benchmark once it ends")
+		return
+	}
 	j := a.bjob
 	j.mu.Lock()
 	if j.state.State == benchRunning {

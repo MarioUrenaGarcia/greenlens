@@ -12,6 +12,7 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
+	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/helpdocs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -28,6 +29,7 @@ const (
 	PathSources      = "/api/v1/sources"
 	PathUsage        = "/api/v1/usage"
 	PathCalibrations = "/api/v1/calibrations"
+	PathCalibRun     = "/api/v1/calibrations/run"
 	PathLive         = "/api/v1/live"
 	PathStream       = "/api/v1/stream"
 	PathBackends     = "/api/v1/backends"
@@ -443,4 +445,21 @@ type HelpPage struct {
 	Path          string `json:"path"`
 	Title         string `json:"title"`
 	HTML          string `json:"html"`
+}
+
+// CalibrationRequest asks the agent to measure idle power.
+type CalibrationRequest struct {
+	// DurationS is how long to measure, 10 to 600 seconds; zero is 60.
+	DurationS float64 `json:"duration_s"`
+}
+
+// CalibrationJob is the state of the calibration run by the agent.
+type CalibrationJob struct {
+	SchemaVersion int               `json:"schema_version"`
+	State         string            `json:"state"`
+	DurationS     float64           `json:"duration_s"`
+	StartedAt     *time.Time        `json:"started_at,omitempty"`
+	EndedAt       *time.Time        `json:"ended_at,omitempty"`
+	Result        *calibrate.Result `json:"result,omitempty"`
+	Error         string            `json:"error,omitempty"`
 }

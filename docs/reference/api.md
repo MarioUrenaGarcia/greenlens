@@ -23,6 +23,9 @@ Energy measurements of the node, its inference backends and models, served by th
 | `DELETE` | `/api/v1/benchmarks/run` | operator | Cancel the benchmark run by the agent |
 | `GET` | `/api/v1/benchmarks/{id}` | viewer | One stored benchmark |
 | `POST` | `/api/v1/calibrations` | operator | Store a calibration of the idle power and apply it |
+| `GET` | `/api/v1/calibrations/run` | viewer | State of the calibration run by the agent |
+| `POST` | `/api/v1/calibrations/run` | operator | Measure idle power with the samples of the agent |
+| `DELETE` | `/api/v1/calibrations/run` | operator | Cancel the calibration run by the agent |
 | `GET` | `/api/v1/catalogs/{lang}` | public | Messages of one language for the graphical interface |
 | `GET` | `/api/v1/config` | admin | The configuration in force and its file |
 | `PUT` | `/api/v1/config` | admin | Change the configuration file and reload it |
@@ -235,6 +238,52 @@ Role: `operator`
 | `401` | No valid session or token. | [Error](#error) |
 | `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
 | `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### GET /api/v1/calibrations/run
+
+State of the calibration run by the agent.
+
+Role: `viewer`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The state. | [CalibrationJob](#calibrationjob) |
+| `401` | No valid session or token. | [Error](#error) |
+
+### POST /api/v1/calibrations/run
+
+Measure idle power with the samples of the agent. The machine should stay idle meanwhile. The result is stored, applied at once and recorded in the audit log; calibration events of the live stream report its start and end. Refused while a benchmark runs.
+
+Role: `operator`
+
+**Document**: [CalibrationRequest](#calibrationrequest)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `202` | The calibration started. | [CalibrationJob](#calibrationjob) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | A calibration or a benchmark is running. | [Error](#error) |
+
+### DELETE /api/v1/calibrations/run
+
+Cancel the calibration run by the agent.
+
+Role: `operator`
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `202` | The calibration is stopping. | [CalibrationJob](#calibrationjob) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | No calibration is running. | [Error](#error) |
 
 ### GET /api/v1/catalogs/{lang}
 
@@ -462,7 +511,7 @@ Role: `viewer`
 
 ### GET /api/v1/stream
 
-Live power and use of the backends as server-sent events. A sample event, whose data is a LivePoint and whose id grows by one with each sample, follows every sample of the agent; a backends event, whose data is a Backends document, follows every usage interval; a benchmark event, whose data is a BenchmarkJob, follows every change of the benchmark run by the agent. A comment keeps the connection open every 15 seconds. A client that reconnects with Last-Event-ID receives the samples it missed while they are still in memory, at most 15 minutes. A client that falls behind is disconnected and resumes the same way.
+Live power and use of the backends as server-sent events. A sample event, whose data is a LivePoint and whose id grows by one with each sample, follows every sample of the agent; a backends event, whose data is a Backends document, follows every usage interval; a benchmark event, whose data is a BenchmarkJob, follows every change of the benchmark run by the agent, and a calibration event, whose data is a CalibrationJob, the start and end of a calibration. A comment keeps the connection open every 15 seconds. A client that reconnects with Last-Event-ID receives the samples it missed while they are still in memory, at most 15 minutes. A client that falls behind is disconnected and resumes the same way.
 
 Role: `viewer`
 
@@ -803,6 +852,28 @@ A measurement of the idle power, as greenlens calibrate makes it.
 | `governor` | string | no | Frequency governor. |
 | `gpus` | map of [CalibrationStats](#calibrationstats) | no | Statistics by GPU PCI address. |
 | `temperature_c` | number | no | Processor temperature. |
+
+### CalibrationJob
+
+The state of the calibration run by the agent.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `duration_s` | number | yes | Seconds measured. |
+| `schema_version` | integer | yes | Version of the document. |
+| `state` | `idle`, `running`, `done`, `failed`, `canceled` | yes | State. |
+| `ended_at` | string (date-time) | no | End. |
+| `error` | string | no | Why it failed. |
+| `result` | [Calibration](#calibration) | no | A measurement of the idle power, as greenlens calibrate makes it. |
+| `started_at` | string (date-time) | no | Start. |
+
+### CalibrationRequest
+
+A calibration for the agent to run.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `duration_s` | number | no | Seconds to measure |
 
 ### CalibrationStats
 

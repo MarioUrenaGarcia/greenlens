@@ -238,3 +238,13 @@ export interface BenchmarkJob {
   benchmark_id?: number;
   error?: string;
 }
+
+export interface CalibrationJob {
+  schema_version: number;
+  state: "idle" | "running" | "done" | "failed" | "canceled";
+  duration_s: number;
+  started_at?: string;
+  ended_at?: string;
+  result?: { samples: number; domains: Record<string, { p10_w: number; p50_w: number; p90_w: number }> };
+  error?: string;
+}

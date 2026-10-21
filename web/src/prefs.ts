@@ -36,6 +36,8 @@ export const prefs = {
     return v === "on" || v === "off" ? v : "auto";
   },
   setEfficient: (v: EfficientChoice) => write("efficient", v),
+  welcomed: () => read("welcome") === "done",
+  setWelcomed: () => write("welcome", "done"),
 };
 
 const dark = window.matchMedia("(prefers-color-scheme: dark)");

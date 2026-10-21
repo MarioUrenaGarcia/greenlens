@@ -28,6 +28,7 @@ import { Models } from "./screens/models";
 import { Reports } from "./screens/reports";
 import { Sources } from "./screens/sources";
 import { Summary } from "./screens/summary";
+import { Welcome } from "./screens/welcome";
 import type { Session, Status } from "./types";
 
 interface Screen {
@@ -35,6 +36,8 @@ interface Screen {
   icon: () => ComponentChildren;
   // admin screens are listed only for administrators.
   admin?: boolean;
+  // hidden screens are reached by links, not from the navigation.
+  hidden?: boolean;
   render: (ctx: {
     status: Status;
     session: Session;
@@ -62,6 +65,12 @@ const screens: Screen[] = [
     render: ({ path, query }) => <Help path={path} anchor={query.get("anchor")} />,
   },
   { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
+  {
+    id: "welcome",
+    icon: icons.help,
+    hidden: true,
+    render: ({ status, session }) => <Welcome status={status} role={session.role} />,
+  },
 ];
 
 // selfLimitW is the estimated power of the interface above which the
@@ -117,6 +126,13 @@ function Shell(props: {
     applyTheme(theme);
     onSystemTheme(() => applyTheme(prefs.theme()));
   }, [theme]);
+  // A node without a calibration opens the first steps once, until the
+  // user finishes or skips them.
+  useEffect(() => {
+    if (!props.status.calibration && !prefs.welcomed() && route.path.length === 0) {
+      location.hash = href("welcome");
+    }
+  }, []);
   const id = route.path[0] ?? "summary";
   const visible = screens.filter((s) => !s.admin || props.session.role === "admin");
   const screen = visible.find((s) => s.id === id) ?? visible[0];
@@ -133,14 +149,16 @@ function Shell(props: {
           {icons.logo()} GreenLens
         </a>
         <ul class="nav">
-          {visible.map((s) => (
-            <li key={s.id}>
-              <a href={href(s.id)} aria-current={s.id === screen?.id ? "page" : undefined}>
-                {s.icon()}
-                {t(`gui.nav.${s.id}`)}
-              </a>
-            </li>
-          ))}
+          {visible
+            .filter((s) => !s.hidden)
+            .map((s) => (
+              <li key={s.id}>
+                <a href={href(s.id)} aria-current={s.id === screen?.id ? "page" : undefined}>
+                  {s.icon()}
+                  {t(`gui.nav.${s.id}`)}
+                </a>
+              </li>
+            ))}
         </ul>
         <div class="sidebar-foot">
           <details class="prefs">

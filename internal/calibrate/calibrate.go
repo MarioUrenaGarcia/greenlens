@@ -69,22 +69,77 @@ func (r Result) Baseline() attribution.Baseline {
 // ErrNoSamples is returned when the duration was too short to measure.
 var ErrNoSamples = errors.New("calibration collected no samples")
 
+// Collector adds up samples of an idle machine into a calibration.
+type Collector struct {
+	chans   map[string]source.Channel
+	quality map[source.Domain]string
+	powers  map[source.Domain][]float64
+	gpus    map[string][]float64
+	samples int
+}
+
+// NewCollector collects the samples of the given channels.
+func NewCollector(chans map[string]source.Channel) *Collector {
+	c := &Collector{chans: chans, quality: map[source.Domain]string{}, powers: map[source.Domain][]float64{}, gpus: map[string][]float64{}}
+	for _, ch := range chans {
+		if ch.Domain.Level() != source.LevelContained {
+			c.quality[ch.Domain] = string(ch.Quality)
+		}
+	}
+	return c
+}
+
+// Add records the power of every domain in one sample.
+func (c *Collector) Add(smp sampler.Sample) {
+	for d := range c.quality {
+		if w, ok := smp.DomainPower(d); ok {
+			c.powers[d] = append(c.powers[d], w)
+		}
+	}
+	for _, ch := range smp.Channels {
+		if ch.Domain == source.DomainGPU {
+			inst := c.chans[ch.Channel].Instance
+			c.gpus[inst] = append(c.gpus[inst], ch.PowerW)
+		}
+	}
+	c.samples++
+}
+
+// Samples returns how many samples were added.
+func (c *Collector) Samples() int { return c.samples }
+
+// Result summarizes the samples. fsys gives the frequency and temperature
+// of the processor at the end.
+func (c *Collector) Result(start time.Time, d time.Duration, fsys fs.FS) (Result, error) {
+	res := Result{StartedAt: start, Duration: d, Samples: c.samples, Domains: map[source.Domain]Stats{}, Quality: map[source.Domain]string{}}
+	for dom, ws := range c.powers {
+		if len(ws) == 0 {
+			continue
+		}
+		res.Domains[dom] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
+		res.Quality[dom] = c.quality[dom]
+	}
+	for inst, ws := range c.gpus {
+		if res.GPUs == nil {
+			res.GPUs = map[string]Stats{}
+		}
+		res.GPUs[inst] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
+	}
+	if len(res.Domains) == 0 {
+		return res, ErrNoSamples
+	}
+	res.FrequencyMHz, res.Governor = CPUFrequency(fsys)
+	res.TemperatureC = Temperature(fsys)
+	return res, nil
+}
+
 // Run samples s every interval for duration. progress, when not nil, is
 // called after every sample with the time elapsed.
 func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval time.Duration, progress func(time.Duration)) (Result, error) {
-	res := Result{StartedAt: time.Now(), Domains: map[source.Domain]Stats{}, Quality: map[source.Domain]string{}}
 	if err := s.Prime(ctx); err != nil {
-		return res, err
+		return Result{}, err
 	}
-	powers := map[source.Domain][]float64{}
-	gpus := map[string][]float64{}
-	quality := map[source.Domain]string{}
-	chans := s.Channels()
-	for _, ch := range chans {
-		if ch.Domain.Level() != source.LevelContained {
-			quality[ch.Domain] = string(ch.Quality)
-		}
-	}
+	c := NewCollector(s.Channels())
 	start := time.Now()
 	t := time.NewTicker(interval)
 	defer t.Stop()
@@ -92,48 +147,22 @@ func Run(ctx context.Context, s *sampler.Sampler, fsys fs.FS, duration, interval
 	for time.Since(start) < duration {
 		select {
 		case <-ctx.Done():
-			return res, ctx.Err()
+			return Result{}, ctx.Err()
 		case <-t.C:
 		}
 		smp, err := s.Sample(ctx)
 		if err != nil {
 			errs = append(errs, err)
 		}
-		for d := range quality {
-			if w, ok := smp.DomainPower(d); ok {
-				powers[d] = append(powers[d], w)
-			}
-		}
-		for _, c := range smp.Channels {
-			if c.Domain == source.DomainGPU {
-				inst := chans[c.Channel].Instance
-				gpus[inst] = append(gpus[inst], c.PowerW)
-			}
-		}
-		res.Samples++
+		c.Add(smp)
 		if progress != nil {
 			progress(time.Since(start))
 		}
 	}
-	res.Duration = time.Since(start)
-	for d, ws := range powers {
-		if len(ws) == 0 {
-			continue
-		}
-		res.Domains[d] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
-		res.Quality[d] = quality[d]
+	res, err := c.Result(start, time.Since(start), fsys)
+	if err != nil {
+		return res, errors.Join(append([]error{err}, errs...)...)
 	}
-	for inst, ws := range gpus {
-		if res.GPUs == nil {
-			res.GPUs = map[string]Stats{}
-		}
-		res.GPUs[inst] = Stats{P10: Percentile(ws, 10), P50: Percentile(ws, 50), P90: Percentile(ws, 90)}
-	}
-	if len(res.Domains) == 0 {
-		return res, errors.Join(append([]error{ErrNoSamples}, errs...)...)
-	}
-	res.FrequencyMHz, res.Governor = CPUFrequency(fsys)
-	res.TemperatureC = Temperature(fsys)
 	return res, nil
 }
 

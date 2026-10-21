@@ -105,6 +105,7 @@ type Agent struct {
 
 	stream *stream
 	bjob   *benchJob
+	cjob   *calJob
 	// selfReload asks the loop to reload the configuration, after the
 	// interface changed it.
 	selfReload     chan struct{}
@@ -196,6 +197,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		collectors: prometheus.NewCollectors(),
 		stream:     newStream(),
 		bjob:       newBenchJob(),
+		cjob:       newCalJob(),
 		selfReload: make(chan struct{}, 1),
 		stopping:   make(chan struct{}),
 		consumerJ:  map[string]float64{},
@@ -441,6 +443,7 @@ func (a *Agent) serve(ctx context.Context) error {
 	shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownGrace)
 	defer cancel()
 	a.stopBenchmark(shutdown)
+	a.stopCalibration(shutdown)
 	// The last, partial interval is stored too.
 	a.cutUsage(time.Now())
 	close(a.cuts)
@@ -620,6 +623,7 @@ func (a *Agent) step(ctx context.Context) {
 	a.ring.add(s)
 	seq := a.samples
 	a.mu.Unlock()
+	a.cjob.observe(s)
 	a.publishSample(seq, s)
 	if w, ok := s.DomainPower(source.DomainPackage); ok {
 		a.idle.Add(s.Time, w)
