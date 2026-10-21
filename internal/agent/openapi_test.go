@@ -145,8 +145,9 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	get("usage", sock, api.PathUsage+"?"+q.Encode())
 	q.Set("bucket", "1m")
 	get("usage", sock, api.PathUsage+"?"+q.Encode())
-	q.Del("bucket")
 	q.Set("group_by", "model")
+	get("usage", sock, api.PathUsage+"?"+q.Encode())
+	q.Del("bucket")
 	get("usage", sock, api.PathUsage+"?"+q.Encode())
 	get("usage", sock, api.PathUsage+"?from=yesterday")
 

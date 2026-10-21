@@ -208,8 +208,8 @@ paths:
           schema: {type: string, format: date-time}
         - name: bucket
           in: query
-          description: Size of each bucket, such as 1m or 1h, at least 1m. Without it, one total.
-          x-description-es: Tamaño de cada intervalo, como 1m o 1h, al menos 1m. Sin él, un solo total.
+          description: Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total.
+          x-description-es: Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total.
           schema: {type: string}
         - name: group_by
           in: query
@@ -919,6 +919,19 @@ components:
         static: {type: boolean, description: Whether it is declared in the configuration., x-description-es: Si está declarado en la configuración.}
         container_id: {type: string, description: Container it runs in., x-description-es: Contenedor en el que se ejecuta.}
         processes: {type: integer, description: Processes found for it., x-description-es: Procesos encontrados para él.}
+        roots:
+          type: array
+          description: Its root processes; their descendants belong to it too.
+          x-description-es: Sus procesos raíz; sus descendientes también le pertenecen.
+          items:
+            type: object
+            description: A process.
+            x-description-es: Un proceso.
+            additionalProperties: false
+            required: [pid, name]
+            properties:
+              pid: {type: integer, description: Process id., x-description-es: Id del proceso.}
+              name: {type: string, description: Name of the executable., x-description-es: Nombre del ejecutable.}
         version: {type: string, description: Version it reports., x-description-es: Versión que reporta.}
         token_counters: {type: boolean, description: Whether it reports token counts., x-description-es: Si reporta conteos de tokens.}
         last_read: {type: string, format: date-time, description: When its counters were last read., x-description-es: Cuándo se leyeron por última vez sus contadores.}
@@ -1003,6 +1016,7 @@ components:
       additionalProperties: false
       required: [backend, kind, energy_j, prompt_tokens, generated_tokens, requests, tokens_counted]
       properties:
+        bucket_start: {type: string, format: date-time, description: Start of the bucket, when the period is split., x-description-es: Inicio del intervalo, cuando el periodo se divide.}
         backend: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
         kind: {type: string, description: Kind of the backend., x-description-es: Tipo del backend.}
         model: {type: string, description: Name of the model, when grouping by model or consumer., x-description-es: Nombre del modelo, al agrupar por modelo o consumidor.}
@@ -1018,12 +1032,13 @@ components:
       description: Use of a period by backend, model or consumer.
       x-description-es: Uso de un periodo por backend, modelo o consumidor.
       additionalProperties: false
-      required: [schema_version, from, to, group_by, resolution, rows]
+      required: [schema_version, from, to, group_by, bucket_ms, resolution, rows]
       properties:
         schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
         from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
         to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
         group_by: {type: string, enum: [backend, model, consumer], description: Grouping., x-description-es: Agrupación.}
+        bucket_ms: {type: integer, description: Size of each bucket in milliseconds; zero for one total., x-description-es: Tamaño de cada intervalo en milisegundos; cero para un solo total.}
         resolution: {type: string, enum: [raw, 1m, 1h], description: Finest resolution read., x-description-es: Resolución más fina leída.}
         rows:
           type: array

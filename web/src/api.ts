@@ -63,8 +63,9 @@ export const api = {
     if (bucket) q.set("bucket", bucket);
     return request<Usage>("GET", `/api/v1/usage?${q}`);
   },
-  usageBy: (from: Date, to: Date, groupBy: "backend" | "model" | "consumer") => {
+  usageBy: (from: Date, to: Date, groupBy: "backend" | "model" | "consumer", bucket?: string) => {
     const q = new URLSearchParams({ from: iso(from), to: iso(to), group_by: groupBy });
+    if (bucket) q.set("bucket", bucket);
     return request<BackendUsage>("GET", `/api/v1/usage?${q}`);
   },
   request,

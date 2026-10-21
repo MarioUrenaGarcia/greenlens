@@ -43,7 +43,7 @@ export function Panel(props: {
 
 export type Tone = "load" | "eff" | "critical" | "plain";
 
-export function Metric(props: { label: string; value: string; note?: string; tone?: Tone }) {
+export function Metric(props: { label: string; value: string; note?: string | undefined; tone?: Tone }) {
   const tone = props.tone && props.tone !== "plain" ? props.tone : "";
   return (
     <div class="inner metric">

@@ -18,7 +18,10 @@ import {
 } from "./prefs";
 import { href, useRoute } from "./router";
 import { About, selfPower } from "./screens/about";
+import { BackendsScreen } from "./screens/backends";
+import { Consumers } from "./screens/consumers";
 import { Login } from "./screens/login";
+import { Models } from "./screens/models";
 import { Sources } from "./screens/sources";
 import { Summary } from "./screens/summary";
 import type { Session, Status } from "./types";
@@ -31,6 +34,9 @@ interface Screen {
 
 const screens: Screen[] = [
   { id: "summary", icon: icons.summary, render: ({ status }) => <Summary status={status} /> },
+  { id: "models", icon: icons.models, render: ({ path }) => <Models path={path} /> },
+  { id: "backends", icon: icons.backends, render: () => <BackendsScreen /> },
+  { id: "consumers", icon: icons.consumers, render: () => <Consumers /> },
   { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
   { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
 ];

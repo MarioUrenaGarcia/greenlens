@@ -88,6 +88,7 @@ export interface Backend {
   static: boolean;
   container_id?: string;
   processes: number;
+  roots?: { pid: number; name: string }[];
   version?: string;
   token_counters: boolean;
   last_read?: string;
@@ -156,6 +157,7 @@ export interface Usage {
 }
 
 export interface UsageEnergy {
+  bucket_start?: string;
   backend: string;
   kind: string;
   model?: string;
@@ -172,6 +174,7 @@ export interface BackendUsage {
   from: string;
   to: string;
   group_by: "backend" | "model" | "consumer";
+  bucket_ms: number;
   resolution: string;
   rows: UsageEnergy[];
 }

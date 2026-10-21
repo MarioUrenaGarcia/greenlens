@@ -72,7 +72,13 @@ All notable changes to GreenLens are recorded in this file. The format follows
   used and why, the problems with their fixes, the calibration and the
   agent itself; the about screen shows the license, the source code of the
   running version and the estimated consumption of the interface, which
-  turns the efficient mode on above 1 W.
+  turns the efficient mode on above 1 W. The models screen lists the energy, J per
+  token, Wh per thousand tokens and tokens per joule of every model in a
+  period, with the history of each one; the backends screen shows each
+  server with its processes, power and models; the consumers screen shows
+  the energy of each team or application for showback.
+- `/api/v1/usage` splits the use by backend, model or consumer in buckets,
+  and the backends carry their root processes.
 - A live stream of server-sent events on `/api/v1/stream`: the power of
   every domain with each sample and the use of the backends with each
   usage interval, resumable with `Last-Event-ID` from the last 15 minutes.

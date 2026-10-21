@@ -195,24 +195,6 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "from and to must be RFC 3339 times with from before to, at most three years apart")
 		return
 	}
-	switch by := q.Get("group_by"); by {
-	case "":
-	case store.ByBackend, store.ByModel, store.ByConsumer:
-		rows, res, err := a.st.Usage(r.Context(), from, to, by, time.Now(), a.retention())
-		if err != nil {
-			a.log.Error("usage query failed", "error", err)
-			writeError(w, http.StatusInternalServerError, "usage query failed")
-			return
-		}
-		if rows == nil {
-			rows = []store.UsageEnergy{}
-		}
-		writeJSON(w, http.StatusOK, api.BackendUsage{SchemaVersion: api.SchemaVersion, From: from, To: to, GroupBy: by, Resolution: res, Rows: rows})
-		return
-	default:
-		writeError(w, http.StatusBadRequest, "group_by must be backend, model or consumer")
-		return
-	}
 	var bucket time.Duration
 	if b := q.Get("bucket"); b != "" {
 		d, err := time.ParseDuration(b)
@@ -225,6 +207,25 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		bucket = d
+	}
+	switch by := q.Get("group_by"); by {
+	case "":
+	case store.ByBackend, store.ByModel, store.ByConsumer:
+		rows, res, err := a.st.Usage(r.Context(), from, to, by, bucket, time.Now(), a.retention())
+		if err != nil {
+			a.log.Error("usage query failed", "error", err)
+			writeError(w, http.StatusInternalServerError, "usage query failed")
+			return
+		}
+		if rows == nil {
+			rows = []store.UsageEnergy{}
+		}
+		writeJSON(w, http.StatusOK, api.BackendUsage{SchemaVersion: api.SchemaVersion, From: from, To: to, GroupBy: by,
+			BucketMS: bucket.Milliseconds(), Resolution: res, Rows: rows})
+		return
+	default:
+		writeError(w, http.StatusBadRequest, "group_by must be backend, model or consumer")
+		return
 	}
 	rows, res, err := a.st.NodeEnergy(r.Context(), from, to, bucket, time.Now(), a.retention())
 	if err != nil {

@@ -218,12 +218,15 @@ type Model struct {
 
 // Backend is an inference server with its use since the agent started.
 type Backend struct {
-	Name          string    `json:"name"`
-	Kind          string    `json:"kind"`
-	Endpoint      string    `json:"endpoint,omitempty"`
-	Static        bool      `json:"static"`
-	ContainerID   string    `json:"container_id,omitempty"`
-	Processes     int       `json:"processes"`
+	Name        string `json:"name"`
+	Kind        string `json:"kind"`
+	Endpoint    string `json:"endpoint,omitempty"`
+	Static      bool   `json:"static"`
+	ContainerID string `json:"container_id,omitempty"`
+	Processes   int    `json:"processes"`
+	// Roots are the root processes of the backend; their descendants
+	// belong to it too.
+	Roots         []Process `json:"roots,omitempty"`
 	Version       string    `json:"version,omitempty"`
 	TokenCounters bool      `json:"token_counters"`
 	LastRead      time.Time `json:"last_read,omitzero"`
@@ -235,6 +238,12 @@ type Backend struct {
 	DRAMJ   float64 `json:"dram_energy_j"`
 	GPUJ    float64 `json:"gpu_energy_j"`
 	Models  []Model `json:"models,omitempty"`
+}
+
+// Process is a process of a backend.
+type Process struct {
+	PID  int    `json:"pid"`
+	Name string `json:"name"`
 }
 
 // Proxy is the state of the token-counting proxy.
@@ -260,6 +269,7 @@ type BackendUsage struct {
 	From          time.Time           `json:"from"`
 	To            time.Time           `json:"to"`
 	GroupBy       string              `json:"group_by"`
+	BucketMS      int64               `json:"bucket_ms"`
 	Resolution    string              `json:"resolution"`
 	Rows          []store.UsageEnergy `json:"rows"`
 }

@@ -391,6 +391,11 @@ func (a *Agent) Backends() api.Backends {
 			ContainerID: st.info.ContainerID, Processes: st.processes,
 			PowerW: st.powerW, EnergyJ: st.total.TotalJ(), CPUJ: st.total.CPUJ, DRAMJ: st.total.DRAMJ, GPUJ: st.total.GPUJ,
 		}
+		for _, pid := range st.info.Roots {
+			if p, err := procfs.Process(a.hostFS, pid); err == nil {
+				b.Roots = append(b.Roots, api.Process{PID: pid, Name: p.Comm})
+			}
+		}
 		if st.read {
 			b.LastRead = st.reading.At
 			if st.reading.Err != nil {

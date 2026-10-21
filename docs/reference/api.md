@@ -399,7 +399,7 @@ Role: `viewer`
 |---|---|---|---|---|
 | `from` | query | string (date-time) | yes | Start of the period, RFC 3339. |
 | `to` | query | string (date-time) | yes | End of the period, RFC 3339, at most three years after from. |
-| `bucket` | query | string | no | Size of each bucket, such as 1m or 1h, at least 1m. Without it, one total. |
+| `bucket` | query | string | no | Size of each bucket, such as 1m or 1h, at least 1m, also with group_by. Without it, one total. |
 | `group_by` | query | `backend`, `model`, `consumer` | no | Group by backend, model or consumer instead of by channel. |
 
 **Responses**
@@ -526,6 +526,7 @@ An inference server with its use since the agent started.
 | `last_read` | string (date-time) | no | When its counters were last read. |
 | `models` | list of [Model](#model) | no | Its models, most energy first. |
 | `problem` | [Problem](#problem) | no | A problem with a code of the GLxxxx catalog and its values. |
+| `roots` | list of object | no | Its root processes; their descendants belong to it too. |
 | `version` | string | no | Version it reports. |
 
 ### BackendUsage
@@ -534,6 +535,7 @@ Use of a period by backend, model or consumer.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
+| `bucket_ms` | integer | yes | Size of each bucket in milliseconds; zero for one total. |
 | `from` | string (date-time) | yes | Start of the period. |
 | `group_by` | `backend`, `model`, `consumer` | yes | Grouping. |
 | `resolution` | `raw`, `1m`, `1h` | yes | Finest resolution read. |
@@ -952,5 +954,6 @@ Use of one backend, model or consumer in a period.
 | `prompt_tokens` | integer | yes | Prompt tokens. |
 | `requests` | integer | yes | Requests. |
 | `tokens_counted` | boolean | yes | False when the backend reported no tokens in the period. |
+| `bucket_start` | string (date-time) | no | Start of the bucket |
 | `consumer` | string | no | Consumer |
 | `model` | string | no | Name of the model |

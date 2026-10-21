@@ -399,7 +399,7 @@ Rol: `viewer`
 |---|---|---|---|---|
 | `from` | query | string (date-time) | sí | Inicio del periodo, RFC 3339. |
 | `to` | query | string (date-time) | sí | Fin del periodo, RFC 3339, a lo sumo tres años después de from. |
-| `bucket` | query | string | no | Tamaño de cada intervalo, como 1m o 1h, al menos 1m. Sin él, un solo total. |
+| `bucket` | query | string | no | Tamaño de cada intervalo, como 1m o 1h, al menos 1m, también con group_by. Sin él, un solo total. |
 | `group_by` | query | `backend`, `model`, `consumer` | no | Agrupa por backend, modelo o consumidor en lugar de por canal. |
 
 **Respuestas**
@@ -526,6 +526,7 @@ Un servidor de inferencia con su uso desde que inició el agente.
 | `last_read` | string (date-time) | no | Cuándo se leyeron por última vez sus contadores. |
 | `models` | lista de [Model](#model) | no | Sus modelos, del que más energía usó al que menos. |
 | `problem` | [Problem](#problem) | no | Un problema con un código del catálogo GLxxxx y sus valores. |
+| `roots` | lista de object | no | Sus procesos raíz; sus descendientes también le pertenecen. |
 | `version` | string | no | Versión que reporta. |
 
 ### BackendUsage
@@ -534,6 +535,7 @@ Uso de un periodo por backend, modelo o consumidor.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
+| `bucket_ms` | integer | sí | Tamaño de cada intervalo en milisegundos; cero para un solo total. |
 | `from` | string (date-time) | sí | Inicio del periodo. |
 | `group_by` | `backend`, `model`, `consumer` | sí | Agrupación. |
 | `resolution` | `raw`, `1m`, `1h` | sí | Resolución más fina leída. |
@@ -952,5 +954,6 @@ Uso de un backend, modelo o consumidor en un periodo.
 | `prompt_tokens` | integer | sí | Tokens de entrada. |
 | `requests` | integer | sí | Solicitudes. |
 | `tokens_counted` | boolean | sí | Falso cuando el backend no reportó tokens en el periodo. |
+| `bucket_start` | string (date-time) | no | Inicio del intervalo |
 | `consumer` | string | no | Consumidor |
 | `model` | string | no | Nombre del modelo |

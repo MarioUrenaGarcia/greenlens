@@ -245,14 +245,16 @@ func (s *Store) rollupUsage(ctx context.Context, now time.Time) error {
 // UsageEnergy is the energy and tokens of one backend, or one model of it,
 // in a period.
 type UsageEnergy struct {
-	Backend         string  `json:"backend"`
-	Kind            string  `json:"kind"`
-	Model           string  `json:"model,omitempty"`
-	Consumer        string  `json:"consumer,omitempty"`
-	EnergyJ         float64 `json:"energy_j"`
-	PromptTokens    int64   `json:"prompt_tokens"`
-	GeneratedTokens int64   `json:"generated_tokens"`
-	Requests        int64   `json:"requests"`
+	// BucketStart is set when the usage is split in buckets.
+	BucketStart     time.Time `json:"bucket_start,omitzero"`
+	Backend         string    `json:"backend"`
+	Kind            string    `json:"kind"`
+	Model           string    `json:"model,omitempty"`
+	Consumer        string    `json:"consumer,omitempty"`
+	EnergyJ         float64   `json:"energy_j"`
+	PromptTokens    int64     `json:"prompt_tokens"`
+	GeneratedTokens int64     `json:"generated_tokens"`
+	Requests        int64     `json:"requests"`
 	// Counted is false when the backend reported no tokens in the period.
 	Counted bool `json:"tokens_counted"`
 }
@@ -264,9 +266,10 @@ const (
 	ByConsumer = "consumer"
 )
 
-// Usage sums the usage in [from, to) by backend or by model, from the
-// finest resolution kept for from plus the rows not folded yet.
-func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now time.Time, r Retention) ([]UsageEnergy, string, error) {
+// Usage sums the usage in [from, to) by backend, model or consumer, from
+// the finest resolution kept for from plus the rows not folded yet. A
+// positive bucket splits the period in buckets that start at from.
+func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, bucket time.Duration, now time.Time, r Retention) ([]UsageEnergy, string, error) {
 	res := Resolution1h
 	switch {
 	case !from.Before(now.Add(-r.Raw)):
@@ -274,7 +277,7 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 	case !from.Before(now.Add(-r.Rollup1m)):
 		res = Resolution1m
 	}
-	raw := `SELECT backend_id, model_id, consumer_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+	raw := `SELECT ts_ms AS t, backend_id, model_id, consumer_id, ` + energyExpr + ` AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
 		FROM usage_intervals WHERE ts_ms >= ? AND ts_ms < ?`
 	q := raw
 	args := []any{from.UnixMilli(), to.UnixMilli()}
@@ -287,7 +290,7 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 		if err := s.db.QueryRowContext(ctx, `SELECT coalesce((SELECT done_until_ms FROM rollup_state WHERE resolution = ?), 0)`, mark).Scan(&done); err != nil {
 			return nil, res, err
 		}
-		q = `SELECT backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
+		q = `SELECT bucket_start_ms AS t, backend_id, model_id, consumer_id, energy_j AS e, prompt_tokens AS p, generated_tokens AS g, requests AS q
 			FROM usage_rollups WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ? UNION ALL ` + raw
 		args = []any{res, from.UnixMilli(), min(to.UnixMilli(), done), max(from.UnixMilli(), done), to.UnixMilli()}
 	}
@@ -298,14 +301,22 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 	case ByConsumer:
 		group, consumer = `b.id, u.consumer_id`, `coalesce(c.alias, '')`
 	}
+	// The bucket of a row counts whole buckets from the start of the
+	// period, so every bucket starts at from plus a multiple of its size.
+	slot, order := `0`, ``
+	if ms := bucket.Milliseconds(); ms > 0 {
+		slot, order = `(u.t - ?) / ?`, `slot, `
+		args = append([]any{from.UnixMilli(), ms}, args...)
+		group += `, slot`
+	}
 	// Only the constant fragments above are formatted into the query;
 	// every value goes through placeholders.
 	//nolint:gosec // constant fragments, see above
-	query := `SELECT b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
+	query := `SELECT ` + slot + ` AS slot, b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
 			count(u.p) > 0 OR count(u.g) > 0
 		FROM (` + q + `) AS u JOIN backends b ON b.id = u.backend_id LEFT JOIN models m ON m.id = u.model_id
 			LEFT JOIN consumers c ON c.id = u.consumer_id
-		GROUP BY ` + group + ` ORDER BY sum(u.e) DESC, b.name`
+		GROUP BY ` + group + ` ORDER BY ` + order + `sum(u.e) DESC, b.name`
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, res, err
@@ -314,8 +325,12 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, now ti
 	var out []UsageEnergy
 	for rows.Next() {
 		var u UsageEnergy
-		if err := rows.Scan(&u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
+		var slotN int64
+		if err := rows.Scan(&slotN, &u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
 			return nil, res, err
+		}
+		if bucket > 0 {
+			u.BucketStart = from.Add(time.Duration(slotN) * bucket).UTC()
 		}
 		out = append(out, u)
 	}

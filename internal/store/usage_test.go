@@ -46,7 +46,7 @@ func TestUsage(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := Retention{Raw: time.Hour, Rollup1m: 24 * time.Hour, Rollup1h: 48 * time.Hour}
-	byModel, res, err := s.Usage(ctx, start, now, ByModel, now, r)
+	byModel, res, err := s.Usage(ctx, start, now, ByModel, 0, now, r)
 	if err != nil || res != ResolutionRaw || len(byModel) != 3 {
 		t.Fatalf("%+v %s %v", byModel, res, err)
 	}
@@ -58,10 +58,29 @@ func TestUsage(t *testing.T) {
 	if b.Backend != "batch" || b.Kind != "process" || b.Model != "" || b.Counted || math.Abs(b.EnergyJ-60) > 1e-6 {
 		t.Fatalf("batch %+v", b)
 	}
-	byBackend, _, err := s.Usage(ctx, start, now, ByBackend, now, r)
+	byBackend, _, err := s.Usage(ctx, start, now, ByBackend, 0, now, r)
 	if err != nil || len(byBackend) != 2 || math.Abs(byBackend[0].EnergyJ-2400) > 1e-6 || byBackend[0].Model != "" {
 		t.Fatalf("%+v %v", byBackend, err)
 	}
+	checkBuckets := func(rows []UsageEnergy) {
+		t.Helper()
+		total := 0.0
+		starts := map[time.Time]bool{}
+		for _, u := range rows {
+			if u.Model == "qwen" {
+				total += u.EnergyJ
+				starts[u.BucketStart] = true
+			}
+		}
+		if math.Abs(total-1800) > 1e-6 || len(starts) != 2 || !starts[start] || !starts[start.Add(5*time.Minute)] {
+			t.Fatalf("buckets %+v", rows)
+		}
+	}
+	buckets, _, err := s.Usage(ctx, start, now, ByModel, 5*time.Minute, now, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBuckets(buckets)
 
 	// Minutes are folded only once their rows can no longer arrive.
 	if err := s.Rollup(ctx, now); err != nil {
@@ -86,7 +105,7 @@ func TestUsage(t *testing.T) {
 	if err := s.DB().QueryRowContext(ctx, `SELECT count(*) FROM usage_intervals`).Scan(&raw); err != nil || raw != 0 {
 		t.Fatalf("raw rows left %d, %v", raw, err)
 	}
-	again, res, err := s.Usage(ctx, start, now, ByModel, later, r)
+	again, res, err := s.Usage(ctx, start, now, ByModel, 0, later, r)
 	if err != nil || res != Resolution1m || len(again) != 3 {
 		t.Fatalf("%+v %s %v", again, res, err)
 	}
@@ -95,6 +114,11 @@ func TestUsage(t *testing.T) {
 			t.Errorf("rollup %+v, raw %+v", again[i], byModel[i])
 		}
 	}
+	buckets, _, err = s.Usage(ctx, start, now, ByModel, 5*time.Minute, later, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBuckets(buckets)
 }
 
 func TestModelIntervals(t *testing.T) {
