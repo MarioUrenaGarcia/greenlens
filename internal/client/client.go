@@ -189,6 +189,42 @@ func (c *Client) SaveCalibration(ctx context.Context, r calibrate.Result) error 
 	return c.do(req, nil)
 }
 
+// Backup asks the agent for a consistent copy of its database and writes
+// it to w. It returns the schema version the agent reported. The copy can
+// take longer than other requests, so only ctx bounds it.
+func (c *Client) Backup(ctx context.Context, w io.Writer) (int, error) {
+	u := url.URL{Scheme: "http", Host: "agent", Path: api.PathBackup}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return 0, err
+	}
+	hc := *c.http
+	hc.Timeout = 0
+	resp, err := hc.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
+		var e api.ErrorBody
+		detail := string(bytes.TrimSpace(body))
+		if json.Unmarshal(body, &e) == nil && e.Error != "" {
+			detail = e.Error
+		}
+		return 0, help.New(help.GL4006, "status", resp.Status, "detail", detail)
+	}
+	v, _ := strconv.Atoi(resp.Header.Get(api.HeaderSchemaVersion))
+	n, err := io.Copy(w, resp.Body)
+	if err != nil {
+		return 0, err
+	}
+	if resp.ContentLength >= 0 && n != resp.ContentLength {
+		return 0, fmt.Errorf("backup cut short: %d of %d bytes", n, resp.ContentLength)
+	}
+	return v, nil
+}
+
 // IsUnreachable reports whether err means the agent could not be reached.
 func IsUnreachable(err error) bool {
 	var e *help.Error

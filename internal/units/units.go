@@ -89,3 +89,18 @@ func Money(v float64, currency string, asRaw bool) string {
 	}
 	return strconv.FormatFloat(v, 'f', 4, 64) + " " + currency
 }
+
+// Bytes formats a size in bytes with binary prefixes.
+func Bytes(n int64, asRaw bool) string {
+	if asRaw || n < 1024 && n > -1024 {
+		return strconv.FormatInt(n, 10) + " B"
+	}
+	v := float64(n) / 1024
+	units := []string{"KiB", "MiB", "GiB", "TiB"}
+	i := 0
+	for math.Abs(v) >= 1024 && i < len(units)-1 {
+		v /= 1024
+		i++
+	}
+	return format(v, units[i])
+}

@@ -35,3 +35,17 @@ func TestPowerAndMass(t *testing.T) {
 		}
 	}
 }
+
+func TestBytes(t *testing.T) {
+	for _, tt := range []struct {
+		got, want string
+	}{
+		{Bytes(0, false), "0 B"}, {Bytes(1023, false), "1023 B"}, {Bytes(4096, false), "4.00 KiB"},
+		{Bytes(5<<20, false), "5.00 MiB"}, {Bytes(300<<30, false), "300 GiB"}, {Bytes(3<<40, false), "3.00 TiB"},
+		{Bytes(4096, true), "4096 B"},
+	} {
+		if tt.got != tt.want {
+			t.Errorf("got %q, want %q", tt.got, tt.want)
+		}
+	}
+}

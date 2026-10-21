@@ -47,6 +47,7 @@ func newRoot(a *app) *cobra.Command {
 	root.SetHelpCommand(newHelpCmd(a))
 	root.AddCommand(
 		newAgentCmd(a),
+		newBackupCmd(a),
 		newBenchCmd(a),
 		newCalibrateCmd(a),
 		newCompareCmd(a),
@@ -58,6 +59,7 @@ func newRoot(a *app) *cobra.Command {
 		newMeasureCmd(a),
 		newProxyCmd(a),
 		newReportCmd(a),
+		newRestoreCmd(a),
 		newSetupPermissionsCmd(a),
 		newStatusCmd(a),
 		newTopCmd(a),

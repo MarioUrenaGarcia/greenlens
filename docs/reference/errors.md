@@ -53,6 +53,10 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL4004](#gl4004) | there is no directory for the agent socket | 6 |
 | [GL4005](#gl4005) | another agent is already running | 1 |
 | [GL4006](#gl4006) | the agent rejected the request | 1 |
+| [GL4007](#gl4007) | cannot write the backup | 1 |
+| [GL4008](#gl4008) | the file is not a valid GreenLens backup | 1 |
+| [GL4009](#gl4009) | cannot restore while the agent is running | 1 |
+| [GL4010](#gl4010) | the backup was made by a newer version of GreenLens | 1 |
 
 ## GL0001
 
@@ -367,4 +371,32 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Message:** the agent rejected the request
 - **Cause:** `{status}`: `{detail}`
 - **Fix:** check the agent logs, for example with 'journalctl -u greenlens'
+- **Exit code:** 1
+
+## GL4007
+
+- **Message:** cannot write the backup
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** choose a new file in a directory you can write to; a backup never replaces an existing file
+- **Exit code:** 1
+
+## GL4008
+
+- **Message:** the file is not a valid GreenLens backup
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** check that the file was made by 'greenlens backup' and copied completely; nothing was changed
+- **Exit code:** 1
+
+## GL4009
+
+- **Message:** cannot restore while the agent is running
+- **Cause:** the agent answers on `{socket}`
+- **Fix:** stop it first, for example with 'sudo systemctl stop greenlens', restore, then start it again
+- **Exit code:** 1
+
+## GL4010
+
+- **Message:** the backup was made by a newer version of GreenLens
+- **Cause:** `{path}` has schema version `{version}`; this version reads up to `{supported}`
+- **Fix:** update GreenLens, then restore the backup again; nothing was changed
 - **Exit code:** 1

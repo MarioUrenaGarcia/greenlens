@@ -40,6 +40,29 @@ greenlens agent
 greenlens agent --config /etc/greenlens/greenlens.yaml
 ```
 
+## greenlens backup
+
+Write a consistent copy of the database to a new file, using the backup interface of SQLite. When the agent is running it makes the copy, so measurements continue and no permissions on its data directory are needed; otherwise the database of this user is copied. The copy is checked before it gets its name, and an existing file is never replaced.
+
+**Usage**
+
+```text
+greenlens backup <file> [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--database` | Copy this database file instead of asking the agent |  |
+
+**Examples**
+
+```bash
+greenlens backup greenlens-2026-10-20.db
+greenlens backup --database /var/lib/greenlens/greenlens.db /srv/backups/greenlens.db
+```
+
 ## greenlens bench
 
 Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. The energy of a run is that attributed to the processes of the backend, so other processes do not change it, and with a calibration only the energy above idle counts.
@@ -369,6 +392,30 @@ greenlens report
 greenlens report --from 7d --by day
 greenlens report --from 7d --group model
 greenlens report --from 2026-10-01 --to 2026-11-01 --output csv
+```
+
+## greenlens restore
+
+Check a backup made by 'greenlens backup' and replace the database with it. The agent must be stopped. The current database is first copied next to it, unless --no-keep is given, and a backup from an older version is updated to the current schema.
+
+**Usage**
+
+```text
+greenlens restore <file> [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--database` | Replace this database file instead of the one of the configuration |  |
+| `--no-keep` | Do not keep a copy of the current database |  |
+
+**Examples**
+
+```bash
+greenlens restore greenlens-2026-10-20.db
+sudo -u greenlens greenlens restore --database /var/lib/greenlens/greenlens.db /srv/backups/greenlens.db
 ```
 
 ## greenlens setup-permissions

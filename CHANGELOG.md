@@ -47,6 +47,10 @@ All notable changes to GreenLens are recorded in this file. The format follows
   `greenlens completion` prints completion scripts for bash, zsh and fish.
 - Manual pages in English and Spanish, `greenlens(1)`, one per command and
   `greenlens.yaml(5)`, written by `make man` in plain ASCII roff.
+- `greenlens backup` and `restore`: consistent copies of the database through
+  the SQLite backup interface, made by the running agent or from the file;
+  a restore checks the backup first, refuses while the agent runs, keeps the
+  previous database and updates older schemas.
 - `greenlens license`: the license, the source code of the running version
   as section 13 of the AGPL asks, and the third-party components, with their
   full texts on request.

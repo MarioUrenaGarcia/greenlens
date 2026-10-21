@@ -53,6 +53,10 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL4004](#gl4004) | no hay directorio para el socket del agente | 6 |
 | [GL4005](#gl4005) | ya hay otro agente en ejecución | 1 |
 | [GL4006](#gl4006) | el agente rechazó la solicitud | 1 |
+| [GL4007](#gl4007) | no se puede escribir el respaldo | 1 |
+| [GL4008](#gl4008) | el archivo no es un respaldo válido de GreenLens | 1 |
+| [GL4009](#gl4009) | no se puede restaurar mientras el agente está en ejecución | 1 |
+| [GL4010](#gl4010) | el respaldo lo creó una versión más reciente de GreenLens | 1 |
 
 ## GL0001
 
@@ -367,4 +371,32 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Mensaje:** el agente rechazó la solicitud
 - **Causa:** `{status}`: `{detail}`
 - **Solución:** revisa los registros del agente, por ejemplo con 'journalctl -u greenlens'
+- **Código de salida:** 1
+
+## GL4007
+
+- **Mensaje:** no se puede escribir el respaldo
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** elige un archivo nuevo en un directorio donde puedas escribir; un respaldo nunca reemplaza un archivo existente
+- **Código de salida:** 1
+
+## GL4008
+
+- **Mensaje:** el archivo no es un respaldo válido de GreenLens
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** comprueba que el archivo lo creó 'greenlens backup' y que se copió completo; no se cambió nada
+- **Código de salida:** 1
+
+## GL4009
+
+- **Mensaje:** no se puede restaurar mientras el agente está en ejecución
+- **Causa:** el agente responde en `{socket}`
+- **Solución:** detenlo primero, por ejemplo con 'sudo systemctl stop greenlens', restaura y vuelve a iniciarlo
+- **Código de salida:** 1
+
+## GL4010
+
+- **Mensaje:** el respaldo lo creó una versión más reciente de GreenLens
+- **Causa:** `{path}` tiene la versión de esquema `{version}`; esta versión lee hasta la `{supported}`
+- **Solución:** actualiza GreenLens y vuelve a restaurar el respaldo; no se cambió nada
 - **Código de salida:** 1

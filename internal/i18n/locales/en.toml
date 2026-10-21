@@ -582,6 +582,29 @@ more = "Run 'greenlens license --full' for the license text and 'greenlens licen
 full = "Print the complete text of the license"
 third_party = "Print the license of every third-party component"
 
+[cli.backup]
+short = "Copy the database to a file"
+long = "Write a consistent copy of the database to a new file, using the backup interface of SQLite. When the agent is running it makes the copy, so measurements continue and no permissions on its data directory are needed; otherwise the database of this user is copied. The copy is checked before it gets its name, and an existing file is never replaced."
+placeholder = "file"
+exists = "the file already exists"
+done = "Backup written to {file}: {size}, schema version {schema}."
+from_agent = "Copied by the agent at {socket}."
+from_database = "Copied from {database}."
+
+[cli.backup.flag]
+database = "Copy this database file instead of asking the agent"
+
+[cli.restore]
+short = "Replace the database with a backup"
+long = "Check a backup made by 'greenlens backup' and replace the database with it. The agent must be stopped. The current database is first copied next to it, unless --no-keep is given, and a backup from an older version is updated to the current schema."
+done = "Restored {file} into {database}: {size}, schema version {schema}."
+kept = "The previous database was kept in {path}; remove it once the restored data looks right."
+start = "Start the agent again to use the restored data."
+
+[cli.restore.flag]
+database = "Replace this database file instead of the one of the configuration"
+no_keep = "Do not keep a copy of the current database"
+
 [config.doc]
 agent_sample_interval = "How often energy is sampled, from 50ms to 60s."
 agent_data_dir = "Directory of the database. Empty: /var/lib/greenlens for the system service, $XDG_DATA_HOME/greenlens for a user."
@@ -785,6 +808,26 @@ fix = "stop the other agent, or give this one a different agent.socket and agent
 message = "the agent rejected the request"
 cause = "{status}: {detail}"
 fix = "check the agent logs, for example with 'journalctl -u greenlens'"
+
+[errors.GL4007]
+message = "cannot write the backup"
+cause = "{path}: {detail}"
+fix = "choose a new file in a directory you can write to; a backup never replaces an existing file"
+
+[errors.GL4008]
+message = "the file is not a valid GreenLens backup"
+cause = "{path}: {detail}"
+fix = "check that the file was made by 'greenlens backup' and copied completely; nothing was changed"
+
+[errors.GL4009]
+message = "cannot restore while the agent is running"
+cause = "the agent answers on {socket}"
+fix = "stop it first, for example with 'sudo systemctl stop greenlens', restore, then start it again"
+
+[errors.GL4010]
+message = "the backup was made by a newer version of GreenLens"
+cause = "{path} has schema version {version}; this version reads up to {supported}"
+fix = "update GreenLens, then restore the backup again; nothing was changed"
 
 [errors.GL0009]
 message = "unsupported output format '{value}'"

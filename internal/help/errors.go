@@ -71,6 +71,10 @@ const (
 	GL4004 Code = "GL4004" // no runtime directory for the socket
 	GL4005 Code = "GL4005" // another agent already listens
 	GL4006 Code = "GL4006" // the agent rejected a request
+	GL4007 Code = "GL4007" // backup file cannot be written
+	GL4008 Code = "GL4008" // file is not a valid backup
+	GL4009 Code = "GL4009" // restore refused while the agent runs
+	GL4010 Code = "GL4010" // backup made by a newer version
 )
 
 // Process exit codes of the command line.
@@ -130,6 +134,10 @@ var exitCodes = map[Code]int{
 	GL4004: ExitConfig,
 	GL4005: ExitError,
 	GL4006: ExitError,
+	GL4007: ExitError,
+	GL4008: ExitError,
+	GL4009: ExitError,
+	GL4010: ExitError,
 }
 
 // IsCode reports whether s looks like an error code, such as GL1002.

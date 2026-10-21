@@ -582,6 +582,29 @@ more = "Ejecuta 'greenlens license --full' para el texto de la licencia y 'green
 full = "Imprime el texto completo de la licencia"
 third_party = "Imprime la licencia de cada componente de terceros"
 
+[cli.backup]
+short = "Copia la base de datos a un archivo"
+long = "Escribe una copia consistente de la base de datos en un archivo nuevo, con la interfaz de respaldo de SQLite. Si el agente está en ejecución, él hace la copia, así que las mediciones continúan y no se necesitan permisos sobre su directorio de datos; si no, se copia la base de datos de este usuario. La copia se comprueba antes de recibir su nombre y nunca se reemplaza un archivo existente."
+placeholder = "archivo"
+exists = "el archivo ya existe"
+done = "Respaldo escrito en {file}: {size}, versión de esquema {schema}."
+from_agent = "Copiado por el agente en {socket}."
+from_database = "Copiado de {database}."
+
+[cli.backup.flag]
+database = "Copia este archivo de base de datos en lugar de pedírselo al agente"
+
+[cli.restore]
+short = "Reemplaza la base de datos con un respaldo"
+long = "Comprueba un respaldo creado con 'greenlens backup' y reemplaza la base de datos con él. El agente debe estar detenido. Primero se copia la base de datos actual junto a ella, salvo con --no-keep, y un respaldo de una versión anterior se actualiza al esquema actual."
+done = "Se restauró {file} en {database}: {size}, versión de esquema {schema}."
+kept = "La base de datos anterior quedó en {path}; bórrala cuando confirmes que los datos restaurados están bien."
+start = "Vuelve a iniciar el agente para usar los datos restaurados."
+
+[cli.restore.flag]
+database = "Reemplaza este archivo de base de datos en lugar del de la configuración"
+no_keep = "No guarda una copia de la base de datos actual"
+
 [config.doc]
 agent_sample_interval = "Cada cuánto se muestrea la energía, de 50ms a 60s."
 agent_data_dir = "Directorio de la base de datos. Vacío: /var/lib/greenlens para el servicio del sistema, $XDG_DATA_HOME/greenlens para un usuario."
@@ -785,6 +808,26 @@ fix = "detén el otro agente, o asigna a este otro agent.socket y otro agent.dat
 message = "el agente rechazó la solicitud"
 cause = "{status}: {detail}"
 fix = "revisa los registros del agente, por ejemplo con 'journalctl -u greenlens'"
+
+[errors.GL4007]
+message = "no se puede escribir el respaldo"
+cause = "{path}: {detail}"
+fix = "elige un archivo nuevo en un directorio donde puedas escribir; un respaldo nunca reemplaza un archivo existente"
+
+[errors.GL4008]
+message = "el archivo no es un respaldo válido de GreenLens"
+cause = "{path}: {detail}"
+fix = "comprueba que el archivo lo creó 'greenlens backup' y que se copió completo; no se cambió nada"
+
+[errors.GL4009]
+message = "no se puede restaurar mientras el agente está en ejecución"
+cause = "el agente responde en {socket}"
+fix = "detenlo primero, por ejemplo con 'sudo systemctl stop greenlens', restaura y vuelve a iniciarlo"
+
+[errors.GL4010]
+message = "el respaldo lo creó una versión más reciente de GreenLens"
+cause = "{path} tiene la versión de esquema {version}; esta versión lee hasta la {supported}"
+fix = "actualiza GreenLens y vuelve a restaurar el respaldo; no se cambió nada"
 
 [errors.GL0009]
 message = "formato de salida no soportado '{value}'"

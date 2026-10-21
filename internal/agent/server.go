@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
+	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 )
@@ -90,6 +92,7 @@ func (a *Agent) handler() http.Handler {
 	mux.HandleFunc("GET "+api.PathBenchmarks, a.handleBenchmarks)
 	mux.HandleFunc("GET "+api.PathBenchmarks+"/{id}", a.handleBenchmark)
 	mux.HandleFunc("POST "+api.PathBenchmarks, a.handleSaveBenchmark)
+	mux.HandleFunc("GET "+api.PathBackup, a.handleBackup)
 	return mux
 }
 
@@ -396,4 +399,45 @@ func validBenchmark(b bench.Result) error {
 		}
 	}
 	return nil
+}
+
+// handleBackup streams a consistent copy of the database. The copy is made
+// in the data directory, the only place the agent can write, and removed
+// once sent.
+func (a *Agent) handleBackup(w http.ResponseWriter, r *http.Request) {
+	dir, err := os.MkdirTemp(a.dataDir, "backup-")
+	if err != nil {
+		a.log.Error("backup failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "backup failed")
+		return
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			a.log.Warn("backup copy not removed", "path", dir, "error", err)
+		}
+	}()
+	p := filepath.Join(dir, paths.DatabaseName)
+	info, err := a.st.Backup(r.Context(), p)
+	if err != nil {
+		a.log.Error("backup failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "backup failed")
+		return
+	}
+	f, err := os.Open(p) //nolint:gosec // the copy was just written by the agent
+	if err != nil {
+		a.log.Error("backup failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "backup failed")
+		return
+	}
+	defer func() { _ = f.Close() }()
+	if err := a.st.Audit(r.Context(), actor(r), "backup", fmt.Sprintf("%d bytes, schema %d", info.Bytes, info.SchemaVersion)); err != nil {
+		a.log.Warn("audit log write failed", "error", err)
+	}
+	w.Header().Set("Content-Type", "application/vnd.sqlite3")
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Bytes, 10))
+	w.Header().Set(api.HeaderSchemaVersion, strconv.Itoa(info.SchemaVersion))
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, f); err != nil {
+		a.log.Warn("backup not delivered", "error", err)
+	}
 }

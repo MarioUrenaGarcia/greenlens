@@ -30,9 +30,14 @@ const (
 	PathLive         = "/api/v1/live"
 	PathBackends     = "/api/v1/backends"
 	PathBenchmarks   = "/api/v1/benchmarks"
+	PathBackup       = "/api/v1/backup"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
+
+// HeaderSchemaVersion carries the schema version of the database in a
+// backup response.
+const HeaderSchemaVersion = "X-GreenLens-Schema-Version"
 
 // Problem is a coded problem with its placeholder values.
 type Problem struct {

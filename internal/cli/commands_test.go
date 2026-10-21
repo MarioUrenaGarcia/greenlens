@@ -428,6 +428,22 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if code, _, errOut := runWith(t, hooks{}, nil, "compare", "--config", cfgPath, "llama3.2", "qwen"); code != 2 || !strings.Contains(errOut, "GL0005") {
 		t.Fatalf("unknown models: %d %s", code, errOut)
 	}
+	// The agent makes the backup while it keeps measuring, and refuses to
+	// have its database replaced.
+	backup := filepath.Join(dir, "backup.db")
+	code, out, errOut = runWith(t, hooks{}, nil, "backup", "--config", cfgPath, backup)
+	if code != 0 || !strings.Contains(out, "Copied by the agent") {
+		t.Fatalf("backup through the agent: %d %s %s", code, out, errOut)
+	}
+	entries, _ := os.ReadDir(filepath.Join(dir, "data"))
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), "backup-") {
+			t.Errorf("copy left in the data directory: %s", e.Name())
+		}
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "restore", "--config", cfgPath, backup); code != 1 || !strings.Contains(errOut, "GL4009") {
+		t.Fatalf("restore while the agent runs: %d %s", code, errOut)
+	}
 	for _, args := range [][]string{{"--group", "team"}, {"--group", "model", "--by", "day"}} {
 		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"report", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
 			t.Fatalf("%v: %d %s", args, code, errOut)

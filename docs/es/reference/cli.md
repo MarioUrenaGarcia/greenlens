@@ -40,6 +40,29 @@ greenlens agent
 greenlens agent --config /etc/greenlens/greenlens.yaml
 ```
 
+## greenlens backup
+
+Escribe una copia consistente de la base de datos en un archivo nuevo, con la interfaz de respaldo de SQLite. Si el agente está en ejecución, él hace la copia, así que las mediciones continúan y no se necesitan permisos sobre su directorio de datos; si no, se copia la base de datos de este usuario. La copia se comprueba antes de recibir su nombre y nunca se reemplaza un archivo existente.
+
+**Uso**
+
+```text
+greenlens backup <archivo> [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--database` | Copia este archivo de base de datos en lugar de pedírselo al agente |  |
+
+**Ejemplos**
+
+```bash
+greenlens backup greenlens-2026-10-20.db
+greenlens backup --database /var/lib/greenlens/greenlens.db /srv/backups/greenlens.db
+```
+
 ## greenlens bench
 
 Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. La energía de una corrida es la atribuida a los procesos del backend, así otros procesos no la cambian, y con una calibración solo cuenta la energía sobre el reposo.
@@ -369,6 +392,30 @@ greenlens report
 greenlens report --from 7d --by day
 greenlens report --from 7d --group model
 greenlens report --from 2026-10-01 --to 2026-11-01 --output csv
+```
+
+## greenlens restore
+
+Comprueba un respaldo creado con 'greenlens backup' y reemplaza la base de datos con él. El agente debe estar detenido. Primero se copia la base de datos actual junto a ella, salvo con --no-keep, y un respaldo de una versión anterior se actualiza al esquema actual.
+
+**Uso**
+
+```text
+greenlens restore <archivo> [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--database` | Reemplaza este archivo de base de datos en lugar del de la configuración |  |
+| `--no-keep` | No guarda una copia de la base de datos actual |  |
+
+**Ejemplos**
+
+```bash
+greenlens restore greenlens-2026-10-20.db
+sudo -u greenlens greenlens restore --database /var/lib/greenlens/greenlens.db /srv/backups/greenlens.db
 ```
 
 ## greenlens setup-permissions
