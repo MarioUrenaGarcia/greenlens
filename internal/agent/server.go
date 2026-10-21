@@ -124,6 +124,8 @@ func (a *Agent) routes() []route {
 		{pattern: "POST " + api.PathTokens, role: auth.Admin, h: a.handleCreateToken},
 		{pattern: "DELETE " + api.PathTokens + "/{id}", role: auth.Admin, h: a.handleRevokeToken},
 		{pattern: "GET " + api.PathAudit, role: auth.Admin, h: a.handleAudit},
+		{pattern: "GET " + api.PathHelp, role: auth.Viewer, h: a.handleHelp},
+		{pattern: "GET " + api.PathHelp + "/{page...}", role: auth.Viewer, h: a.handleHelpPage},
 		{pattern: "GET " + api.PathConfig, role: auth.Admin, h: a.handleConfig},
 		{pattern: "POST " + api.PathConfigCheck, role: auth.Admin, h: a.handleConfigPreview},
 		{pattern: "PUT " + api.PathConfig, role: auth.Admin, h: a.handleConfigApply},

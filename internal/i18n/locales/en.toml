@@ -1002,6 +1002,7 @@ consumers = "Consumers"
 benchmarks = "Benchmarks"
 reports = "Reports"
 config = "Configuration"
+help = "Help"
 
 [gui.prefs]
 title = "Preferences"
@@ -1039,6 +1040,13 @@ title = "Something went wrong:"
 
 [gui.help]
 about = "Help about {topic}"
+title = "Help"
+intro = "The documentation of GreenLens, served by the agent, so it works without internet."
+index = "Documentation"
+search = "Search the documentation"
+search_button = "Search"
+no_results = "No page contains every word of {query}."
+all = "All the documentation"
 
 [gui.table]
 sort = "Sort by {column}"

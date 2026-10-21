@@ -22,6 +22,7 @@ import { BackendsScreen } from "./screens/backends";
 import { Benchmarks } from "./screens/benchmarks";
 import { Config } from "./screens/config";
 import { Consumers } from "./screens/consumers";
+import { Help } from "./screens/help";
 import { Login } from "./screens/login";
 import { Models } from "./screens/models";
 import { Reports } from "./screens/reports";
@@ -34,7 +35,12 @@ interface Screen {
   icon: () => ComponentChildren;
   // admin screens are listed only for administrators.
   admin?: boolean;
-  render: (ctx: { status: Status; session: Session; path: string[] }) => ComponentChildren;
+  render: (ctx: {
+    status: Status;
+    session: Session;
+    path: string[];
+    query: URLSearchParams;
+  }) => ComponentChildren;
 }
 
 const screens: Screen[] = [
@@ -50,6 +56,11 @@ const screens: Screen[] = [
   },
   { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
   { id: "config", icon: icons.config, admin: true, render: () => <Config /> },
+  {
+    id: "help",
+    icon: icons.help,
+    render: ({ path, query }) => <Help path={path} anchor={query.get("anchor")} />,
+  },
   { id: "about", icon: icons.about, render: ({ status }) => <About status={status} /> },
 ];
 
@@ -200,7 +211,12 @@ function Shell(props: {
         </div>
       </nav>
       <main id="main" class="main" tabIndex={-1}>
-        {screen?.render({ status: props.status, session: props.session, path: route.path.slice(1) })}
+        {screen?.render({
+          status: props.status,
+          session: props.session,
+          path: route.path.slice(1),
+          query: route.query,
+        })}
       </main>
     </div>
   );

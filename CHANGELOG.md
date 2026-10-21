@@ -92,6 +92,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
   the resulting file, and applying it when the agent can write its file,
   keeping its comments and reloading it. The system service, whose file
   is read-only, gets the file to download and the commands to install it.
+- Help in the interface: the documentation of the site, in English and
+  Spanish, is embedded in the binary, rendered without raw HTML and
+  searchable, and every panel links to its page; links between pages and
+  anchors work as routes of the interface. `GET /api/v1/help` serves the
+  index and the search, and `GET /api/v1/help/{page}` each page.
 - Energy reports in the interface: energy, emissions, cost and water of a
   period, by domain per day or hour and by backend, model or consumer,
   printable from the browser and exported as CSV or JSON.

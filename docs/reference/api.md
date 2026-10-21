@@ -27,6 +27,8 @@ Energy measurements of the node, its inference backends and models, served by th
 | `GET` | `/api/v1/config` | admin | The configuration in force and its file |
 | `PUT` | `/api/v1/config` | admin | Change the configuration file and reload it |
 | `POST` | `/api/v1/config/preview` | admin | The configuration file that changes would produce, checked |
+| `GET` | `/api/v1/help` | viewer | Pages of the embedded documentation, or a search of them |
+| `GET` | `/api/v1/help/{page}` | viewer | One page of the embedded documentation, rendered to HTML |
 | `GET` | `/api/v1/live` | viewer | Power of every domain over the last minutes |
 | `GET` | `/api/v1/openapi.yaml` | public | This description of the API |
 | `GET` | `/api/v1/session` | public | Who sends the request, and the CSRF token of a session |
@@ -304,6 +306,48 @@ Role: `admin`
 | `400` | The request is not valid. | [Error](#error) |
 | `401` | No valid session or token. | [Error](#error) |
 | `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+
+### GET /api/v1/help
+
+Pages of the embedded documentation, or a search of them.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `lang` | query | string | no | Language, such as en or es; English when missing or unknown. |
+| `q` | query | string | no | Words to search; without it, the index. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The index, or the pages that contain every word. | [HelpIndex](#helpindex) or [HelpSearch](#helpsearch) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+
+### GET /api/v1/help/{page}
+
+One page of the embedded documentation, rendered to HTML. The page may contain slashes, as guides/agent. Raw HTML of the sources is dropped, and links between pages become routes of the interface such as #/help/guides/agent.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `page` | path | string | yes | Path of the page. |
+| `lang` | query | string | no | Language; a page without a translation comes in English. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The page. | [HelpPage](#helppage) |
+| `401` | No valid session or token. | [Error](#error) |
+| `404` | Nothing has this id. | [Error](#error) |
 
 ### GET /api/v1/live
 
@@ -923,6 +967,40 @@ Conversion factors in force, to turn energy into emissions, cost and water as th
 | `pue` | number | yes | Power usage effectiveness of the facility. |
 | `tariff_per_kwh` | number | no | Price of a kWh; absent when no tariff is configured. |
 | `wue_l_per_kwh` | number | no | Water in liters per kWh; absent when not configured. |
+
+### HelpIndex
+
+The pages of the embedded documentation, by section and order.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `lang` | string | yes | Language of the pages. |
+| `pages` | list of object | yes | The pages. |
+| `schema_version` | integer | yes | Version of the document. |
+| `sections` | list of string | yes | Sections, in order. |
+
+### HelpPage
+
+One page of the documentation rendered to HTML.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `html` | string | yes | The page in HTML |
+| `lang` | string | yes | Language of the page. |
+| `path` | string | yes | Path of the page. |
+| `schema_version` | integer | yes | Version of the document. |
+| `title` | string | yes | Title. |
+
+### HelpSearch
+
+The pages that contain every word of a search, the best first.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `lang` | string | yes | Language searched. |
+| `query` | string | yes | The search. |
+| `results` | list of object | yes | At most 20 pages. |
+| `schema_version` | integer | yes | Version of the document. |
 
 ### Live
 

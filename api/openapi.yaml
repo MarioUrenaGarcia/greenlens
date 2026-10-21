@@ -589,6 +589,72 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/help:
+    get:
+      operationId: help
+      tags: [health]
+      summary: Pages of the embedded documentation, or a search of them
+      x-summary-es: Páginas de la documentación incluida, o una búsqueda en ellas
+      x-greenlens-role: viewer
+      parameters:
+        - name: lang
+          in: query
+          description: Language, such as en or es; English when missing or unknown.
+          x-description-es: Idioma, como en o es; inglés si falta o es desconocido.
+          schema: {type: string}
+        - name: q
+          in: query
+          description: Words to search; without it, the index.
+          x-description-es: Palabras a buscar; sin ellas, el índice.
+          schema: {type: string, maxLength: 200}
+      responses:
+        "200":
+          description: The index, or the pages that contain every word.
+          x-description-es: El índice, o las páginas que contienen todas las palabras.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {$ref: "#/components/schemas/HelpIndex"}
+                  - {$ref: "#/components/schemas/HelpSearch"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/help/{page}:
+    get:
+      operationId: helpPage
+      tags: [health]
+      summary: One page of the embedded documentation, rendered to HTML
+      x-summary-es: Una página de la documentación incluida, convertida a HTML
+      description: >-
+        The page may contain slashes, as guides/agent. Raw HTML of the sources is
+        dropped, and links between pages become routes of the interface such as
+        #/help/guides/agent.
+      x-description-es: >-
+        La página puede contener barras, como guides/agent. El HTML crudo de las
+        fuentes se descarta, y los enlaces entre páginas se convierten en rutas de
+        la interfaz como #/help/guides/agent.
+      x-greenlens-role: viewer
+      parameters:
+        - name: page
+          in: path
+          required: true
+          description: Path of the page.
+          x-description-es: Ruta de la página.
+          schema: {type: string}
+        - name: lang
+          in: query
+          description: Language; a page without a translation comes in English.
+          x-description-es: Idioma; una página sin traducción llega en inglés.
+          schema: {type: string}
+      responses:
+        "200":
+          description: The page.
+          x-description-es: La página.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HelpPage"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
   /api/v1/config:
     get:
       operationId: config
@@ -998,6 +1064,74 @@ components:
               message: {type: string, description: What is wrong., x-description-es: Qué está mal.}
         needs_restart: {type: boolean, description: Whether some change takes effect only after a restart., x-description-es: Si algún cambio surte efecto solo tras reiniciar.}
         applied: {type: boolean, description: Whether the file was written and reloaded., x-description-es: Si se escribió el archivo y se recargó.}
+
+    HelpIndex:
+      type: object
+      description: The pages of the embedded documentation, by section and order.
+      x-description-es: Las páginas de la documentación incluida, por sección y orden.
+      additionalProperties: false
+      required: [schema_version, lang, sections, pages]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        lang: {type: string, description: Language of the pages., x-description-es: Idioma de las páginas.}
+        sections:
+          type: array
+          description: Sections, in order.
+          x-description-es: Secciones, en orden.
+          items: {type: string}
+        pages:
+          type: array
+          description: The pages.
+          x-description-es: Las páginas.
+          items:
+            type: object
+            description: A page.
+            x-description-es: Una página.
+            additionalProperties: false
+            required: [path, section, title]
+            properties:
+              path: {type: string, description: Path of the page; a section has the path of its name., x-description-es: Ruta de la página; una sección tiene la ruta de su nombre.}
+              section: {type: string, description: Section of the page., x-description-es: Sección de la página.}
+              title: {type: string, description: Title., x-description-es: Título.}
+              description: {type: string, description: What the page covers., x-description-es: Qué cubre la página.}
+
+    HelpSearch:
+      type: object
+      description: The pages that contain every word of a search, the best first.
+      x-description-es: Las páginas que contienen todas las palabras de una búsqueda, la mejor primero.
+      additionalProperties: false
+      required: [schema_version, lang, query, results]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        lang: {type: string, description: Language searched., x-description-es: Idioma buscado.}
+        query: {type: string, description: The search., x-description-es: La búsqueda.}
+        results:
+          type: array
+          description: At most 20 pages.
+          x-description-es: A lo sumo 20 páginas.
+          items:
+            type: object
+            description: A page that matches.
+            x-description-es: Una página que coincide.
+            additionalProperties: false
+            required: [path, title, snippet]
+            properties:
+              path: {type: string, description: Path of the page., x-description-es: Ruta de la página.}
+              title: {type: string, description: Title., x-description-es: Título.}
+              snippet: {type: string, description: Text around the first match., x-description-es: Texto alrededor de la primera coincidencia.}
+
+    HelpPage:
+      type: object
+      description: One page of the documentation rendered to HTML.
+      x-description-es: Una página de la documentación convertida a HTML.
+      additionalProperties: false
+      required: [schema_version, lang, path, title, html]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        lang: {type: string, description: Language of the page., x-description-es: Idioma de la página.}
+        path: {type: string, description: Path of the page., x-description-es: Ruta de la página.}
+        title: {type: string, description: Title., x-description-es: Título.}
+        html: {type: string, description: The page in HTML, without raw HTML of the sources., x-description-es: La página en HTML, sin el HTML crudo de las fuentes.}
 
     Catalog:
       type: object

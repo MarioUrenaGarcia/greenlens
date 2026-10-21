@@ -13,6 +13,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
+	"github.com/MarioUrenaGarcia/greenlens/internal/helpdocs"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
@@ -44,6 +45,7 @@ const (
 	PathCatalogs     = "/api/v1/catalogs"
 	PathAbout        = "/api/v1/about"
 	PathConfig       = "/api/v1/config"
+	PathHelp         = "/api/v1/help"
 	PathConfigCheck  = "/api/v1/config/preview"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
@@ -415,4 +417,30 @@ type ConfigPreview struct {
 	Errors        []ConfigError `json:"errors"`
 	NeedsRestart  bool          `json:"needs_restart"`
 	Applied       bool          `json:"applied"`
+}
+
+// HelpIndex lists the pages of the embedded documentation.
+type HelpIndex struct {
+	SchemaVersion int             `json:"schema_version"`
+	Lang          string          `json:"lang"`
+	Sections      []string        `json:"sections"`
+	Pages         []helpdocs.Page `json:"pages"`
+}
+
+// HelpSearch is the answer to a search of the documentation.
+type HelpSearch struct {
+	SchemaVersion int               `json:"schema_version"`
+	Lang          string            `json:"lang"`
+	Query         string            `json:"query"`
+	Results       []helpdocs.Result `json:"results"`
+}
+
+// HelpPage is one page rendered to HTML. Links between pages are routes of
+// the interface, as #/help/guides/agent.
+type HelpPage struct {
+	SchemaVersion int    `json:"schema_version"`
+	Lang          string `json:"lang"`
+	Path          string `json:"path"`
+	Title         string `json:"title"`
+	HTML          string `json:"html"`
 }

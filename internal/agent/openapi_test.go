@@ -45,7 +45,9 @@ func TestRoutesMatchTheSpec(t *testing.T) {
 		if role == "" {
 			role = "public"
 		}
-		routes[rt.pattern] = served{role, rt.socketOnly}
+		// A trailing wildcard of the mux takes slashes; OpenAPI writes it as a
+		// plain parameter.
+		routes[strings.Replace(rt.pattern, "...}", "}", 1)] = served{role, rt.socketOnly}
 	}
 	documented := map[string]bool{}
 	for _, op := range loadSpec(t).Operations() {
@@ -222,6 +224,11 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 
 	post("revokeToken", sock, "DELETE", api.PathTokens+"/viewer", nil)
 	post("revokeToken", sock, "DELETE", api.PathTokens+"/viewer", nil)
+	get("help", sock, api.PathHelp+"?lang=es")
+	get("help", sock, api.PathHelp+"?q=token")
+	get("help", sock, api.PathHelp+"?q="+strings.Repeat("x", 201))
+	get("helpPage", sock, api.PathHelp+"/guides/http-api?lang=es")
+	get("helpPage", sock, api.PathHelp+"/no/such/page")
 	get("config", sock, api.PathConfig)
 	post("previewConfig", sock, "POST", api.PathConfigCheck, api.ConfigChange{Changes: map[string]string{"indicators.pue": "1.2"}})
 	post("previewConfig", sock, "POST", api.PathConfigCheck, api.ConfigChange{Changes: map[string]string{"indicators.pue": "lots"}})

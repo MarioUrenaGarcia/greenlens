@@ -27,6 +27,8 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/api/v1/config` | admin | La configuración vigente y su archivo |
 | `PUT` | `/api/v1/config` | admin | Cambia el archivo de configuración y lo recarga |
 | `POST` | `/api/v1/config/preview` | admin | El archivo de configuración que producirían los cambios, revisado |
+| `GET` | `/api/v1/help` | viewer | Páginas de la documentación incluida, o una búsqueda en ellas |
+| `GET` | `/api/v1/help/{page}` | viewer | Una página de la documentación incluida, convertida a HTML |
 | `GET` | `/api/v1/live` | viewer | Potencia de cada dominio en los últimos minutos |
 | `GET` | `/api/v1/openapi.yaml` | public | Esta descripción de la API |
 | `GET` | `/api/v1/session` | public | Quién envía la solicitud, y el token CSRF de una sesión |
@@ -304,6 +306,48 @@ Rol: `admin`
 | `400` | La solicitud no es válida. | [Error](#error) |
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
 | `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+
+### GET /api/v1/help
+
+Páginas de la documentación incluida, o una búsqueda en ellas.
+
+Rol: `viewer`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `lang` | query | string | no | Idioma, como en o es; inglés si falta o es desconocido. |
+| `q` | query | string | no | Palabras a buscar; sin ellas, el índice. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El índice, o las páginas que contienen todas las palabras. | [HelpIndex](#helpindex) o [HelpSearch](#helpsearch) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+
+### GET /api/v1/help/{page}
+
+Una página de la documentación incluida, convertida a HTML. La página puede contener barras, como guides/agent. El HTML crudo de las fuentes se descarta, y los enlaces entre páginas se convierten en rutas de la interfaz como #/help/guides/agent.
+
+Rol: `viewer`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `page` | path | string | sí | Ruta de la página. |
+| `lang` | query | string | no | Idioma; una página sin traducción llega en inglés. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | La página. | [HelpPage](#helppage) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `404` | Nada tiene este id. | [Error](#error) |
 
 ### GET /api/v1/live
 
@@ -923,6 +967,40 @@ Factores de conversión vigentes, para convertir la energía en emisiones, costo
 | `pue` | number | sí | Eficiencia en el uso de energía de la instalación. |
 | `tariff_per_kwh` | number | no | Precio de un kWh; ausente si no hay tarifa configurada. |
 | `wue_l_per_kwh` | number | no | Agua en litros por kWh; ausente si no está configurada. |
+
+### HelpIndex
+
+Las páginas de la documentación incluida, por sección y orden.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `lang` | string | sí | Idioma de las páginas. |
+| `pages` | lista de object | sí | Las páginas. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `sections` | lista de string | sí | Secciones, en orden. |
+
+### HelpPage
+
+Una página de la documentación convertida a HTML.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `html` | string | sí | La página en HTML |
+| `lang` | string | sí | Idioma de la página. |
+| `path` | string | sí | Ruta de la página. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `title` | string | sí | Título. |
+
+### HelpSearch
+
+Las páginas que contienen todas las palabras de una búsqueda, la mejor primero.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `lang` | string | sí | Idioma buscado. |
+| `query` | string | sí | La búsqueda. |
+| `results` | lista de object | sí | A lo sumo 20 páginas. |
+| `schema_version` | integer | sí | Versión del documento. |
 
 ### Live
 

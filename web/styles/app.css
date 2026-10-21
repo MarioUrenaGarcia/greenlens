@@ -617,6 +617,44 @@ textarea.input {
   flex: none;
 }
 
+/* The embedded documentation */
+.help-section ul {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+}
+
+.help-section li {
+  margin-bottom: var(--space-1);
+}
+
+.doc {
+  max-width: 60rem;
+}
+
+.doc-body h1 {
+  font-size: var(--step-2);
+}
+
+.doc-body h2 {
+  margin-top: var(--space-5);
+}
+
+.doc-body pre {
+  padding: var(--space-3);
+  overflow-x: auto;
+  background: var(--value-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-inner);
+}
+
+.doc-body table {
+  margin: var(--space-3) 0;
+}
+
+.doc-body img {
+  max-width: 100%;
+}
+
 /* uPlot: the theme of the charts follows the tokens. */
 .u-legend {
   display: none;

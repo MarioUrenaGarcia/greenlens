@@ -56,12 +56,13 @@ func TestEveryDescriptionIsTranslated(t *testing.T) {
 	walk = func(v any, at string) {
 		switch x := v.(type) {
 		case map[string]any:
-			if _, ok := x["description"]; ok {
+			// A field may be named description; only text is a description.
+			if _, ok := x["description"].(string); ok {
 				if es, _ := x["x-description-es"].(string); es == "" {
 					t.Errorf("%s has no x-description-es", at)
 				}
 			}
-			if _, ok := x["summary"]; ok {
+			if _, ok := x["summary"].(string); ok {
 				if es, _ := x["x-summary-es"].(string); es == "" {
 					t.Errorf("%s has no x-summary-es", at)
 				}

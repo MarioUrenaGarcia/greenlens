@@ -6,7 +6,10 @@
 // binary carries them.
 package greenlens
 
-import _ "embed" // for go:embed
+import (
+	"embed"
+	"io/fs"
+)
 
 // License is the text of the GNU Affero General Public License version 3.
 //
@@ -17,3 +20,20 @@ var License string
 //
 //go:embed THIRD_PARTY_NOTICES.md
 var ThirdPartyNotices string
+
+// The all: prefix keeps the _index.md pages of the sections, which embed
+// leaves out otherwise.
+//
+//go:embed all:docs
+var docs embed.FS
+
+// Docs is the documentation, English at its root and Spanish under es/, as
+// the site serves it.
+func Docs() fs.FS {
+	sub, err := fs.Sub(docs, "docs")
+	if err != nil {
+		// fs.Sub fails only for an invalid directory name, and "docs" is valid.
+		panic(err)
+	}
+	return sub
+}
