@@ -148,12 +148,12 @@ func (a *Agent) metrics() []prometheus.Family {
 				jpt.Samples = append(jpt.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "window", "since_start"), Value: m.EnergyJ / float64(m.GeneratedTokens)})
 			}
 			if mi := st.ind[mn]; mi != nil {
-				emissions.Samples = append(emissions.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "scope", scopeOperational), Value: mi.co2eG})
-				if mi.costSet {
-					cost.Samples = append(cost.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "currency", currency), Value: mi.cost})
+				emissions.Samples = append(emissions.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "scope", scopeOperational), Value: mi.CO2eG})
+				if mi.Cost != nil {
+					cost.Samples = append(cost.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn, "currency", currency), Value: *mi.Cost})
 				}
-				if mi.waterSet {
-					water.Samples = append(water.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn), Value: mi.waterL})
+				if mi.WaterL != nil {
+					water.Samples = append(water.Samples, prometheus.Sample{Labels: L("backend", n, "model", mn), Value: *mi.WaterL})
 				}
 			}
 		}

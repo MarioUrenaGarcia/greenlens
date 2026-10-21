@@ -712,6 +712,7 @@ An inference server with its use since the agent started.
 | `dram_energy_j` | number | yes | Memory share of energy_j. |
 | `energy_j` | number | yes | Energy attributed to it. |
 | `gpu_energy_j` | number | yes | GPU share of energy_j. |
+| `indicators` | [Indicators](#indicators) | yes | Indicators of an amount of energy, each hour with the factors in force then. |
 | `kind` | string | yes | Kind of server |
 | `name` | string | yes | Name of the backend. |
 | `power_w` | number | yes | Mean power in the last usage interval. |
@@ -937,6 +938,7 @@ Energy of one channel in one bucket.
 | `quality` | string | yes | Quality of its values. |
 | `samples` | integer | yes | Samples added up. |
 | `source` | string | yes | Source that read it. |
+| `indicators` | [Indicators](#indicators) | no | Indicators of an amount of energy, each hour with the factors in force then. |
 
 ### ConfigChange
 
@@ -1028,14 +1030,17 @@ Returned with every error status.
 
 ### Factors
 
-Conversion factors in force, to turn energy into emissions, cost and water as the agent does.
+Conversion factors in force. Usage rows carry the indicators the agent computes hour by hour; the factors serve projections without a time, such as the savings of another model.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `currency` | string | yes | ISO 4217 code of the tariff. |
 | `emission_g_per_kwh` | number | yes | Grid emission factor in gCO2e per kWh. |
 | `emission_source` | string | yes | Where the emission factor comes from. |
+| `hourly_profile` | boolean | yes | Whether an hourly profile replaces the emission factor hour by hour. |
 | `pue` | number | yes | Power usage effectiveness of the facility. |
+| `tariff_periods` | integer | yes | Number of time-of-use prices of the tariff. |
+| `time_zone` | string | yes | Time zone of the hourly profile and the tariff periods. |
 | `tariff_per_kwh` | number | no | Price of a kWh; absent when no tariff is configured. |
 | `wue_l_per_kwh` | number | no | Water in liters per kWh; absent when not configured. |
 
@@ -1073,6 +1078,17 @@ The pages that contain every word of a search, the best first.
 | `results` | list of object | yes | At most 20 pages. |
 | `schema_version` | integer | yes | Version of the document. |
 
+### Indicators
+
+Indicators of an amount of energy, each hour with the factors in force then.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `co2e_g` | number | yes | Operational emissions in grams of CO2e |
+| `kwh` | number | yes | Energy in kWh. |
+| `cost` | number | no | Cost in the currency of the tariff |
+| `water_l` | number | no | Water in liters; absent without a WUE. |
+
 ### Live
 
 The samples kept in memory.
@@ -1108,6 +1124,7 @@ Use of one model of a backend since the agent started.
 |---|---|---|---|
 | `energy_j` | number | yes | Energy attributed to it. |
 | `generated_tokens` | integer | yes | Generated tokens counted. |
+| `indicators` | [Indicators](#indicators) | yes | Indicators of an amount of energy, each hour with the factors in force then. |
 | `joules_per_generated_token` | number | yes | Energy per generated token; zero when no token was counted. |
 | `method` | string | yes | Attribution method. |
 | `name` | string | yes | Name of the model |
@@ -1212,7 +1229,7 @@ State of the node.
 | `cpu_joules_per_busy_second` | number | yes | Energy of one busy processor second over about the last minute; without idle power when the node is calibrated. |
 | `domains` | list of [Domain](#domain) | yes | Power and energy of every domain. |
 | `estimated` | boolean | yes | Whether processor energy is estimated rather than measured. |
-| `factors` | [Factors](#factors) | yes | Conversion factors in force, to turn energy into emissions, cost and water as the agent does. |
+| `factors` | [Factors](#factors) | yes | Conversion factors in force. Usage rows carry the indicators the agent computes hour by hour; the factors serve projections without a time, such as the savings of another model. |
 | `idle_policy` | `dynamic`, `proportional`, `full`, `wall` | yes | How idle power is shared. |
 | `interval_ms` | integer | yes | Sampling interval in milliseconds. |
 | `sample_time` | string (date-time) | yes | Time of the latest sample. |
@@ -1287,4 +1304,5 @@ Use of one backend, model or consumer in a period.
 | `tokens_counted` | boolean | yes | False when the backend reported no tokens in the period. |
 | `bucket_start` | string (date-time) | no | Start of the bucket |
 | `consumer` | string | no | Consumer |
+| `indicators` | [Indicators](#indicators) | no | Indicators of an amount of energy, each hour with the factors in force then. |
 | `model` | string | no | Name of the model |

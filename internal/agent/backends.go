@@ -41,14 +41,11 @@ type backendState struct {
 	powerW    float64
 	method    string
 	models    map[string]*api.Model
-	// ind holds the indicators of each model, added up interval by
-	// interval with the factors in force, so they never decrease.
-	ind map[string]*modelIndicators
-}
-
-type modelIndicators struct {
-	co2eG, cost, waterL float64
-	costSet, waterSet   bool
+	// ind holds the indicators of each model, and all those of the
+	// backend, added up interval by interval with the factors in force at
+	// the time of each, so they never decrease.
+	ind    map[string]*indicators.Values
+	indAll indicators.Values
 }
 
 // refreshBackends finds the backends and their processes again.
@@ -327,25 +324,20 @@ func (a *Agent) recordUsage(c usage.Cut, readings map[string]backends.Reading, r
 		if r.Consumer != "" {
 			a.consumerJ[r.Consumer] += r.TotalJ()
 		}
+		v := f.ComputeOver(r.TotalJ(), r.Start, r.Start.Add(r.Interval))
+		st.indAll.Add(v)
 		if r.Model == "" {
 			continue
 		}
 		if st.ind == nil {
-			st.ind = map[string]*modelIndicators{}
+			st.ind = map[string]*indicators.Values{}
 		}
 		mi, ok := st.ind[r.Model]
 		if !ok {
-			mi = &modelIndicators{}
+			mi = &indicators.Values{}
 			st.ind[r.Model] = mi
 		}
-		v := f.Compute(r.TotalJ())
-		mi.co2eG += v.CO2eG
-		if v.Cost != nil {
-			mi.cost, mi.costSet = mi.cost+*v.Cost, true
-		}
-		if v.WaterL != nil {
-			mi.waterL, mi.waterSet = mi.waterL+*v.WaterL, true
-		}
+		mi.Add(v)
 		m, ok := st.models[r.Model]
 		if !ok {
 			m = &api.Model{Name: r.Model}
@@ -392,6 +384,7 @@ func (a *Agent) Backends() api.Backends {
 			Name: st.info.Name, Kind: string(st.info.Kind), Endpoint: st.info.Endpoint, Static: st.info.Static,
 			ContainerID: st.info.ContainerID, Processes: st.processes,
 			PowerW: st.powerW, EnergyJ: st.total.TotalJ(), CPUJ: st.total.CPUJ, DRAMJ: st.total.DRAMJ, GPUJ: st.total.GPUJ,
+			Indicators: st.indAll,
 		}
 		for _, pid := range st.info.Roots {
 			if p, err := procfs.Process(a.hostFS, pid); err == nil {
@@ -411,6 +404,9 @@ func (a *Agent) Backends() api.Backends {
 			mm := *m
 			if mm.GeneratedTokens > 0 {
 				mm.JoulesPerToken = mm.EnergyJ / float64(mm.GeneratedTokens)
+			}
+			if v := st.ind[m.Name]; v != nil {
+				mm.Indicators = *v
 			}
 			b.Models = append(b.Models, mm)
 		}

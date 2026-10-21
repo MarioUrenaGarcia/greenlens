@@ -219,18 +219,23 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 		}
 		bucket = d
 	}
+	a.mu.RLock()
+	f := a.cfg.Factors()
+	a.mu.RUnlock()
 	switch by := q.Get("group_by"); by {
 	case "":
 	case store.ByBackend, store.ByModel, store.ByConsumer:
-		rows, res, err := a.st.Usage(r.Context(), from, to, by, bucket, time.Now(), a.retention())
+		query := a.st.Usage
+		if f.Varies() {
+			query = a.st.UsageHourly
+		}
+		rows, res, err := query(r.Context(), from, to, by, bucket, time.Now(), a.retention())
 		if err != nil {
 			a.log.Error("usage query failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "usage query failed")
 			return
 		}
-		if rows == nil {
-			rows = []store.UsageEnergy{}
-		}
+		rows = usageIndicators(rows, f, from, to, bucket, f.Varies())
 		writeJSON(w, http.StatusOK, api.BackendUsage{SchemaVersion: api.SchemaVersion, From: from, To: to, GroupBy: by,
 			BucketMS: bucket.Milliseconds(), Resolution: res, Rows: rows})
 		return
@@ -238,15 +243,17 @@ func (a *Agent) handleUsage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "group_by must be backend, model or consumer")
 		return
 	}
-	rows, res, err := a.st.NodeEnergy(r.Context(), from, to, bucket, time.Now(), a.retention())
+	query := a.st.NodeEnergy
+	if f.Varies() {
+		query = a.st.NodeEnergyHourly
+	}
+	rows, res, err := query(r.Context(), from, to, bucket, time.Now(), a.retention())
 	if err != nil {
 		a.log.Error("usage query failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "usage query failed")
 		return
 	}
-	if rows == nil {
-		rows = []store.ChannelEnergy{}
-	}
+	rows = nodeIndicators(rows, f, from, to, bucket, f.Varies())
 	writeJSON(w, http.StatusOK, api.Usage{
 		SchemaVersion: api.SchemaVersion, From: from, To: to, BucketMS: bucket.Milliseconds(), Resolution: res, Rows: rows,
 	})
@@ -316,7 +323,8 @@ func (a *Agent) Status() api.Status {
 	st.CPUJPerBusyS = a.cpuJPerBusyS
 	f := a.cfg.Factors()
 	st.Factors = api.Factors{EmissionGPerKWh: f.EmissionGPerKWh, EmissionSource: f.EmissionSource, PUE: f.PUE,
-		TariffPerKWh: f.TariffPerKWh, Currency: f.Currency, WUELPerKWh: f.WUELPerKWh}
+		TariffPerKWh: f.TariffPerKWh, Currency: f.Currency, WUELPerKWh: f.WUELPerKWh,
+		HourlyProfile: f.Profile != nil, TariffPeriods: len(f.Periods), TimeZone: f.Location.String()}
 	quality := map[source.Domain]source.Quality{}
 	for _, c := range a.sel.Channels {
 		quality[c.Domain] = c.Quality

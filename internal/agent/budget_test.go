@@ -18,6 +18,7 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 )
@@ -124,10 +125,22 @@ func TestBudgetOfThirtyDayQueries(t *testing.T) {
 	dir := t.TempDir()
 	seedThirtyDays(t, filepath.Join(dir, paths.DatabaseName), now)
 	listen := freePort(t)
+	// An hourly profile and tariff periods make every query split its
+	// buckets by hour, the slower path.
+	var profile indicators.Profile
+	for d := range profile {
+		for h := range profile[d] {
+			profile[d][h] = float64(400 + 5*h)
+		}
+	}
+	base := 1.0
 	r := startAgentWith(t, "", func(c *config.Config) {
 		c.Agent.DataDir = dir
 		c.Server.Enabled = true
 		c.Server.Listen = listen
+		c.Indicators.Profile, c.Indicators.Location = &profile, time.UTC
+		c.Indicators.Tariff.PricePerKWh = &base
+		c.Indicators.Tariff.Periods = []config.TariffPeriod{{Days: []string{"mon", "tue", "wed", "thu", "fri"}, From: "18:00", To: "22:00", PricePerKWh: 3}}
 	})
 	sock := call{t: t, c: socketClient(r.socket), base: "http://agent"}
 	resp, body := sock.do("POST", api.PathTokens, api.CreateToken{Name: "budget", Role: "viewer"})
@@ -170,13 +183,15 @@ func TestBudgetOfThirtyDayQueries(t *testing.T) {
 				t.Fatal(err)
 			}
 			var doc struct {
-				Resolution string            `json:"resolution"`
-				Rows       []json.RawMessage `json:"rows"`
+				Resolution string `json:"resolution"`
+				Rows       []struct {
+					Indicators *indicators.Values `json:"indicators"`
+				} `json:"rows"`
 			}
 			err = json.NewDecoder(resp.Body).Decode(&doc)
 			_ = resp.Body.Close()
 			d := time.Since(start)
-			if err != nil || resp.StatusCode != 200 || len(doc.Rows) == 0 {
+			if err != nil || resp.StatusCode != 200 || len(doc.Rows) == 0 || doc.Rows[0].Indicators == nil || doc.Rows[0].Indicators.Cost == nil {
 				t.Fatalf("%s: %d %v, %d rows", q.Encode(), resp.StatusCode, err, len(doc.Rows))
 			}
 			res = doc.Resolution

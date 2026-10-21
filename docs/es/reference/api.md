@@ -712,6 +712,7 @@ Un servidor de inferencia con su uso desde que inició el agente.
 | `dram_energy_j` | number | sí | Parte de memoria de energy_j. |
 | `energy_j` | number | sí | Energía que se le atribuyó. |
 | `gpu_energy_j` | number | sí | Parte de GPU de energy_j. |
+| `indicators` | [Indicators](#indicators) | sí | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
 | `kind` | string | sí | Tipo de servidor |
 | `name` | string | sí | Nombre del backend. |
 | `power_w` | number | sí | Potencia media en el último intervalo de uso. |
@@ -937,6 +938,7 @@ Energía de un canal en un intervalo.
 | `quality` | string | sí | Calidad de sus valores. |
 | `samples` | integer | sí | Muestras sumadas. |
 | `source` | string | sí | Fuente que lo leyó. |
+| `indicators` | [Indicators](#indicators) | no | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
 
 ### ConfigChange
 
@@ -1028,14 +1030,17 @@ Se devuelve con cada estado de error.
 
 ### Factors
 
-Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente.
+Factores de conversión vigentes. Las filas de uso traen los indicadores que el agente calcula hora por hora; los factores sirven para proyecciones sin hora, como el ahorro de otro modelo.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `currency` | string | sí | Código ISO 4217 de la tarifa. |
 | `emission_g_per_kwh` | number | sí | Factor de emisión de la red en gCO2e por kWh. |
 | `emission_source` | string | sí | De dónde viene el factor de emisión. |
+| `hourly_profile` | boolean | sí | Si un perfil horario reemplaza al factor de emisión hora por hora. |
 | `pue` | number | sí | Eficiencia en el uso de energía de la instalación. |
+| `tariff_periods` | integer | sí | Número de precios por horario de la tarifa. |
+| `time_zone` | string | sí | Zona horaria del perfil horario y de los tramos de tarifa. |
 | `tariff_per_kwh` | number | no | Precio de un kWh; ausente si no hay tarifa configurada. |
 | `wue_l_per_kwh` | number | no | Agua en litros por kWh; ausente si no está configurada. |
 
@@ -1073,6 +1078,17 @@ Las páginas que contienen todas las palabras de una búsqueda, la mejor primero
 | `results` | lista de object | sí | A lo sumo 20 páginas. |
 | `schema_version` | integer | sí | Versión del documento. |
 
+### Indicators
+
+Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `co2e_g` | number | sí | Emisiones operacionales en gramos de CO2e |
+| `kwh` | number | sí | Energía en kWh. |
+| `cost` | number | no | Costo en la moneda de la tarifa |
+| `water_l` | number | no | Agua en litros; ausente sin WUE. |
+
 ### Live
 
 Las muestras que se conservan en memoria.
@@ -1108,6 +1124,7 @@ Uso de un modelo de un backend desde que inició el agente.
 |---|---|---|---|
 | `energy_j` | number | sí | Energía que se le atribuyó. |
 | `generated_tokens` | integer | sí | Tokens generados contados. |
+| `indicators` | [Indicators](#indicators) | sí | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
 | `joules_per_generated_token` | number | sí | Energía por token generado; cero si no se contó ningún token. |
 | `method` | string | sí | Método de atribución. |
 | `name` | string | sí | Nombre del modelo |
@@ -1212,7 +1229,7 @@ Estado del nodo.
 | `cpu_joules_per_busy_second` | number | sí | Energía de un segundo de procesador ocupado en aproximadamente el último minuto; sin la potencia en reposo cuando el nodo está calibrado. |
 | `domains` | lista de [Domain](#domain) | sí | Potencia y energía de cada dominio. |
 | `estimated` | boolean | sí | Si la energía del procesador es estimada en lugar de medida. |
-| `factors` | [Factors](#factors) | sí | Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente. |
+| `factors` | [Factors](#factors) | sí | Factores de conversión vigentes. Las filas de uso traen los indicadores que el agente calcula hora por hora; los factores sirven para proyecciones sin hora, como el ahorro de otro modelo. |
 | `idle_policy` | `dynamic`, `proportional`, `full`, `wall` | sí | Cómo se reparte la potencia en reposo. |
 | `interval_ms` | integer | sí | Intervalo de muestreo en milisegundos. |
 | `sample_time` | string (date-time) | sí | Hora de la última muestra. |
@@ -1287,4 +1304,5 @@ Uso de un backend, modelo o consumidor en un periodo.
 | `tokens_counted` | boolean | sí | Falso cuando el backend no reportó tokens en el periodo. |
 | `bucket_start` | string (date-time) | no | Inicio del intervalo |
 | `consumer` | string | no | Consumidor |
+| `indicators` | [Indicators](#indicators) | no | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
 | `model` | string | no | Nombre del modelo |

@@ -1019,10 +1019,10 @@ components:
 
     Factors:
       type: object
-      description: Conversion factors in force, to turn energy into emissions, cost and water as the agent does.
-      x-description-es: Factores de conversión vigentes, para convertir la energía en emisiones, costo y agua como lo hace el agente.
+      description: Conversion factors in force. Usage rows carry the indicators the agent computes hour by hour; the factors serve projections without a time, such as the savings of another model.
+      x-description-es: Factores de conversión vigentes. Las filas de uso traen los indicadores que el agente calcula hora por hora; los factores sirven para proyecciones sin hora, como el ahorro de otro modelo.
       additionalProperties: false
-      required: [emission_g_per_kwh, emission_source, pue, currency]
+      required: [emission_g_per_kwh, emission_source, pue, currency, hourly_profile, tariff_periods, time_zone]
       properties:
         emission_g_per_kwh: {type: number, description: Grid emission factor in gCO2e per kWh., x-description-es: Factor de emisión de la red en gCO2e por kWh.}
         emission_source: {type: string, description: Where the emission factor comes from., x-description-es: De dónde viene el factor de emisión.}
@@ -1030,6 +1030,21 @@ components:
         tariff_per_kwh: {type: number, description: Price of a kWh; absent when no tariff is configured., x-description-es: Precio de un kWh; ausente si no hay tarifa configurada.}
         currency: {type: string, description: ISO 4217 code of the tariff., x-description-es: Código ISO 4217 de la tarifa.}
         wue_l_per_kwh: {type: number, description: Water in liters per kWh; absent when not configured., x-description-es: Agua en litros por kWh; ausente si no está configurada.}
+        hourly_profile: {type: boolean, description: Whether an hourly profile replaces the emission factor hour by hour., x-description-es: Si un perfil horario reemplaza al factor de emisión hora por hora.}
+        tariff_periods: {type: integer, description: Number of time-of-use prices of the tariff., x-description-es: Número de precios por horario de la tarifa.}
+        time_zone: {type: string, description: Time zone of the hourly profile and the tariff periods., x-description-es: Zona horaria del perfil horario y de los tramos de tarifa.}
+
+    Indicators:
+      type: object
+      description: Indicators of an amount of energy, each hour with the factors in force then.
+      x-description-es: Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces.
+      additionalProperties: false
+      required: [kwh, co2e_g]
+      properties:
+        kwh: {type: number, description: Energy in kWh., x-description-es: Energía en kWh.}
+        co2e_g: {type: number, description: Operational emissions in grams of CO2e, with the PUE., x-description-es: Emisiones operacionales en gramos de CO2e, con el PUE.}
+        cost: {type: number, description: Cost in the currency of the tariff, with the PUE; absent without a tariff., x-description-es: Costo en la moneda de la tarifa, con el PUE; ausente sin tarifa.}
+        water_l: {type: number, description: Water in liters; absent without a WUE., x-description-es: Agua en litros; ausente sin WUE.}
 
     About:
       type: object
@@ -1340,7 +1355,7 @@ components:
       description: Use of one model of a backend since the agent started.
       x-description-es: Uso de un modelo de un backend desde que inició el agente.
       additionalProperties: false
-      required: [name, energy_j, prompt_tokens, generated_tokens, requests, joules_per_generated_token, method, quality]
+      required: [name, energy_j, prompt_tokens, generated_tokens, requests, joules_per_generated_token, method, quality, indicators]
       properties:
         name: {type: string, description: Name of the model, or other beyond the limit., x-description-es: Nombre del modelo, u other más allá del límite.}
         energy_j: {type: number, description: Energy attributed to it., x-description-es: Energía que se le atribuyó.}
@@ -1351,13 +1366,14 @@ components:
         method: {type: string, description: Attribution method., x-description-es: Método de atribución.}
         quality: {type: string, description: Quality of the energy., x-description-es: Calidad de la energía.}
         regression: {$ref: "#/components/schemas/Regression"}
+        indicators: {$ref: "#/components/schemas/Indicators"}
 
     Backend:
       type: object
       description: An inference server with its use since the agent started.
       x-description-es: Un servidor de inferencia con su uso desde que inició el agente.
       additionalProperties: false
-      required: [name, kind, static, processes, token_counters, power_w, energy_j, cpu_energy_j, dram_energy_j, gpu_energy_j]
+      required: [name, kind, static, processes, token_counters, power_w, energy_j, cpu_energy_j, dram_energy_j, gpu_energy_j, indicators]
       properties:
         name: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
         kind: {type: string, description: Kind of server, such as ollama or llamacpp., x-description-es: Tipo de servidor, como ollama o llamacpp.}
@@ -1387,6 +1403,7 @@ components:
         cpu_energy_j: {type: number, description: Processor share of energy_j., x-description-es: Parte de procesador de energy_j.}
         dram_energy_j: {type: number, description: Memory share of energy_j., x-description-es: Parte de memoria de energy_j.}
         gpu_energy_j: {type: number, description: GPU share of energy_j., x-description-es: Parte de GPU de energy_j.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
         models:
           type: array
           description: Its models, most energy first.
@@ -1436,6 +1453,7 @@ components:
         quality: {type: string, description: Quality of its values., x-description-es: Calidad de sus valores.}
         energy_j: {type: number, description: Energy in joules., x-description-es: Energía en joules.}
         samples: {type: integer, description: Samples added up., x-description-es: Muestras sumadas.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
 
     Usage:
       type: object
@@ -1472,6 +1490,7 @@ components:
         generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
         requests: {type: integer, description: Requests., x-description-es: Solicitudes.}
         tokens_counted: {type: boolean, description: False when the backend reported no tokens in the period., x-description-es: Falso cuando el backend no reportó tokens en el periodo.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
 
     BackendUsage:
       type: object

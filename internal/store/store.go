@@ -29,6 +29,7 @@ import (
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/sampler"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 )
@@ -380,6 +381,10 @@ type ChannelEnergy struct {
 	Quality     string        `json:"quality"`
 	EnergyJ     float64       `json:"energy_j"`
 	Samples     int64         `json:"samples"`
+	// Hour is the UTC hour of the energy, set by NodeEnergyHourly.
+	Hour time.Time `json:"-"`
+	// Indicators are set by the agent from the factors in force.
+	Indicators *indicators.Values `json:"indicators,omitempty"`
 }
 
 // NodeEnergy sums the energy of every channel in [from, to), grouped in
@@ -388,6 +393,25 @@ type ChannelEnergy struct {
 // edges of the period and of its buckets are; the whole hours and minutes
 // in between come from the rollups.
 func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.Duration, now time.Time, r Retention) ([]ChannelEnergy, string, error) {
+	return s.nodeEnergy(ctx, from, to, bucket, now, r, false)
+}
+
+// NodeEnergyHourly is NodeEnergy with each bucket split further by UTC
+// hour, for indicators whose factors change with the time of day.
+func (s *Store) NodeEnergyHourly(ctx context.Context, from, to time.Time, bucket time.Duration, now time.Time, r Retention) ([]ChannelEnergy, string, error) {
+	return s.nodeEnergy(ctx, from, to, bucket, now, r, true)
+}
+
+// hourOf is the SQL expression of the UTC hour of a time column, or a
+// constant when the hours are not wanted.
+func hourOf(col string, hourly bool) string {
+	if !hourly {
+		return "0"
+	}
+	return fmt.Sprintf("(%s / %d) * %d", col, hourMS, hourMS)
+}
+
+func (s *Store) nodeEnergy(ctx context.Context, from, to time.Time, bucket time.Duration, now time.Time, r Retention, hourly bool) ([]ChannelEnergy, string, error) {
 	res := finest(from, now, r)
 	bucketMS := bucket.Milliseconds()
 	if bucketMS <= 0 {
@@ -402,14 +426,14 @@ func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.
 	}
 	plan := planRead(from.UnixMilli(), to.UnixMilli(), done1m, done1h, bucket.Milliseconds(), res)
 	union, args := plan.union(
-		`SELECT `+group("bucket_start_ms")+` AS b, source_id, energy_j, samples AS n FROM node_rollups
+		`SELECT `+group("bucket_start_ms")+` AS b, `+hourOf("bucket_start_ms", hourly)+` AS h, source_id, energy_j, samples AS n FROM node_rollups
 			WHERE resolution = ? AND bucket_start_ms >= ? AND bucket_start_ms < ?`,
-		`SELECT `+group("ts_ms")+` AS b, source_id, energy_j, 1 AS n FROM node_samples WHERE ts_ms >= ? AND ts_ms < ?`)
+		`SELECT `+group("ts_ms")+` AS b, `+hourOf("ts_ms", hourly)+` AS h, source_id, energy_j, 1 AS n FROM node_samples WHERE ts_ms >= ? AND ts_ms < ?`)
 	// The subqueries are constants of this function with only integers
 	// formatted into them; every value goes through placeholders.
 	//nolint:gosec // constant subqueries, see above
-	q := `SELECT u.b, s.name, s.kind, s.domain, s.quality, sum(u.energy_j), sum(u.n) FROM (` + union +
-		`) AS u JOIN sources s ON s.id = u.source_id GROUP BY u.b, s.id ORDER BY u.b, s.name`
+	q := `SELECT u.b, u.h, s.name, s.kind, s.domain, s.quality, sum(u.energy_j), sum(u.n) FROM (` + union +
+		`) AS u JOIN sources s ON s.id = u.source_id GROUP BY u.b, u.h, s.id ORDER BY u.b, u.h, s.name`
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, res, err
@@ -418,13 +442,16 @@ func (s *Store) NodeEnergy(ctx context.Context, from, to time.Time, bucket time.
 	var out []ChannelEnergy
 	for rows.Next() {
 		var ce ChannelEnergy
-		var b int64
+		var b, h int64
 		var domain string
-		if err := rows.Scan(&b, &ce.Channel, &ce.Source, &domain, &ce.Quality, &ce.EnergyJ, &ce.Samples); err != nil {
+		if err := rows.Scan(&b, &h, &ce.Channel, &ce.Source, &domain, &ce.Quality, &ce.EnergyJ, &ce.Samples); err != nil {
 			return nil, res, err
 		}
 		ce.Domain = source.Domain(domain)
 		ce.BucketStart = time.UnixMilli(b).UTC()
+		if hourly {
+			ce.Hour = time.UnixMilli(h).UTC()
+		}
 		out = append(out, ce)
 	}
 	return out, res, rows.Err()

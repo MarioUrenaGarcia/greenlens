@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
 )
 
@@ -257,6 +258,10 @@ type UsageEnergy struct {
 	Requests        int64     `json:"requests"`
 	// Counted is false when the backend reported no tokens in the period.
 	Counted bool `json:"tokens_counted"`
+	// Hour is the UTC hour of the usage, set by UsageHourly.
+	Hour time.Time `json:"-"`
+	// Indicators are set by the agent from the factors in force.
+	Indicators *indicators.Values `json:"indicators,omitempty"`
 }
 
 // Usage groupings.
@@ -270,6 +275,16 @@ const (
 // positive bucket splits the period in buckets that start at from. As for
 // NodeEnergy, the resolution returned is the finest kept for from.
 func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, bucket time.Duration, now time.Time, r Retention) ([]UsageEnergy, string, error) {
+	return s.usage(ctx, from, to, by, bucket, now, r, false)
+}
+
+// UsageHourly is Usage with each row split further by UTC hour, for
+// indicators whose factors change with the time of day.
+func (s *Store) UsageHourly(ctx context.Context, from, to time.Time, by string, bucket time.Duration, now time.Time, r Retention) ([]UsageEnergy, string, error) {
+	return s.usage(ctx, from, to, by, bucket, now, r, true)
+}
+
+func (s *Store) usage(ctx context.Context, from, to time.Time, by string, bucket time.Duration, now time.Time, r Retention, hourly bool) ([]UsageEnergy, string, error) {
 	res := finest(from, now, r)
 	done1m, done1h, err := s.folded(ctx, usage1m, usage1h)
 	if err != nil {
@@ -296,10 +311,13 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, bucket
 		args = append([]any{from.UnixMilli(), ms}, args...)
 		group += `, slot`
 	}
+	if hourly {
+		group += `, hour`
+	}
 	// Only the constant fragments above are formatted into the query;
 	// every value goes through placeholders.
 	//nolint:gosec // constant fragments, see above
-	query := `SELECT ` + slot + ` AS slot, b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
+	query := `SELECT ` + slot + ` AS slot, ` + hourOf("u.t", hourly) + ` AS hour, b.name, b.kind, ` + model + `, ` + consumer + `, sum(u.e), coalesce(sum(u.p), 0), coalesce(sum(u.g), 0), coalesce(sum(u.q), 0),
 			count(u.p) > 0 OR count(u.g) > 0
 		FROM (` + q + `) AS u JOIN backends b ON b.id = u.backend_id LEFT JOIN models m ON m.id = u.model_id
 			LEFT JOIN consumers c ON c.id = u.consumer_id
@@ -312,12 +330,15 @@ func (s *Store) Usage(ctx context.Context, from, to time.Time, by string, bucket
 	var out []UsageEnergy
 	for rows.Next() {
 		var u UsageEnergy
-		var slotN int64
-		if err := rows.Scan(&slotN, &u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
+		var slotN, hour int64
+		if err := rows.Scan(&slotN, &hour, &u.Backend, &u.Kind, &u.Model, &u.Consumer, &u.EnergyJ, &u.PromptTokens, &u.GeneratedTokens, &u.Requests, &u.Counted); err != nil {
 			return nil, res, err
 		}
 		if bucket > 0 {
 			u.BucketStart = from.Add(time.Duration(slotN) * bucket).UTC()
+		}
+		if hourly {
+			u.Hour = time.UnixMilli(hour).UTC()
 		}
 		out = append(out, u)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/helpdocs"
+	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 	"github.com/MarioUrenaGarcia/greenlens/internal/usage"
@@ -136,8 +137,9 @@ type Self struct {
 	RSSBytes   uint64  `json:"rss_bytes"`
 }
 
-// Factors are the conversion factors in force, so clients can turn energy
-// into emissions, cost and water as the agent does.
+// Factors are the conversion factors in force. Usage rows carry the
+// indicators the agent computes hour by hour; clients use the factors for
+// projections that have no time, such as the savings of another model.
 type Factors struct {
 	EmissionGPerKWh float64  `json:"emission_g_per_kwh"`
 	EmissionSource  string   `json:"emission_source"`
@@ -145,6 +147,12 @@ type Factors struct {
 	TariffPerKWh    *float64 `json:"tariff_per_kwh,omitempty"`
 	Currency        string   `json:"currency"`
 	WUELPerKWh      *float64 `json:"wue_l_per_kwh,omitempty"`
+	// HourlyProfile says that an hourly profile replaces the emission
+	// factor, and TariffPeriods counts the time-of-use prices; both follow
+	// TimeZone.
+	HourlyProfile bool   `json:"hourly_profile"`
+	TariffPeriods int    `json:"tariff_periods"`
+	TimeZone      string `json:"time_zone"`
 }
 
 // Catalog holds the messages of one language for the graphical interface.
@@ -222,6 +230,9 @@ type Model struct {
 	// Regression is the energy per prompt and per generated token, when
 	// the fit over the last day is good enough.
 	Regression *usage.Regression `json:"regression,omitempty"`
+	// Indicators add up interval by interval, with the factors in force
+	// at the time of each.
+	Indicators indicators.Values `json:"indicators"`
 }
 
 // Backend is an inference server with its use since the agent started.
@@ -245,7 +256,9 @@ type Backend struct {
 	CPUJ    float64 `json:"cpu_energy_j"`
 	DRAMJ   float64 `json:"dram_energy_j"`
 	GPUJ    float64 `json:"gpu_energy_j"`
-	Models  []Model `json:"models,omitempty"`
+	// Indicators add up as for each model.
+	Indicators indicators.Values `json:"indicators"`
+	Models     []Model           `json:"models,omitempty"`
 }
 
 // Process is a process of a backend.

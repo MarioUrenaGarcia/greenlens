@@ -180,6 +180,31 @@ func TestQueriesMatchTheRawRows(t *testing.T) {
 		}
 		compare(t, "node", from, to, bucket, gotJ, want)
 
+		// Split by hour, each part holds the samples of its UTC hour.
+		type part struct{ bucket, hour time.Time }
+		wantH := map[part]float64{}
+		for _, x := range samples {
+			if !x.at.Before(from) && x.at.Before(to) {
+				wantH[part{key(x.at), x.at.Truncate(time.Hour).UTC()}] += x.j
+			}
+		}
+		hourly, _, err := s.NodeEnergyHourly(ctx, from, to, bucket, now, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotH := map[part]float64{}
+		for _, g := range hourly {
+			gotH[part{g.BucketStart, g.Hour}] += g.EnergyJ
+		}
+		for k, w := range wantH {
+			if math.Abs(gotH[k]-w) > 1e-6*math.Max(1, w) {
+				t.Fatalf("node by hour [%s, %s) by %s: %v has %v, want %v", from, to, bucket, k, gotH[k], w)
+			}
+		}
+		if len(gotH) != len(wantH) {
+			t.Fatalf("node by hour: %d parts, want %d", len(gotH), len(wantH))
+		}
+
 		wantU := map[time.Time]float64{}
 		for _, x := range usageAt {
 			if !x.at.Before(from) && x.at.Before(to) {
@@ -199,6 +224,26 @@ func TestQueriesMatchTheRawRows(t *testing.T) {
 			gotU[k] += g.EnergyJ
 		}
 		compare(t, "usage", from, to, bucket, gotU, wantU)
+
+		hourRows, _, err := s.UsageHourly(ctx, from, to, ByModel, bucket, now, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		byHour := map[time.Time]float64{}
+		for _, g := range hourRows {
+			byHour[g.Hour] += g.EnergyJ
+		}
+		wantByHour := map[time.Time]float64{}
+		for _, x := range usageAt {
+			if !x.at.Before(from) && x.at.Before(to) {
+				wantByHour[x.at.Truncate(time.Hour).UTC()] += x.used
+			}
+		}
+		for k, w := range wantByHour {
+			if math.Abs(byHour[k]-w) > 1e-6*math.Max(1, w) {
+				t.Fatalf("usage by hour: %s has %v, want %v", k, byHour[k], w)
+			}
+		}
 	}
 }
 
