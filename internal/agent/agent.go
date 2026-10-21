@@ -103,6 +103,11 @@ type Agent struct {
 
 	collectors *prometheus.Collectors
 
+	stream *stream
+	// stopping is closed when the agent shuts down, so live streams end
+	// instead of holding up the shutdown of the servers.
+	stopping chan struct{}
+
 	tokens   *auth.Tokens
 	sessions *auth.Sessions
 	codes    *auth.Codes
@@ -182,6 +187,8 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		chanW:   map[string]float64{},
 		// The statistics outlive the sampler, which a reload replaces.
 		collectors: prometheus.NewCollectors(),
+		stream:     newStream(),
+		stopping:   make(chan struct{}),
 		consumerJ:  map[string]float64{},
 		idle:       calibrate.NewIdleTracker(),
 		lastLog:    map[string]time.Time{},
@@ -415,6 +422,7 @@ func (a *Agent) serve(ctx context.Context) error {
 
 	err = a.loop(ctx, reload, serveErr)
 
+	close(a.stopping)
 	// The parent context is already canceled; closing still needs time.
 	shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownGrace)
 	defer cancel()
@@ -589,7 +597,9 @@ func (a *Agent) step(ctx context.Context) {
 		a.chanW[c.Channel] = c.PowerW
 	}
 	a.ring.add(s)
+	seq := a.samples
 	a.mu.Unlock()
+	a.publishSample(seq, s)
 	if w, ok := s.DomainPower(source.DomainPackage); ok {
 		a.idle.Add(s.Time, w)
 	}

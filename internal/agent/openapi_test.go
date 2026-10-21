@@ -129,6 +129,11 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	get("sources", sock, api.PathSources)
 	get("backends", sock, api.PathBackends)
 	get("live", sock, api.PathLive)
+	stream, cancel := openStream(t, r, 0)
+	readEvents(t, stream.Body, func(e sse) bool { return e.name == eventBackends })
+	cancel()
+	_ = stream.Body.Close()
+	called["stream"] = true
 	now := time.Now().UTC()
 	q := url.Values{"from": {now.Add(-time.Hour).Format(time.RFC3339)}, "to": {now.Add(time.Minute).Format(time.RFC3339)}}
 	get("usage", sock, api.PathUsage+"?"+q.Encode())

@@ -27,6 +27,7 @@ Energy measurements of the node, its inference backends and models, served by th
 | `POST` | `/api/v1/session/codes` | admin | One-time sign-in link for a local user |
 | `GET` | `/api/v1/sources` | viewer | Energy channels found, chosen and discarded |
 | `GET` | `/api/v1/status` | viewer | State of the node, its sources and backends |
+| `GET` | `/api/v1/stream` | viewer | Live power and use of the backends as server-sent events |
 | `GET` | `/api/v1/tokens` | admin | Access tokens, without their secrets |
 | `POST` | `/api/v1/tokens` | admin | Create an access token |
 | `DELETE` | `/api/v1/tokens/{id}` | admin | Revoke an access token |
@@ -276,6 +277,26 @@ Role: `viewer`
 |---|---|---|
 | `200` | The state of the node. | [Status](#status) |
 | `401` | No valid session or token. | [Error](#error) |
+
+### GET /api/v1/stream
+
+Live power and use of the backends as server-sent events. A sample event, whose data is a LivePoint and whose id grows by one with each sample, follows every sample of the agent; a backends event, whose data is a Backends document, follows every usage interval. A comment keeps the connection open every 15 seconds. A client that reconnects with Last-Event-ID receives the samples it missed while they are still in memory, at most 15 minutes. A client that falls behind is disconnected and resumes the same way.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `Last-Event-ID` | header | integer | no | Id of the last sample received. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The stream of events. |  |
+| `401` | No valid session or token. | [Error](#error) |
+| `503` | Too many live clients. | [Error](#error) |
 
 ### GET /api/v1/tokens
 

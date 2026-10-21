@@ -61,6 +61,9 @@ All notable changes to GreenLens are recorded in this file. The format follows
   and managed with `greenlens token`, browser sessions with CSRF
   protection, an audit log, security headers, rate limits and optional TLS.
   The agent refuses to listen beyond loopback while no token exists.
+- A live stream of server-sent events on `/api/v1/stream`: the power of
+  every domain with each sample and the use of the backends with each
+  usage interval, resumable with `Last-Event-ID` from the last 15 minutes.
 - An OpenAPI 3.1 description of the HTTP API in `api/openapi.yaml`, served
   at `/api/v1/openapi.yaml`, with Spanish translations of every text. Tests
   check that it lists every route with its role and that the documents of

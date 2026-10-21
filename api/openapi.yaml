@@ -221,6 +221,49 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/Live"}
         "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/stream:
+    get:
+      operationId: stream
+      tags: [measurements]
+      summary: Live power and use of the backends as server-sent events
+      x-summary-es: Potencia en vivo y uso de los backends como eventos enviados por el servidor
+      description: >-
+        A sample event, whose data is a LivePoint and whose id grows by one with
+        each sample, follows every sample of the agent; a backends event, whose
+        data is a Backends document, follows every usage interval. A comment
+        keeps the connection open every 15 seconds. A client that reconnects
+        with Last-Event-ID receives the samples it missed while they are still
+        in memory, at most 15 minutes. A client that falls behind is
+        disconnected and resumes the same way.
+      x-description-es: >-
+        Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en
+        uno con cada muestra, sigue a cada muestra del agente; un evento
+        backends, cuyos datos son un documento Backends, sigue a cada intervalo
+        de uso. Un comentario mantiene abierta la conexión cada 15 segundos. Un
+        cliente que se reconecta con Last-Event-ID recibe las muestras que se
+        perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que
+        se atrasa se desconecta y continúa de la misma forma.
+      x-greenlens-role: viewer
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          description: Id of the last sample received.
+          x-description-es: Id de la última muestra recibida.
+          schema: {type: integer, minimum: 0}
+      responses:
+        "200":
+          description: The stream of events.
+          x-description-es: El flujo de eventos.
+          content:
+            text/event-stream:
+              schema: {type: string}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "503":
+          description: Too many live clients.
+          x-description-es: Demasiados clientes en vivo.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
   /api/v1/calibrations:
     post:
       operationId: saveCalibration

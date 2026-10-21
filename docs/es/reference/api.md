@@ -27,6 +27,7 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `POST` | `/api/v1/session/codes` | admin | Enlace de inicio de sesión de un solo uso para un usuario local |
 | `GET` | `/api/v1/sources` | viewer | Canales de energía encontrados, elegidos y descartados |
 | `GET` | `/api/v1/status` | viewer | Estado del nodo, sus fuentes y backends |
+| `GET` | `/api/v1/stream` | viewer | Potencia en vivo y uso de los backends como eventos enviados por el servidor |
 | `GET` | `/api/v1/tokens` | admin | Tokens de acceso, sin sus secretos |
 | `POST` | `/api/v1/tokens` | admin | Crea un token de acceso |
 | `DELETE` | `/api/v1/tokens/{id}` | admin | Revoca un token de acceso |
@@ -276,6 +277,26 @@ Rol: `viewer`
 |---|---|---|
 | `200` | El estado del nodo. | [Status](#status) |
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
+
+### GET /api/v1/stream
+
+Potencia en vivo y uso de los backends como eventos enviados por el servidor. Un evento sample, cuyos datos son un LivePoint y cuyo id crece de uno en uno con cada muestra, sigue a cada muestra del agente; un evento backends, cuyos datos son un documento Backends, sigue a cada intervalo de uso. Un comentario mantiene abierta la conexión cada 15 segundos. Un cliente que se reconecta con Last-Event-ID recibe las muestras que se perdió mientras sigan en memoria, a lo sumo 15 minutos. Un cliente que se atrasa se desconecta y continúa de la misma forma.
+
+Rol: `viewer`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `Last-Event-ID` | header | integer | no | Id de la última muestra recibida. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El flujo de eventos. |  |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `503` | Demasiados clientes en vivo. | [Error](#error) |
 
 ### GET /api/v1/tokens
 

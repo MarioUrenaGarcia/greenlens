@@ -211,6 +211,7 @@ func (a *Agent) usageWorker(ctx context.Context) {
 			a.limited("usage-insert", "storing usage failed", "error", err)
 		}
 		a.recordUsage(c, readings, rows, factors)
+		a.publishBackends()
 		every := regressionEvery
 		if a.o.RegressionEvery > 0 {
 			every = a.o.RegressionEvery

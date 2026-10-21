@@ -108,6 +108,7 @@ func (a *Agent) routes() []route {
 		{pattern: "GET " + api.PathLive, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
 			writeJSON(w, http.StatusOK, a.Live())
 		}},
+		{pattern: "GET " + api.PathStream, role: auth.Viewer, h: a.handleStream},
 		{pattern: "POST " + api.PathCalibrations, role: auth.Operator, h: a.handleCalibration},
 		{pattern: "GET " + api.PathBenchmarks, role: auth.Viewer, h: a.handleBenchmarks},
 		{pattern: "GET " + api.PathBenchmarks + "/{id}", role: auth.Viewer, h: a.handleBenchmark},
@@ -355,11 +356,7 @@ func (a *Agent) Live() api.Live {
 	a.mu.RUnlock()
 	out := api.Live{SchemaVersion: api.SchemaVersion, Points: make([]api.LivePoint, 0, len(samples))}
 	for _, s := range samples {
-		p := api.LivePoint{Time: s.Time, IntervalMS: s.Interval.Milliseconds(), PowerW: map[source.Domain]float64{}}
-		for _, c := range s.Channels {
-			p.PowerW[c.Domain] += c.PowerW
-		}
-		out.Points = append(out.Points, p)
+		out.Points = append(out.Points, livePoint(s))
 	}
 	return out
 }

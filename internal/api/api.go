@@ -28,6 +28,7 @@ const (
 	PathUsage        = "/api/v1/usage"
 	PathCalibrations = "/api/v1/calibrations"
 	PathLive         = "/api/v1/live"
+	PathStream       = "/api/v1/stream"
 	PathBackends     = "/api/v1/backends"
 	PathBenchmarks   = "/api/v1/benchmarks"
 	PathBackup       = "/api/v1/backup"
