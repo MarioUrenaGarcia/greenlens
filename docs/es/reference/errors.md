@@ -25,6 +25,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL0015](#gl0015) | '`{command}`' recibe `{want}` argumentos | 2 |
 | [GL0016](#gl0016) | greenlens top necesita una terminal | 2 |
 | [GL0017](#gl0017) | no hay explicación para '`{metric}`' | 2 |
+| [GL0018](#gl0018) | no hay ningún token de acceso '`{token}`' | 1 |
 | [GL1001](#gl1001) | no hay ninguna fuente de energía medida disponible | 3 |
 | [GL1002](#gl1002) | no se pueden leer los contadores de energía RAPL | 5 |
 | [GL1003](#gl1003) | no se pueden abrir los contadores de energía de perf_event | 5 |
@@ -57,6 +58,10 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL4008](#gl4008) | el archivo no es un respaldo válido de GreenLens | 1 |
 | [GL4009](#gl4009) | no se puede restaurar mientras el agente está en ejecución | 1 |
 | [GL4010](#gl4010) | el respaldo lo creó una versión más reciente de GreenLens | 1 |
+| [GL4011](#gl4011) | la API HTTP quedaría abierta a la red sin autenticación | 6 |
+| [GL4012](#gl4012) | la API HTTP no puede escuchar en `{listen}` | 1 |
+| [GL4013](#gl4013) | no se puede usar el archivo de tokens | 1 |
+| [GL4014](#gl4014) | no se puede cargar el certificado TLS | 6 |
 
 ## GL0001
 
@@ -176,6 +181,13 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** los valores que se pueden explicar son: `{metrics}`
 - **Solución:** ejecuta 'greenlens explain' para listarlos
 - **Código de salida:** 2
+
+## GL0018
+
+- **Mensaje:** no hay ningún token de acceso '`{token}`'
+- **Causa:** ningún token tiene este id o nombre
+- **Solución:** ejecuta 'greenlens token list' para ver los tokens
+- **Código de salida:** 1
 
 ## GL1001
 
@@ -400,3 +412,31 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** `{path}` tiene la versión de esquema `{version}`; esta versión lee hasta la `{supported}`
 - **Solución:** actualiza GreenLens y vuelve a restaurar el respaldo; no se cambió nada
 - **Código de salida:** 1
+
+## GL4011
+
+- **Mensaje:** la API HTTP quedaría abierta a la red sin autenticación
+- **Causa:** server.listen es `{listen}` y no hay ningún token de acceso
+- **Solución:** crea uno primero con 'greenlens token create --name admin --role admin', o deja server.listen en 127.0.0.1
+- **Código de salida:** 6
+
+## GL4012
+
+- **Mensaje:** la API HTTP no puede escuchar en `{listen}`
+- **Causa:** `{detail}`
+- **Solución:** elige otro server.listen, detén el programa que usa el puerto o pon server.enabled en false
+- **Código de salida:** 1
+
+## GL4013
+
+- **Mensaje:** no se puede usar el archivo de tokens
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** restáuralo de un respaldo, o bórralo y vuelve a crear los tokens; solo el agente debe poder leerlo (chmod 600)
+- **Código de salida:** 1
+
+## GL4014
+
+- **Mensaje:** no se puede cargar el certificado TLS
+- **Causa:** `{detail}`
+- **Solución:** revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archivos PEM del mismo par de llaves
+- **Código de salida:** 6

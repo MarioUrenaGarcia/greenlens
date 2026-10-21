@@ -250,3 +250,44 @@ func TestObjectListsHaveNoVariable(t *testing.T) {
 		t.Fatalf("fields %v", keys)
 	}
 }
+
+func TestServer(t *testing.T) {
+	for _, tt := range []struct {
+		listen string
+		want   bool
+	}{
+		{"127.0.0.1:10060", true}, {"localhost:10060", true}, {"[::1]:10060", true}, {"127.0.0.53:1", true},
+		{":10060", false}, {"0.0.0.0:10060", false}, {"192.0.2.10:10060", false}, {"[::]:10060", false}, {"10060", false},
+	} {
+		if got := IsLoopback(tt.listen); got != tt.want {
+			t.Errorf("IsLoopback(%q) = %v", tt.listen, got)
+		}
+	}
+	cfg := Defaults()
+	if !cfg.Server.Enabled || cfg.Server.Listen != DefaultListen {
+		t.Fatalf("defaults %+v", cfg.Server)
+	}
+	cfg.Server.Listen = "192.0.2.10"
+	cfg.Server.TokensFile = "tokens"
+	cfg.Server.TLS.CertFile = "/etc/greenlens/cert.pem"
+	errs := help.Flatten(cfg.Validate())
+	var keys []string
+	for _, e := range errs {
+		for i := 0; i+1 < len(help.As(e).Args); i += 2 {
+			if help.As(e).Args[i] == "key" {
+				keys = append(keys, help.As(e).Args[i+1].(string))
+			}
+		}
+	}
+	for _, want := range []string{"server.listen", "server.tokens_file", "server.tls"} {
+		if !slices.Contains(keys, want) {
+			t.Errorf("%s not reported: %v", want, keys)
+		}
+	}
+	cfg = Defaults()
+	cfg.Server.Enabled = false
+	cfg.Server.Listen = ""
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("a disabled server needs no address: %v", err)
+	}
+}

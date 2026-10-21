@@ -557,6 +557,90 @@ greenlens status
 greenlens status --output json
 ```
 
+## greenlens token
+
+Crea, lista y revoca los tokens de acceso que usan los programas y los navegadores remotos con la API HTTP. Cada token tiene un rol: viewer lee mediciones, operator además ejecuta benchmarks y calibraciones, admin además gestiona tokens y respaldos. Los tokens se guardan como hashes argon2id; el secreto se muestra solo al crearlo. Con el agente en ejecución, los cambios pasan por él y por su registro de auditoría; si no, se cambia directamente el archivo de tokens.
+
+**Uso**
+
+```text
+greenlens token [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+## greenlens token create
+
+Crea un token de acceso con un nombre, un rol y una caducidad opcional, e imprime su secreto una sola vez.
+
+**Uso**
+
+```text
+greenlens token create [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--expires` | Vigencia del token, como 90d, 12w o 36h, o never | `never` |
+| `--name` | Nombre del token, como grafana o ci |  |
+| `--role` | Rol del token: viewer, operator o admin | `viewer` |
+
+**Ejemplos**
+
+```bash
+greenlens token create --name grafana --role viewer --expires 90d
+sudo -u greenlens greenlens token create --name admin --role admin
+```
+
+## greenlens token list
+
+Lista los tokens de acceso con su rol, fecha de creación y caducidad. Los secretos nunca se muestran.
+
+**Uso**
+
+```text
+greenlens token list [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens token list
+greenlens token list --output json
+```
+
+## greenlens token revoke
+
+Revoca el token de acceso con el id o nombre indicado. Desde ese momento se rechaza a los programas que lo usen.
+
+**Uso**
+
+```text
+greenlens token revoke <token> [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens token revoke grafana
+greenlens token revoke 3f9a1c0b7d2e
+```
+
 ## greenlens top
 
 Abre en la terminal una vista en vivo del agente: la potencia de cada dominio, los backends y modelos con su energía por token, los consumidores y las fuentes de energía. Las teclas 1 a 4 o Tab cambian de vista, / filtra, s ordena, p pausa, e exporta la vista a CSV, ? muestra la ayuda de la vista y q sale. Funciona por SSH desde 80 por 24 caracteres, en ASCII cuando el locale no es UTF-8 y sin color con --no-color o NO_COLOR.

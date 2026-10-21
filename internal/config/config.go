@@ -63,6 +63,7 @@ type Config struct {
 	Backends    []Backend   `yaml:"backends"`
 	Discovery   Discovery   `yaml:"discovery"`
 	Proxy       Proxy       `yaml:"proxy"`
+	Server      Server      `yaml:"server"`
 	Indicators  Indicators  `yaml:"indicators"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
@@ -126,6 +127,43 @@ type Proxy struct {
 	ConsumerAliasesFile string `yaml:"consumer_aliases_file"`
 }
 
+// Server configures the HTTP API and the graphical interface.
+type Server struct {
+	Enabled bool   `yaml:"enabled"`
+	Listen  string `yaml:"listen"`
+	// TokensFile holds the access tokens; empty keeps them in the data
+	// directory, where the agent can add and revoke them.
+	TokensFile string `yaml:"tokens_file"`
+	// MetricsAuth asks for a token on /metrics too.
+	MetricsAuth bool `yaml:"metrics_auth"`
+	TLS         TLS  `yaml:"tls"`
+}
+
+// TLS names the certificate of the HTTP API. Without one the API speaks
+// plain HTTP, which is meant for loopback and SSH tunnels.
+type TLS struct {
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
+}
+
+// DefaultListen is the address of the HTTP API. Port 10060 follows the
+// default port allocations of the Prometheus ecosystem.
+const DefaultListen = "127.0.0.1:10060"
+
+// IsLoopback reports whether a listen address accepts only connections
+// from this machine. An empty host listens on every interface.
+func IsLoopback(listen string) bool {
+	host, _, err := net.SplitHostPort(listen)
+	if err != nil || host == "" {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // Backend is an inference server declared in the configuration. Its name
 // identifies it across restarts.
 type Backend struct {
@@ -179,6 +217,7 @@ func Defaults() Config {
 		Sources:     Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1}},
 		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50, MaxConsumers: 200, RegressionMinR2: 0.7},
 		Proxy:       Proxy{Listen: "127.0.0.1:11435", Upstream: "http://127.0.0.1:11434"},
+		Server:      Server{Enabled: true, Listen: DefaultListen},
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}},
 		Retention: Retention{
@@ -401,6 +440,23 @@ func (c Config) Validate() error {
 		}
 		if err := CheckEndpoint(p.Upstream); err != nil {
 			bad("proxy.upstream", err.Error())
+		}
+	}
+	if sv := c.Server; sv.Enabled {
+		if _, port, err := net.SplitHostPort(sv.Listen); err != nil || port == "" || port == "0" {
+			bad("server.listen", "must be an address and port, such as "+DefaultListen)
+		}
+	}
+	if f := c.Server.TokensFile; f != "" && !filepath.IsAbs(f) {
+		bad("server.tokens_file", "must be an absolute path")
+	}
+	if t := c.Server.TLS; (t.CertFile == "") != (t.KeyFile == "") {
+		bad("server.tls", "set both cert_file and key_file, or neither")
+	} else {
+		for _, p := range []struct{ key, v string }{{"server.tls.cert_file", t.CertFile}, {"server.tls.key_file", t.KeyFile}} {
+			if p.v != "" && !filepath.IsAbs(p.v) {
+				bad(p.key, "must be an absolute path")
+			}
 		}
 	}
 	if h := c.Proxy.ConsumerHeader; h != "" && !headerName.MatchString(h) {

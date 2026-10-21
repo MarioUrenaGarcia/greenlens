@@ -31,6 +31,11 @@ const (
 	PathBackends     = "/api/v1/backends"
 	PathBenchmarks   = "/api/v1/benchmarks"
 	PathBackup       = "/api/v1/backup"
+	PathTokens       = "/api/v1/tokens" //nolint:gosec // a path, not a credential
+	PathAudit        = "/api/v1/audit"
+	PathSession      = "/api/v1/session"
+	PathSessionCodes = "/api/v1/session/codes"
+	PathLogin        = "/login"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -38,6 +43,13 @@ const (
 // HeaderSchemaVersion carries the schema version of the database in a
 // backup response.
 const HeaderSchemaVersion = "X-GreenLens-Schema-Version"
+
+// HeaderCSRF carries the CSRF token of a browser session on requests that
+// change something.
+const HeaderCSRF = "X-GreenLens-CSRF" //nolint:gosec // the name of a header, not a credential
+
+// SessionCookie holds the identifier of a browser session.
+const SessionCookie = "greenlens_session" //nolint:gosec // the name of a cookie, not a credential
 
 // Problem is a coded problem with its placeholder values.
 type Problem struct {
@@ -228,4 +240,69 @@ type BackendUsage struct {
 type Benchmarks struct {
 	SchemaVersion int            `json:"schema_version"`
 	Benchmarks    []bench.Result `json:"benchmarks"`
+}
+
+// Token describes an access token without its secret.
+type Token struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Role      string     `json:"role"`
+	CreatedAt time.Time  `json:"created_at"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+// Tokens is the document of GET PathTokens.
+type Tokens struct {
+	SchemaVersion int     `json:"schema_version"`
+	Tokens        []Token `json:"tokens"`
+}
+
+// CreateToken is the body of POST PathTokens.
+type CreateToken struct {
+	Name string `json:"name"`
+	Role string `json:"role"`
+	// ExpiresInS is the lifetime in seconds; zero never expires.
+	ExpiresInS int64 `json:"expires_in_s,omitempty"`
+}
+
+// CreatedToken is the answer to POST PathTokens. The secret is shown only
+// in this answer.
+type CreatedToken struct {
+	SchemaVersion int    `json:"schema_version"`
+	Token         Token  `json:"token"`
+	Secret        string `json:"secret"`
+}
+
+// Login is the body of POST PathSession.
+type Login struct {
+	Token string `json:"token"`
+}
+
+// Session describes who sends a request.
+type Session struct {
+	SchemaVersion int    `json:"schema_version"`
+	Role          string `json:"role"`
+	Actor         string `json:"actor"`
+	Via           string `json:"via"`
+	// CSRF must be sent in HeaderCSRF by a browser session on requests
+	// that change something.
+	CSRF string `json:"csrf,omitempty"`
+}
+
+// SessionCodeRequest is the body of POST PathSessionCodes.
+type SessionCodeRequest struct {
+	Role string `json:"role"`
+}
+
+// SessionCode is a one-time sign-in link for the graphical interface.
+type SessionCode struct {
+	SchemaVersion int       `json:"schema_version"`
+	URL           string    `json:"url"`
+	ExpiresAt     time.Time `json:"expires_at"`
+}
+
+// Audit is the document of PathAudit, newest entries first.
+type Audit struct {
+	SchemaVersion int                `json:"schema_version"`
+	Entries       []store.AuditEntry `json:"entries"`
 }

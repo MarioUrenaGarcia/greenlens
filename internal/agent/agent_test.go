@@ -57,6 +57,13 @@ type running struct {
 
 func startAgent(t *testing.T, cfgPath string) *running {
 	t.Helper()
+	return startAgentWith(t, cfgPath, nil)
+}
+
+// startAgentWith starts an agent whose HTTP API is off unless change turns
+// it on, so tests never compete for its default port.
+func startAgentWith(t *testing.T, cfgPath string, change func(*config.Config)) *running {
+	t.Helper()
 	dir := t.TempDir()
 	cfg := config.Defaults()
 	cfg.Agent.SampleInterval = config.Duration(50 * time.Millisecond)
@@ -69,6 +76,10 @@ func startAgent(t *testing.T, cfgPath string) *running {
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
 	cfg.Agent.Socket = filepath.Join(sockDir, "a.sock")
+	cfg.Server.Enabled = false
+	if change != nil {
+		change(&cfg)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r := &running{cfg: cfg, cancel: cancel, done: make(chan error, 1), reload: make(chan struct{}), socket: cfg.Agent.Socket}
 	ready := make(chan struct{})

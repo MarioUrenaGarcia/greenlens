@@ -56,6 +56,11 @@ All notable changes to GreenLens are recorded in this file. The format follows
 - `greenlens license`: the license, the source code of the running version
   as section 13 of the AGPL asks, and the third-party components, with their
   full texts on request.
+- An HTTP API on `127.0.0.1:10060` for programs and browsers, with the
+  viewer, operator and admin roles, access tokens kept as argon2id hashes
+  and managed with `greenlens token`, browser sessions with CSRF
+  protection, an audit log, security headers, rate limits and optional TLS.
+  The agent refuses to listen beyond loopback while no token exists.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

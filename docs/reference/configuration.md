@@ -66,6 +66,17 @@ Every key of the configuration file, the environment variable that overrides it 
 | `proxy.consumer_header` | `GREENLENS_PROXY_CONSUMER_HEADER` | string | empty | Request header that tells consumers apart, such as Authorization; its value is kept only as an HMAC. |
 | `proxy.consumer_aliases_file` | `GREENLENS_PROXY_CONSUMER_ALIASES_FILE` | string | empty | YAML file mapping consumer names to the SHA-256 of header values, written as sha256:&lt;hex&gt;. |
 
+## server
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `server.enabled` | `GREENLENS_SERVER_ENABLED` | bool | `true` | Serve the HTTP API and the graphical interface. |
+| `server.listen` | `GREENLENS_SERVER_LISTEN` | string | `127.0.0.1:10060` | Address and port of the HTTP API. Listening beyond loopback needs at least one access token. |
+| `server.tokens_file` | `GREENLENS_SERVER_TOKENS_FILE` | string | empty | File of access tokens, kept as argon2id hashes. Empty: tokens in the data directory. |
+| `server.metrics_auth` | `GREENLENS_SERVER_METRICS_AUTH` | bool | `false` | Ask for an access token on /metrics too. |
+| `server.tls.cert_file` | `GREENLENS_SERVER_TLS_CERT_FILE` | string | empty | Certificate chain in PEM. |
+| `server.tls.key_file` | `GREENLENS_SERVER_TLS_KEY_FILE` | string | empty | Private key in PEM, readable only by the agent. |
+
 ## indicators
 
 | Key | Environment variable | Type | Default | Description |

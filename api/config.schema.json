@@ -229,6 +229,42 @@
       },
       "type": "object"
     },
+    "server": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Serve the HTTP API and the graphical interface.",
+          "type": "boolean"
+        },
+        "listen": {
+          "description": "Address and port of the HTTP API. Listening beyond loopback needs at least one access token.",
+          "type": "string"
+        },
+        "metrics_auth": {
+          "description": "Ask for an access token on /metrics too.",
+          "type": "boolean"
+        },
+        "tls": {
+          "additionalProperties": false,
+          "properties": {
+            "cert_file": {
+              "description": "Certificate chain in PEM.",
+              "type": "string"
+            },
+            "key_file": {
+              "description": "Private key in PEM, readable only by the agent.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "tokens_file": {
+          "description": "File of access tokens, kept as argon2id hashes. Empty: tokens in the data directory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "sources": {
       "additionalProperties": false,
       "properties": {

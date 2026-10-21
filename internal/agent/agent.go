@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
+	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/backends"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
@@ -52,6 +53,9 @@ const LiveWindow = 15 * time.Minute
 // driftAfter is how long the agent samples before its idle estimate is
 // compared with the calibration.
 const driftAfter = time.Hour
+
+// TokensName is the file of access tokens inside the data directory.
+const TokensName = "tokens"
 
 // shutdownGrace bounds the time spent closing, well under the 5 seconds a
 // service manager waits after SIGTERM.
@@ -95,6 +99,12 @@ type Agent struct {
 	sockPath string
 	started  time.Time
 	ready    atomic.Bool
+
+	tokens   *auth.Tokens
+	sessions *auth.Sessions
+	codes    *auth.Codes
+	logins   *limiter
+	httpSrv  *http.Server
 
 	// The tracker and the accountant are used only by the sampling loop,
 	// the splitter only by the usage worker.
@@ -187,6 +197,15 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 	if a.st, err = store.Open(ctx, dbPath); err != nil {
 		return nil, help.New(help.GL4002, "path", dbPath, "detail", err.Error()).Wrap(err)
 	}
+	tokensPath := o.Config.Server.TokensFile
+	if tokensPath == "" {
+		tokensPath = filepath.Join(a.dataDir, TokensName)
+	}
+	if a.tokens, err = auth.OpenTokens(tokensPath); err != nil {
+		_ = a.st.Close()
+		return nil, help.New(help.GL4013, "path", tokensPath, "detail", err.Error()).Wrap(err)
+	}
+	a.sessions, a.codes, a.logins = auth.NewSessions(a.st), auth.NewCodes(), newLimiter(loginRate/60.0, loginRate)
 	if err := a.setupSources(ctx); err != nil {
 		_ = a.st.Close()
 		return nil, err
@@ -304,6 +323,9 @@ func (a *Agent) confine() {
 		ro = append(ro, filepath.Dir(a.o.ConfigPath))
 	}
 	rw := []string{a.dataDir, filepath.Dir(a.sockPath)}
+	if d := filepath.Dir(a.tokens.Path()); d != a.dataDir {
+		rw = append(rw, d)
+	}
 	st, err := sandbox.Restrict(sandbox.Rules{ReadOnly: ro, ReadWrite: rw})
 	switch {
 	case err != nil:
@@ -326,6 +348,15 @@ func (a *Agent) serve(ctx context.Context) error {
 		_ = a.close()
 		return err
 	}
+	hl, err := a.startHTTP(ctx)
+	if err != nil {
+		_ = l.Close()
+		if a.proxySrv != nil {
+			_ = a.proxySrv.Close()
+		}
+		_ = a.close()
+		return err
+	}
 	a.confine()
 	// Processes are read before the API answers, so the first status
 	// already lists the backends.
@@ -341,8 +372,13 @@ func (a *Agent) serve(ctx context.Context) error {
 		WriteTimeout:      30 * time.Second,
 		ConnContext:       withPeer,
 	}
-	serveErr := make(chan error, 1)
+	serveErr := make(chan error, 2)
 	go func() { serveErr <- srv.Serve(l) }()
+	if hl != nil {
+		a.httpSrv = a.httpServer()
+		go func() { serveErr <- a.httpSrv.Serve(hl) }()
+		a.log.Info("HTTP API listening", "address", hl.Addr().String(), "tls", a.cfg.Server.TLS.CertFile != "")
+	}
 	if a.o.Ready != nil {
 		close(a.o.Ready)
 	}
@@ -378,6 +414,11 @@ func (a *Agent) serve(ctx context.Context) error {
 	}
 	if serr := srv.Shutdown(shutdown); serr != nil {
 		a.log.Warn("closing the API", "error", serr)
+	}
+	if a.httpSrv != nil {
+		if herr := a.httpSrv.Shutdown(shutdown); herr != nil {
+			a.log.Warn("closing the HTTP API", "error", herr)
+		}
 	}
 	if a.proxySrv != nil {
 		if perr := a.proxySrv.Shutdown(shutdown); perr != nil {
@@ -467,6 +508,9 @@ func (a *Agent) hourly(ctx context.Context, lastCheck *time.Time) {
 		a.log.Warn("pruning old data failed", "error", err)
 	} else if n > 0 {
 		a.log.Info("old data pruned", "rows", n)
+	}
+	if err := a.sessions.Prune(ctx); err != nil {
+		a.log.Warn("pruning sessions failed", "error", err)
 	}
 	if err := a.st.Vacuum(ctx); err != nil {
 		a.log.Warn("vacuum failed", "error", err)
@@ -598,6 +642,10 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 		} else {
 			a.consumers.SetAliases(aliases)
 		}
+	}
+	if cfg.Server != old.Server {
+		a.log.Warn("server settings change only after a restart")
+		cfg.Server = old.Server
 	}
 	if cfg.Agent.DataDir != old.Agent.DataDir || cfg.Agent.Socket != old.Agent.Socket || cfg.Agent.HostRoot != old.Agent.HostRoot {
 		a.log.Warn("agent.data_dir, agent.socket and agent.host_root change only after a restart")

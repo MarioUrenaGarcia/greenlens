@@ -108,6 +108,7 @@ func TestProxyKeepsNoContent(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
 	cfg.Agent.Socket = filepath.Join(sockDir, "a.sock")
+	cfg.Server.Enabled = false
 	cfg.Backends = []config.Backend{{Name: "ollama-test", Kind: "ollama", Endpoint: up.URL}}
 	cfg.Proxy = config.Proxy{Enabled: true, Listen: freePort(t), Upstream: up.URL, PerRequestEnergyHeader: true, ConsumerHeader: "Authorization"}
 

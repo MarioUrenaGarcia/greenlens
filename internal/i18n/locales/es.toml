@@ -79,6 +79,10 @@ tokens = "Tokens entrada/salida"
 joules_per_token = "J por token generado"
 component = "Componente"
 version = "Versión"
+name = "Nombre"
+role = "Rol"
+created = "Creado"
+expires = "Caduca"
 
 [domain]
 package = "Paquete de CPU"
@@ -567,6 +571,33 @@ to = "Fin del periodo"
 by = "Agrupa por none, hour o day"
 group = "Reporta por backend, model o consumer en lugar de por dominio"
 
+[cli.token]
+short = "Gestiona los tokens de acceso de la API HTTP"
+long = "Crea, lista y revoca los tokens de acceso que usan los programas y los navegadores remotos con la API HTTP. Cada token tiene un rol: viewer lee mediciones, operator además ejecuta benchmarks y calibraciones, admin además gestiona tokens y respaldos. Los tokens se guardan como hashes argon2id; el secreto se muestra solo al crearlo. Con el agente en ejecución, los cambios pasan por él y por su registro de auditoría; si no, se cambia directamente el archivo de tokens."
+placeholder = "token"
+created = "Token {name} creado con el rol {role}. Cópialo ahora; no se vuelve a mostrar:"
+use = "Envíalo en la cabecera 'Authorization: Bearer <token>', o pégalo en la página de inicio de sesión de la interfaz."
+none = "No hay tokens de acceso. Crea uno con 'greenlens token create --name <nombre> --role viewer'."
+never = "nunca"
+revoked = "Token {name} ({id}) revocado."
+
+[cli.token.create]
+short = "Crea un token de acceso"
+long = "Crea un token de acceso con un nombre, un rol y una caducidad opcional, e imprime su secreto una sola vez."
+
+[cli.token.list]
+short = "Lista los tokens de acceso"
+long = "Lista los tokens de acceso con su rol, fecha de creación y caducidad. Los secretos nunca se muestran."
+
+[cli.token.revoke]
+short = "Revoca un token de acceso"
+long = "Revoca el token de acceso con el id o nombre indicado. Desde ese momento se rechaza a los programas que lo usen."
+
+[cli.token.flag]
+name = "Nombre del token, como grafana o ci"
+role = "Rol del token: viewer, operator o admin"
+expires = "Vigencia del token, como 90d, 12w o 36h, o never"
+
 [cli.license]
 short = "Muestra la licencia y los avisos de terceros"
 long = "Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente."
@@ -642,6 +673,14 @@ sources_estimate_exponent = "Exponente del uso en el modelo estimado; 1 es linea
 attribution_idle_policy = "Cómo se atribuye la energía de reposo: dynamic, proportional, full o wall."
 attribution_max_models_per_backend = "Máximo de modelos por backend; la energía de los demás se reporta junta como 'other'."
 attribution_max_consumers = "Máximo de consumidores que sigue el proxy; los demás se reportan juntos como 'other'."
+server = "API HTTP, interfaz gráfica y métricas de Prometheus."
+server_enabled = "Atiende la API HTTP y la interfaz gráfica."
+server_listen = "Dirección y puerto de la API HTTP. Escuchar fuera de loopback requiere al menos un token de acceso."
+server_tokens_file = "Archivo de tokens de acceso, guardados como hashes argon2id. Vacío: tokens en el directorio de datos."
+server_metrics_auth = "Pide un token de acceso también en /metrics."
+server_tls = "Certificado de la API HTTP. Sin él, la API habla HTTP sin cifrar."
+server_tls_cert_file = "Cadena de certificados en PEM."
+server_tls_key_file = "Llave privada en PEM, legible solo por el agente."
 proxy = "Proxy inverso que cuenta tokens, ejecutado por el agente."
 proxy_enabled = "Ejecuta el proxy."
 proxy_listen = "Dirección y puerto en que escucha el proxy."
@@ -729,6 +768,11 @@ fix = "ejecútalo en una terminal, o usa 'greenlens status' para un resumen que 
 message = "no hay explicación para '{metric}'"
 cause = "los valores que se pueden explicar son: {metrics}"
 fix = "ejecuta 'greenlens explain' para listarlos"
+
+[errors.GL0018]
+message = "no hay ningún token de acceso '{token}'"
+cause = "ningún token tiene este id o nombre"
+fix = "ejecuta 'greenlens token list' para ver los tokens"
 
 [errors.GL1001]
 message = "no hay ninguna fuente de energía medida disponible"
@@ -849,6 +893,26 @@ fix = "detenlo primero, por ejemplo con 'sudo systemctl stop greenlens', restaur
 message = "el respaldo lo creó una versión más reciente de GreenLens"
 cause = "{path} tiene la versión de esquema {version}; esta versión lee hasta la {supported}"
 fix = "actualiza GreenLens y vuelve a restaurar el respaldo; no se cambió nada"
+
+[errors.GL4011]
+message = "la API HTTP quedaría abierta a la red sin autenticación"
+cause = "server.listen es {listen} y no hay ningún token de acceso"
+fix = "crea uno primero con 'greenlens token create --name admin --role admin', o deja server.listen en 127.0.0.1"
+
+[errors.GL4012]
+message = "la API HTTP no puede escuchar en {listen}"
+cause = "{detail}"
+fix = "elige otro server.listen, detén el programa que usa el puerto o pon server.enabled en false"
+
+[errors.GL4013]
+message = "no se puede usar el archivo de tokens"
+cause = "{path}: {detail}"
+fix = "restáuralo de un respaldo, o bórralo y vuelve a crear los tokens; solo el agente debe poder leerlo (chmod 600)"
+
+[errors.GL4014]
+message = "no se puede cargar el certificado TLS"
+cause = "{detail}"
+fix = "revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archivos PEM del mismo par de llaves"
 
 [errors.GL0009]
 message = "formato de salida no soportado '{value}'"

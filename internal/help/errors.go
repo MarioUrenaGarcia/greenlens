@@ -39,6 +39,7 @@ const (
 	GL0015 Code = "GL0015" // wrong number of positional arguments
 	GL0016 Code = "GL0016" // the terminal interface needs a terminal
 	GL0017 Code = "GL0017" // unknown metric asked to explain
+	GL0018 Code = "GL0018" // no access token with this id or name
 
 	GL1001 Code = "GL1001" // no measured energy source
 	GL1002 Code = "GL1002" // RAPL counters readable only by root
@@ -75,6 +76,10 @@ const (
 	GL4008 Code = "GL4008" // file is not a valid backup
 	GL4009 Code = "GL4009" // restore refused while the agent runs
 	GL4010 Code = "GL4010" // backup made by a newer version
+	GL4011 Code = "GL4011" // HTTP API exposed without access tokens
+	GL4012 Code = "GL4012" // HTTP API cannot listen
+	GL4013 Code = "GL4013" // token file cannot be used
+	GL4014 Code = "GL4014" // TLS certificate cannot be loaded
 )
 
 // Process exit codes of the command line.
@@ -106,6 +111,7 @@ var exitCodes = map[Code]int{
 	GL0015: ExitUsage,
 	GL0016: ExitUsage,
 	GL0017: ExitUsage,
+	GL0018: ExitError,
 	GL1001: ExitNoSource,
 	GL1002: ExitPermission,
 	GL1003: ExitPermission,
@@ -138,6 +144,10 @@ var exitCodes = map[Code]int{
 	GL4008: ExitError,
 	GL4009: ExitError,
 	GL4010: ExitError,
+	GL4011: ExitConfig,
+	GL4012: ExitError,
+	GL4013: ExitError,
+	GL4014: ExitConfig,
 }
 
 // IsCode reports whether s looks like an error code, such as GL1002.

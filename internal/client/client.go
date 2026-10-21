@@ -225,6 +225,55 @@ func (c *Client) Backup(ctx context.Context, w io.Writer) (int, error) {
 	return v, nil
 }
 
+// send makes a request with an optional JSON body.
+func (c *Client) send(ctx context.Context, method, path string, in, out any) error {
+	var rd io.Reader
+	if in != nil {
+		body, err := json.Marshal(in)
+		if err != nil {
+			return err
+		}
+		rd = bytes.NewReader(body)
+	}
+	u := url.URL{Scheme: "http", Host: "agent", Path: path}
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), rd)
+	if err != nil {
+		return err
+	}
+	if in != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	return c.do(req, out)
+}
+
+// Tokens lists the access tokens of the HTTP API.
+func (c *Client) Tokens(ctx context.Context) (api.Tokens, error) {
+	var t api.Tokens
+	err := c.get(ctx, api.PathTokens, nil, &t)
+	return t, err
+}
+
+// CreateToken adds an access token and returns it with its secret.
+func (c *Client) CreateToken(ctx context.Context, req api.CreateToken) (api.CreatedToken, error) {
+	var out api.CreatedToken
+	err := c.send(ctx, http.MethodPost, api.PathTokens, req, &out)
+	return out, err
+}
+
+// RevokeToken removes the token with the given id or name.
+func (c *Client) RevokeToken(ctx context.Context, idOrName string) (api.Token, error) {
+	var out api.Token
+	err := c.send(ctx, http.MethodDelete, api.PathTokens+"/"+url.PathEscape(idOrName), nil, &out)
+	return out, err
+}
+
+// SessionCode asks for a one-time sign-in link to the interface.
+func (c *Client) SessionCode(ctx context.Context, role string) (api.SessionCode, error) {
+	var out api.SessionCode
+	err := c.send(ctx, http.MethodPost, api.PathSessionCodes, api.SessionCodeRequest{Role: role}, &out)
+	return out, err
+}
+
 // IsUnreachable reports whether err means the agent could not be reached.
 func IsUnreachable(err error) bool {
 	var e *help.Error

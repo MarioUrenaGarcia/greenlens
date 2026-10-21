@@ -346,7 +346,7 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(sockDir) }()
 	cfgPath := filepath.Join(dir, "greenlens.yaml")
-	cfgText := "agent:\n  sample_interval: 50ms\n  data_dir: " + filepath.Join(dir, "data") + "\n  socket: " + filepath.Join(sockDir, "a.sock") + "\n"
+	cfgText := "agent:\n  sample_interval: 50ms\n  data_dir: " + filepath.Join(dir, "data") + "\n  socket: " + filepath.Join(sockDir, "a.sock") + "\nserver:\n  enabled: false\n"
 	if err := os.WriteFile(cfgPath, []byte(cfgText), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -448,6 +448,21 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	}
 	if code, _, errOut := runWith(t, hooks{}, nil, "export", "--config", cfgPath, "models"); code != 2 || !strings.Contains(errOut, "GL0002") {
 		t.Fatalf("export of an unknown dataset: %d %s", code, errOut)
+	}
+	// Tokens go through the running agent, which audits them.
+	code, out, errOut = runWith(t, hooks{}, nil, "token", "create", "--config", cfgPath, "--name", "ci", "--role", "operator", "-o", "json")
+	var tok api.CreatedToken
+	if code != 0 || json.Unmarshal([]byte(out), &tok) != nil || tok.Token.Role != "operator" {
+		t.Fatalf("token through the agent: %d %s %s", code, out, errOut)
+	}
+	if code, out, _ := runWith(t, hooks{}, nil, "token", "list", "--config", cfgPath, "-o", "json"); code != 0 || !strings.Contains(out, `"name": "ci"`) {
+		t.Fatalf("token list through the agent: %d %s", code, out)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "token", "revoke", "--config", cfgPath, "nobody"); code != 1 || !strings.Contains(errOut, "GL0018") {
+		t.Fatalf("revoke of an unknown token: %d %s", code, errOut)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "token", "revoke", "--config", cfgPath, "ci"); code != 0 {
+		t.Fatalf("revoke through the agent: %d %s", code, errOut)
 	}
 	// The agent makes the backup while it keeps measuring, and refuses to
 	// have its database replaced.

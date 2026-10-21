@@ -63,6 +63,7 @@ func newRoot(a *app) *cobra.Command {
 		newRestoreCmd(a),
 		newSetupPermissionsCmd(a),
 		newStatusCmd(a),
+		newTokenCmd(a),
 		newTopCmd(a),
 		newVersionCmd(l),
 	)

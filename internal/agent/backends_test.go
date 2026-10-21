@@ -118,6 +118,7 @@ func TestBackendEnergyAndTokens(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
 	cfg.Agent.Socket = filepath.Join(sockDir, "a.sock")
+	cfg.Server.Enabled = false
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	ready := make(chan struct{})
@@ -182,4 +183,5 @@ func TestBackendEnergyAndTokens(t *testing.T) {
 	if err != nil || len(u.Rows) != 1 || u.Rows[0].Model != m.Name || u.Rows[0].GeneratedTokens <= 0 || u.Rows[0].EnergyJ <= 0 {
 		t.Fatalf("usage %+v, %v", u, err)
 	}
+
 }

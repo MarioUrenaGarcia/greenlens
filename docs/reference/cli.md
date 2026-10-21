@@ -557,6 +557,90 @@ greenlens status
 greenlens status --output json
 ```
 
+## greenlens token
+
+Create, list and revoke the access tokens that programs and remote browsers use with the HTTP API. Each token has a role: viewer reads measurements, operator also runs benchmarks and calibrations, admin also manages tokens and backups. Tokens are kept as argon2id hashes; the secret is shown only when it is created. With the agent running, the changes go through it and its audit log; otherwise the token file is changed directly.
+
+**Usage**
+
+```text
+greenlens token [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+## greenlens token create
+
+Create an access token with a name, a role and an optional expiry, and print its secret once.
+
+**Usage**
+
+```text
+greenlens token create [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--expires` | Lifetime of the token, such as 90d, 12w or 36h, or never | `never` |
+| `--name` | Name of the token, such as grafana or ci |  |
+| `--role` | Role of the token: viewer, operator or admin | `viewer` |
+
+**Examples**
+
+```bash
+greenlens token create --name grafana --role viewer --expires 90d
+sudo -u greenlens greenlens token create --name admin --role admin
+```
+
+## greenlens token list
+
+List the access tokens with their role, creation time and expiry. Secrets are never shown.
+
+**Usage**
+
+```text
+greenlens token list [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+**Examples**
+
+```bash
+greenlens token list
+greenlens token list --output json
+```
+
+## greenlens token revoke
+
+Revoke the access token with the given id or name. Programs using it are refused from then on.
+
+**Usage**
+
+```text
+greenlens token revoke <token> [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+**Examples**
+
+```bash
+greenlens token revoke grafana
+greenlens token revoke 3f9a1c0b7d2e
+```
+
 ## greenlens top
 
 Open a live view of the agent in the terminal: the power of every domain, the backends and models with their energy per token, the consumers and the energy sources. Keys 1 to 4 or Tab change the view, / filters, s sorts, p pauses, e exports the view to CSV, ? shows the help of the view and q quits. It works over SSH from 80 by 24 characters, in ASCII when the locale is not UTF-8 and without color with --no-color or NO_COLOR.

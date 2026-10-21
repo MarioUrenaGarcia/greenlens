@@ -89,6 +89,24 @@ proxy:
   # "team-a: sha256:<hex>", to report consumers by name.
   consumer_aliases_file: ""
 
+# The HTTP API, the graphical interface and the Prometheus metrics. Requests
+# need a session or an access token, except /healthz, /readyz and, unless
+# metrics_auth is set, /metrics. Listening beyond loopback without any token
+# is refused at start.
+server:
+  enabled: true
+  listen: 127.0.0.1:10060
+  # File of access tokens, kept as argon2id hashes. Empty: "tokens" in the
+  # data directory, managed with "greenlens token".
+  tokens_file: ""
+  # Ask for a token on /metrics too.
+  metrics_auth: false
+  # Certificate and key in PEM. Without them the API speaks plain HTTP,
+  # meant for loopback and SSH tunnels.
+  tls:
+    cert_file: ""
+    key_file: ""
+
 indicators:
   # Grid emission factor in gCO2e/kWh. Empty: FESEN 2024, 444 gCO2e/kWh.
   # When set, emission_factor_source must say where it comes from.

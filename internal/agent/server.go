@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
+	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/calibrate"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
@@ -56,44 +57,106 @@ func withPeer(ctx context.Context, c net.Conn) context.Context {
 	return context.WithValue(ctx, peerKey{}, "uid:"+strconv.FormatUint(uint64(cred.Uid), 10))
 }
 
+// actor names who sent a request in the audit log.
 func actor(r *http.Request) string {
+	if p, ok := auth.FromContext(r.Context()); ok && p.Actor != "" {
+		return p.Actor
+	}
+	return peerActor(r)
+}
+
+// peerActor names the local user on the other end of the socket.
+func peerActor(r *http.Request) string {
 	if v, ok := r.Context().Value(peerKey{}).(string); ok {
 		return v
 	}
 	return "unknown"
 }
 
+// route is an endpoint with the least role that may call it. An empty role
+// makes it public; socketOnly keeps it off the HTTP listener.
+type route struct {
+	pattern    string
+	role       auth.Role
+	socketOnly bool
+	h          http.HandlerFunc
+}
+
+func (a *Agent) routes() []route {
+	return []route{
+		{pattern: "GET " + api.PathHealth, h: func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = io.WriteString(w, "ok\n")
+		}},
+		{pattern: "GET " + api.PathReady, h: func(w http.ResponseWriter, _ *http.Request) {
+			if !a.ready.Load() {
+				http.Error(w, "no sample yet", http.StatusServiceUnavailable)
+				return
+			}
+			_, _ = io.WriteString(w, "ready\n")
+		}},
+		{pattern: "GET " + api.PathStatus, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, a.Status())
+		}},
+		{pattern: "GET " + api.PathSources, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, a.Status().Channels)
+		}},
+		{pattern: "GET " + api.PathUsage, role: auth.Viewer, h: a.handleUsage},
+		{pattern: "GET " + api.PathBackends, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, a.Backends())
+		}},
+		{pattern: "GET " + api.PathLive, role: auth.Viewer, h: func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, a.Live())
+		}},
+		{pattern: "POST " + api.PathCalibrations, role: auth.Operator, h: a.handleCalibration},
+		{pattern: "GET " + api.PathBenchmarks, role: auth.Viewer, h: a.handleBenchmarks},
+		{pattern: "GET " + api.PathBenchmarks + "/{id}", role: auth.Viewer, h: a.handleBenchmark},
+		{pattern: "POST " + api.PathBenchmarks, role: auth.Operator, h: a.handleSaveBenchmark},
+		{pattern: "GET " + api.PathBackup, role: auth.Admin, h: a.handleBackup},
+		{pattern: "GET " + api.PathTokens, role: auth.Admin, h: a.handleTokens},
+		{pattern: "POST " + api.PathTokens, role: auth.Admin, h: a.handleCreateToken},
+		{pattern: "DELETE " + api.PathTokens + "/{id}", role: auth.Admin, h: a.handleRevokeToken},
+		{pattern: "GET " + api.PathAudit, role: auth.Admin, h: a.handleAudit},
+		{pattern: "POST " + api.PathSessionCodes, role: auth.Admin, socketOnly: true, h: a.handleSessionCode},
+	}
+}
+
+// handler serves the API on the socket. Its clients are members of the
+// group of the agent, trusted like an administrator of the node.
 func (a *Agent) handler() http.Handler {
+	mux := a.mux(true)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := auth.Principal{Role: auth.Admin, Actor: peerActor(r), Via: auth.ViaSocket}
+		mux.ServeHTTP(w, r.WithContext(auth.WithPrincipal(r.Context(), p)))
+	})
+}
+
+func (a *Agent) mux(socket bool) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET "+api.PathHealth, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, "ok\n")
-	})
-	mux.HandleFunc("GET "+api.PathReady, func(w http.ResponseWriter, _ *http.Request) {
-		if !a.ready.Load() {
-			http.Error(w, "no sample yet", http.StatusServiceUnavailable)
-			return
+	for _, rt := range a.routes() {
+		if rt.socketOnly && !socket {
+			continue
 		}
-		_, _ = io.WriteString(w, "ready\n")
-	})
-	mux.HandleFunc("GET "+api.PathStatus, func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, a.Status())
-	})
-	mux.HandleFunc("GET "+api.PathSources, func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, a.Status().Channels)
-	})
-	mux.HandleFunc("GET "+api.PathUsage, a.handleUsage)
-	mux.HandleFunc("GET "+api.PathBackends, func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, a.Backends())
-	})
-	mux.HandleFunc("GET "+api.PathLive, func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, a.Live())
-	})
-	mux.HandleFunc("POST "+api.PathCalibrations, a.handleCalibration)
-	mux.HandleFunc("GET "+api.PathBenchmarks, a.handleBenchmarks)
-	mux.HandleFunc("GET "+api.PathBenchmarks+"/{id}", a.handleBenchmark)
-	mux.HandleFunc("POST "+api.PathBenchmarks, a.handleSaveBenchmark)
-	mux.HandleFunc("GET "+api.PathBackup, a.handleBackup)
+		mux.Handle(rt.pattern, require(rt.role, rt.h))
+	}
 	return mux
+}
+
+// require lets a request through only when its principal has role.
+func require(role auth.Role, h http.HandlerFunc) http.Handler {
+	if role == "" {
+		return h
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p, ok := auth.FromContext(r.Context())
+		switch {
+		case !ok:
+			writeError(w, http.StatusUnauthorized, "sign in or send an access token")
+		case !p.Role.Allows(role):
+			writeError(w, http.StatusForbidden, "this needs the "+string(role)+" role")
+		default:
+			h(w, r)
+		}
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

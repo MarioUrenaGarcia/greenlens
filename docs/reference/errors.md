@@ -25,6 +25,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL0015](#gl0015) | '`{command}`' takes `{want}` arguments | 2 |
 | [GL0016](#gl0016) | greenlens top needs a terminal | 2 |
 | [GL0017](#gl0017) | there is no explanation for '`{metric}`' | 2 |
+| [GL0018](#gl0018) | there is no access token '`{token}`' | 1 |
 | [GL1001](#gl1001) | no measured energy source is available | 3 |
 | [GL1002](#gl1002) | cannot read RAPL energy counters | 5 |
 | [GL1003](#gl1003) | cannot open the perf_event energy counters | 5 |
@@ -57,6 +58,10 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL4008](#gl4008) | the file is not a valid GreenLens backup | 1 |
 | [GL4009](#gl4009) | cannot restore while the agent is running | 1 |
 | [GL4010](#gl4010) | the backup was made by a newer version of GreenLens | 1 |
+| [GL4011](#gl4011) | the HTTP API would be open to the network without authentication | 6 |
+| [GL4012](#gl4012) | the HTTP API cannot listen on `{listen}` | 1 |
+| [GL4013](#gl4013) | the token file cannot be used | 1 |
+| [GL4014](#gl4014) | the TLS certificate cannot be loaded | 6 |
 
 ## GL0001
 
@@ -176,6 +181,13 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** the values that can be explained are: `{metrics}`
 - **Fix:** run 'greenlens explain' to list them
 - **Exit code:** 2
+
+## GL0018
+
+- **Message:** there is no access token '`{token}`'
+- **Cause:** no token has this id or name
+- **Fix:** run 'greenlens token list' to see the tokens
+- **Exit code:** 1
 
 ## GL1001
 
@@ -400,3 +412,31 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** `{path}` has schema version `{version}`; this version reads up to `{supported}`
 - **Fix:** update GreenLens, then restore the backup again; nothing was changed
 - **Exit code:** 1
+
+## GL4011
+
+- **Message:** the HTTP API would be open to the network without authentication
+- **Cause:** server.listen is `{listen}` and there is no access token
+- **Fix:** create one first with 'greenlens token create --name admin --role admin', or keep server.listen on 127.0.0.1
+- **Exit code:** 6
+
+## GL4012
+
+- **Message:** the HTTP API cannot listen on `{listen}`
+- **Cause:** `{detail}`
+- **Fix:** choose another server.listen, stop the program that uses the port, or set server.enabled to false
+- **Exit code:** 1
+
+## GL4013
+
+- **Message:** the token file cannot be used
+- **Cause:** `{path}`: `{detail}`
+- **Fix:** restore it from a backup, or remove it and create the tokens again; it must be readable only by the agent (chmod 600)
+- **Exit code:** 1
+
+## GL4014
+
+- **Message:** the TLS certificate cannot be loaded
+- **Cause:** `{detail}`
+- **Fix:** check server.tls.cert_file and server.tls.key_file: both must be PEM files of the same key pair
+- **Exit code:** 6

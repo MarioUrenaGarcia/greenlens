@@ -40,14 +40,15 @@ func TestOpenCreatesSchemaOnce(t *testing.T) {
 	if err != nil || info.Mode().Perm() != 0o600 {
 		t.Fatalf("database mode %v, err %v", info.Mode(), err)
 	}
-	if v, err := s.SchemaVersion(ctx); err != nil || v != 3 {
+	latest, _ := LatestSchema()
+	if v, err := s.SchemaVersion(ctx); err != nil || v != latest || latest < 4 {
 		t.Fatalf("schema version %d, err %v", v, err)
 	}
 	tables, err := s.Tables(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"schema_migrations", "sources", "node_samples", "backends", "models", "consumers",
+	for _, want := range []string{"schema_migrations", "sources", "node_samples", "backends", "models", "consumers", "sessions",
 		"usage_intervals", "usage_rollups", "calibrations", "benchmarks", "alert_events", "audit_log", "node_rollups", "rollup_state"} {
 		if !slices.Contains(tables, want) {
 			t.Errorf("table %s missing", want)
