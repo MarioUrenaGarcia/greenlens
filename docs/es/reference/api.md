@@ -35,7 +35,7 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | `GET` | `/api/v1/live` | viewer | Potencia de cada dominio en los últimos minutos |
 | `GET` | `/api/v1/openapi.yaml` | public | Esta descripción de la API |
 | `GET` | `/api/v1/regressions` | viewer | Regresiones de la energía por token de cada modelo |
-| `GET` | `/api/v1/reports` | viewer | Intensidad de carbono del software de un periodo |
+| `GET` | `/api/v1/reports` | viewer | Reportes ambiental y SCI de un periodo |
 | `GET` | `/api/v1/session` | public | Quién envía la solicitud, y el token CSRF de una sesión |
 | `POST` | `/api/v1/session` | public | Abre una sesión del navegador con un token de acceso |
 | `DELETE` | `/api/v1/session` | public | Termina la sesión del navegador |
@@ -451,7 +451,7 @@ Rol: `viewer`
 
 ### GET /api/v1/reports
 
-Intensidad de carbono del software de un periodo. El SCI de ISO/IEC 21031 del nodo y, con group_by, de cada backend, modelo o consumidor: las emisiones operacionales, hora por hora, más el carbono incorporado del servidor y de la GPU en la parte de su energía, por unidad funcional.
+Reportes ambiental y SCI de un periodo. Con kind sci, el SCI de ISO/IEC 21031 del nodo y, con group_by, de cada backend, modelo o consumidor: las emisiones operacionales, hora por hora, más el carbono incorporado del servidor y de la GPU en la parte de su energía, por unidad funcional. Con kind esg, el reporte ambiental del nodo: su electricidad por dominio, backend y modelo, las emisiones de alcance 2 del GHG Protocol por el método basado en ubicación, el costo, el agua y el SCI. El formato html es una página imprimible que no necesita nada más.
 
 Rol: `viewer`
 
@@ -459,18 +459,19 @@ Rol: `viewer`
 
 | Nombre | En | Tipo | Obligatorio | Descripción |
 |---|---|---|---|---|
-| `kind` | query | `sci` | sí | El reporte, sci. |
+| `kind` | query | `sci`, `esg` | sí | El reporte, sci o esg. |
 | `from` | query | string (date-time) | sí | Inicio del periodo, RFC 3339. |
 | `to` | query | string (date-time) | sí | Fin del periodo, RFC 3339, a lo sumo tres años después de from. |
-| `group_by` | query | `backend`, `model`, `consumer` | no | Reporta además cada backend, modelo o consumidor. |
+| `group_by` | query | `backend`, `model`, `consumer` | no | Con kind sci, reporta además cada backend, modelo o consumidor. |
 | `unit` | query | `1k_generated_tokens`, `request`, `consumer` | no | Unidad funcional en lugar de indicators.sci.functional_unit. |
-| `format` | query | `json`, `csv` | no | json, el predeterminado, o csv. |
+| `format` | query | `json`, `csv`, `html` | no | json, el predeterminado, csv o html. |
+| `lang` | query | `en`, `es` | no | Idioma del formato html, en, el predeterminado, o es. |
 
 **Respuestas**
 
 | Estado | Descripción | Documento |
 |---|---|---|
-| `200` | El reporte. | [SCIReport](#scireport) |
+| `200` | El reporte. | [SCIReport](#scireport) o [ESGReport](#esgreport) |
 | `400` | La solicitud no es válida. | [Error](#error) |
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
 | `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
@@ -1084,6 +1085,45 @@ Potencia de un dominio en la última muestra y su energía desde el inicio.
 | `level` | `component`, `system`, `wall` | sí | Nivel de componente |
 | `power_w` | number | sí | Potencia en watts. |
 | `quality` | string | sí | Calidad de la medición. |
+
+### ESGGroup
+
+Uso de un backend o modelo en el periodo.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `backend` | string | sí | Nombre del backend. |
+| `energy_j` | number | sí | Energía que se le atribuyó. |
+| `generated_tokens` | integer | sí | Tokens generados. |
+| `indicators` | [Indicators](#indicators) | sí | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
+| `kind` | string | sí | Tipo del backend. |
+| `requests` | integer | sí | Solicitudes. |
+| `j_per_generated_token` | number | no | Energía por token generado. |
+| `model` | string | no | Nombre del modelo. |
+
+### ESGReport
+
+Reporte ambiental del nodo en un periodo, por el método basado en ubicación del alcance 2 del GHG Protocol.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `backends` | lista de [ESGGroup](#esggroup) | sí | Cada backend, del que más energía usó al que menos. |
+| `components_j` | number | sí | Electricidad de procesador |
+| `domains` | lista de object | sí | Energía de cada dominio; los medidores de plataforma y de pared se muestran pero no se suman. |
+| `facility_kwh` | number | sí | Lo mismo con la sobrecarga de la instalación. |
+| `factors` | [Factors](#factors) | sí | Factores de conversión vigentes. Las filas de uso traen los indicadores que el agente calcula hora por hora; los factores sirven para proyecciones sin hora, como el ahorro de otro modelo. |
+| `from` | string (date-time) | sí | Inicio del periodo. |
+| `generated_at` | string (date-time) | sí | Cuándo se hizo el reporte. |
+| `indicators` | [Indicators](#indicators) | sí | Indicadores de una cantidad de energía, cada hora con los factores vigentes entonces. |
+| `measured_share` | number | sí | Parte de la energía que se midió. |
+| `method` | `ghg_protocol_scope2_location_based` | sí | Método de contabilidad. |
+| `models` | lista de [ESGGroup](#esggroup) | sí | Cada modelo, del que más energía usó al que menos. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `sci` | [SCIRow](#scirow) | sí | Intensidad de carbono del nodo o de un grupo. |
+| `sci_missing` | lista de string | sí | Configuración que le falta al carbono incorporado. |
+| `to` | string (date-time) | sí | Fin del periodo. |
+| `unattributed_j` | number | sí | Energía que ningún backend explica. |
+| `version` | string | sí | Versión del agente. |
 
 ### Error
 

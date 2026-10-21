@@ -234,26 +234,34 @@ paths:
     get:
       operationId: reports
       tags: [reports]
-      summary: Software Carbon Intensity of a period
-      x-summary-es: Intensidad de carbono del software de un periodo
+      summary: Environmental and SCI reports of a period
+      x-summary-es: Reportes ambiental y SCI de un periodo
       description: >-
-        The SCI of ISO/IEC 21031 for the node and, with group_by, for each
-        backend, model or consumer: the operational emissions, hour by hour,
-        plus the embodied carbon of the server and the GPU in the share of
-        their energy, per functional unit.
+        With kind sci, the SCI of ISO/IEC 21031 for the node and, with
+        group_by, for each backend, model or consumer: the operational
+        emissions, hour by hour, plus the embodied carbon of the server and
+        the GPU in the share of their energy, per functional unit. With kind
+        esg, the environmental report of the node: its electricity by domain,
+        backend and model, the Scope 2 emissions of the GHG Protocol by the
+        location-based method, the cost, the water and the SCI. The html
+        format is a printable page that needs nothing else.
       x-description-es: >-
-        El SCI de ISO/IEC 21031 del nodo y, con group_by, de cada backend,
-        modelo o consumidor: las emisiones operacionales, hora por hora, más
-        el carbono incorporado del servidor y de la GPU en la parte de su
-        energía, por unidad funcional.
+        Con kind sci, el SCI de ISO/IEC 21031 del nodo y, con group_by, de
+        cada backend, modelo o consumidor: las emisiones operacionales, hora
+        por hora, más el carbono incorporado del servidor y de la GPU en la
+        parte de su energía, por unidad funcional. Con kind esg, el reporte
+        ambiental del nodo: su electricidad por dominio, backend y modelo,
+        las emisiones de alcance 2 del GHG Protocol por el método basado en
+        ubicación, el costo, el agua y el SCI. El formato html es una página
+        imprimible que no necesita nada más.
       x-greenlens-role: viewer
       parameters:
         - name: kind
           in: query
           required: true
-          description: The report, sci.
-          x-description-es: El reporte, sci.
-          schema: {type: string, enum: [sci]}
+          description: The report, sci or esg.
+          x-description-es: El reporte, sci o esg.
+          schema: {type: string, enum: [sci, esg]}
         - name: from
           in: query
           required: true
@@ -268,8 +276,8 @@ paths:
           schema: {type: string, format: date-time}
         - name: group_by
           in: query
-          description: Also report each backend, model or consumer.
-          x-description-es: Reporta además cada backend, modelo o consumidor.
+          description: With kind sci, also report each backend, model or consumer.
+          x-description-es: Con kind sci, reporta además cada backend, modelo o consumidor.
           schema: {type: string, enum: [backend, model, consumer]}
         - name: unit
           in: query
@@ -278,17 +286,27 @@ paths:
           schema: {type: string, enum: [1k_generated_tokens, request, consumer]}
         - name: format
           in: query
-          description: json, the default, or csv.
-          x-description-es: json, el predeterminado, o csv.
-          schema: {type: string, enum: [json, csv]}
+          description: json, the default, csv or html.
+          x-description-es: json, el predeterminado, csv o html.
+          schema: {type: string, enum: [json, csv, html]}
+        - name: lang
+          in: query
+          description: Language of the html format, en, the default, or es.
+          x-description-es: Idioma del formato html, en, el predeterminado, o es.
+          schema: {type: string, enum: [en, es]}
       responses:
         "200":
           description: The report.
           x-description-es: El reporte.
           content:
             application/json:
-              schema: {$ref: "#/components/schemas/SCIReport"}
+              schema:
+                oneOf:
+                  - {$ref: "#/components/schemas/SCIReport"}
+                  - {$ref: "#/components/schemas/ESGReport"}
             text/csv:
+              schema: {type: string}
+            text/html:
               schema: {type: string}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
@@ -1196,6 +1214,73 @@ components:
         consumers: {type: integer, description: Consumers counted, for the unit consumer., x-description-es: Consumidores contados, para la unidad consumer.}
         indicators: {$ref: "#/components/schemas/Indicators"}
         sci: {$ref: "#/components/schemas/SCI"}
+
+    ESGGroup:
+      type: object
+      description: Use of one backend or model in the period.
+      x-description-es: Uso de un backend o modelo en el periodo.
+      additionalProperties: false
+      required: [backend, kind, energy_j, generated_tokens, requests, indicators]
+      properties:
+        backend: {type: string, description: Name of the backend., x-description-es: Nombre del backend.}
+        kind: {type: string, description: Kind of the backend., x-description-es: Tipo del backend.}
+        model: {type: string, description: Name of the model., x-description-es: Nombre del modelo.}
+        energy_j: {type: number, description: Energy attributed to it., x-description-es: Energía que se le atribuyó.}
+        generated_tokens: {type: integer, description: Generated tokens., x-description-es: Tokens generados.}
+        requests: {type: integer, description: Requests., x-description-es: Solicitudes.}
+        j_per_generated_token: {type: number, description: Energy per generated token., x-description-es: Energía por token generado.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
+
+    ESGReport:
+      type: object
+      description: Environmental report of the node in a period, by the location-based method of Scope 2 of the GHG Protocol.
+      x-description-es: Reporte ambiental del nodo en un periodo, por el método basado en ubicación del alcance 2 del GHG Protocol.
+      additionalProperties: false
+      required: [schema_version, from, to, generated_at, version, method, factors, domains, components_j, facility_kwh, indicators, measured_share, unattributed_j, backends, models, sci, sci_missing]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        from: {type: string, format: date-time, description: Start of the period., x-description-es: Inicio del periodo.}
+        to: {type: string, format: date-time, description: End of the period., x-description-es: Fin del periodo.}
+        generated_at: {type: string, format: date-time, description: When the report was made., x-description-es: Cuándo se hizo el reporte.}
+        version: {type: string, description: Version of the agent., x-description-es: Versión del agente.}
+        method: {type: string, enum: [ghg_protocol_scope2_location_based], description: Accounting method., x-description-es: Método de contabilidad.}
+        factors: {$ref: "#/components/schemas/Factors"}
+        domains:
+          type: array
+          description: Energy of each domain; platform and wall meters are shown but not added.
+          x-description-es: Energía de cada dominio; los medidores de plataforma y de pared se muestran pero no se suman.
+          items:
+            type: object
+            description: One domain.
+            x-description-es: Un dominio.
+            additionalProperties: false
+            required: [domain, energy_j, component, quality]
+            properties:
+              domain: {type: string, description: The domain., x-description-es: El dominio.}
+              energy_j: {type: number, description: Its energy., x-description-es: Su energía.}
+              component: {type: boolean, description: Whether it is added to the total., x-description-es: Si se suma al total.}
+              quality: {type: string, description: Quality of its values., x-description-es: Calidad de sus valores.}
+        components_j: {type: number, description: Electricity of processor, memory and GPU., x-description-es: Electricidad de procesador, memoria y GPU.}
+        facility_kwh: {type: number, description: The same with the overhead of the facility., x-description-es: Lo mismo con la sobrecarga de la instalación.}
+        indicators: {$ref: "#/components/schemas/Indicators"}
+        measured_share: {type: number, description: Part of the energy that was measured., x-description-es: Parte de la energía que se midió.}
+        unattributed_j: {type: number, description: Energy that no backend accounts for., x-description-es: Energía que ningún backend explica.}
+        backends:
+          type: array
+          description: Every backend, most energy first.
+          x-description-es: Cada backend, del que más energía usó al que menos.
+          items: {$ref: "#/components/schemas/ESGGroup"}
+        models:
+          type: array
+          description: Every model, most energy first.
+          x-description-es: Cada modelo, del que más energía usó al que menos.
+          items: {$ref: "#/components/schemas/ESGGroup"}
+        sci: {$ref: "#/components/schemas/SCIRow"}
+        sci_missing:
+          type: array
+          description: Configuration that the embodied carbon lacks.
+          x-description-es: Configuración que le falta al carbono incorporado.
+          items: {type: string}
 
     SCIReport:
       type: object

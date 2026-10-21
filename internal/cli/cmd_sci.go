@@ -22,7 +22,7 @@ import (
 
 func newSCICmd(a *app) *cobra.Command {
 	l := a.l
-	var fromS, toS, group, unit string
+	var fromS, toS, group, unit, htmlPath string
 	cmd := &cobra.Command{
 		Use:   "sci",
 		Short: l.T("cli.sci.short"),
@@ -54,6 +54,9 @@ func newSCICmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if htmlPath != "" {
+				return a.savePage(cmd, c, "sci", from, to, group, unit, htmlPath)
+			}
 			rep, err := c.SCIReport(cmd.Context(), from, to, group, unit)
 			if err != nil {
 				return err
@@ -65,6 +68,7 @@ func newSCICmd(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&toS, "to", "now", l.T("cli.report.flag.to"))
 	cmd.Flags().StringVar(&group, "group", "", l.T("cli.sci.flag.group"))
 	cmd.Flags().StringVar(&unit, "unit", "", l.T("cli.sci.flag.unit"))
+	cmd.Flags().StringVar(&htmlPath, "html", "", l.T("cli.report.flag.html"))
 	return cmd
 }
 

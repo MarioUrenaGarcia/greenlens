@@ -494,8 +494,10 @@ greenlens report [opciones]
 | Opción | Descripción | Por defecto |
 |---|---|---|
 | `--by` | Agrupa por none, hour o day | `none` |
+| `--esg` | Reporta el ambiente del nodo: emisiones de alcance 2, costo, agua y SCI, por backend y modelo |  |
 | `--from` | Inicio del periodo | `24h` |
 | `--group` | Reporta por backend, model o consumer en lugar de por dominio |  |
+| `--html` | Escribe el reporte como página imprimible en este archivo |  |
 | `--regressions` | Lista los días cuya energía por token generado es una regresión o una mejora, y los cambios de contexto |  |
 | `--to` | Fin del periodo | `now` |
 
@@ -506,6 +508,7 @@ greenlens report
 greenlens report --from 7d --by day
 greenlens report --from 7d --group model
 greenlens report --from 30d --regressions
+greenlens report --from 2026-10-01 --to 2026-11-01 --esg --html report.html
 greenlens report --from 2026-10-01 --to 2026-11-01 --output csv
 ```
 
@@ -549,6 +552,7 @@ greenlens sci [opciones]
 |---|---|---|
 | `--from` | Inicio del periodo | `24h` |
 | `--group` | Reporta además cada backend, modelo o consumidor |  |
+| `--html` | Escribe el reporte como página imprimible en este archivo |  |
 | `--to` | Fin del periodo | `now` |
 | `--unit` | Unidad funcional: 1k_generated_tokens, request o consumer |  |
 

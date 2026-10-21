@@ -812,3 +812,12 @@ textarea.input {
 .events time {
   font-variant-numeric: tabular-nums;
 }
+
+.links {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.links li + li {
+  margin-top: var(--space-2);
+}

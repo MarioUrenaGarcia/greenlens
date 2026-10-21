@@ -10,7 +10,7 @@ import { DataTable } from "../components/table";
 import { Empty, ErrorNotice, Loading, Metric, Panel, Segmented } from "../components/ui";
 import { csv, save, stamp } from "../download";
 import * as fmt from "../format";
-import { t } from "../i18n";
+import { lang, t } from "../i18n";
 import { add, factorNote, priced, tariffNote, zero } from "../indicators";
 import type { Indicators, Status, UsageEnergy } from "../types";
 
@@ -150,6 +150,19 @@ export function Reports(props: { status: Status }) {
   };
 
   const totals = report ? report.total.ind : null;
+  // The agent writes the environmental and SCI reports of the same period
+  // itself, as pages to print or files to keep.
+  const reportHref = (kind: "esg" | "sci", format: "html" | "csv" | "json") => {
+    const q = new URLSearchParams({
+      kind,
+      format,
+      lang: lang(),
+      from: new Date(`${from}T00:00:00`).toISOString(),
+      to: new Date(new Date(`${to}T00:00:00`).getTime() + 864e5).toISOString(),
+    });
+    if (kind === "sci") q.set("group_by", "model");
+    return `/api/v1/reports?${q}`;
+  };
   return (
     <div class="stack">
       <div class="page-head">
@@ -287,6 +300,29 @@ export function Reports(props: { status: Status }) {
                 ]}
               />
             )}
+          </Panel>
+          <Panel title={t("gui.reports.documents")} help="guides/reports">
+            <p>{t("gui.reports.documents_intro")}</p>
+            <ul class="links no-print">
+              {(["esg", "sci"] as const).map((kind) => (
+                <li key={kind}>
+                  <a href={reportHref(kind, "html")} target="_blank" rel="noopener">
+                    {t(`gui.reports.document_${kind}`)}
+                  </a>{" "}
+                  <span class="muted">
+                    (
+                    <a href={reportHref(kind, "csv")} download>
+                      CSV
+                    </a>
+                    ,{" "}
+                    <a href={reportHref(kind, "json")} download={`greenlens-${kind}.json`}>
+                      JSON
+                    </a>
+                    )
+                  </span>
+                </li>
+              ))}
+            </ul>
           </Panel>
           <Panel title={t(`gui.reports.by_group_${report.groupBy}`)} help="explanation/attribution">
             {report.groups.length === 0 ? (

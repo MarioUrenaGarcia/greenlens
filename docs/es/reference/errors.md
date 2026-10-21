@@ -26,6 +26,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL0016](#gl0016) | greenlens top necesita una terminal | 2 |
 | [GL0017](#gl0017) | no hay explicación para '`{metric}`' | 2 |
 | [GL0018](#gl0018) | no hay ningún token de acceso '`{token}`' | 1 |
+| [GL0019](#gl0019) | no se puede escribir el reporte | 1 |
 | [GL1001](#gl1001) | no hay ninguna fuente de energía medida disponible | 3 |
 | [GL1002](#gl1002) | no se pueden leer los contadores de energía RAPL | 5 |
 | [GL1003](#gl1003) | no se pueden abrir los contadores de energía de perf_event | 5 |
@@ -188,6 +189,13 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Mensaje:** no hay ningún token de acceso '`{token}`'
 - **Causa:** ningún token tiene este id o nombre
 - **Solución:** ejecuta 'greenlens token list' para ver los tokens
+- **Código de salida:** 1
+
+## GL0019
+
+- **Mensaje:** no se puede escribir el reporte
+- **Causa:** `{path}`: `{detail}`
+- **Solución:** elige un archivo en un directorio donde puedas escribir
 - **Código de salida:** 1
 
 ## GL1001

@@ -96,6 +96,14 @@ All notable changes to GreenLens are recorded in this file. The format follows
   `greenlens_sci_grams_co2e_per_unit` and the embodied scope of
   `greenlens_emissions_grams_co2e_total`. Usage rollups keep their GPU
   part for that share.
+- The environmental report, by the location-based method of Scope 2 of the
+  GHG Protocol: the electricity of the node by domain, backend and model,
+  with the facility overhead, the emissions, cost and water, the measured
+  share and the SCI. `greenlens report --esg`, `greenlens sci` and
+  `GET /api/v1/reports` give both reports as JSON, CSV or a printable page
+  in English or Spanish that needs nothing else, linked from the reports
+  screen. Without `indicators.timezone` the time zone of the system is
+  named in the reports.
 - Regressions of the energy per generated token: every local day of a
   model is judged against the days before it with a z-score
   (`analysis.regression`), next to the changes of context the agent

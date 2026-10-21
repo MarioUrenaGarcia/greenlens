@@ -5,6 +5,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -15,9 +16,11 @@ import (
 
 	"github.com/MarioUrenaGarcia/greenlens/internal/analysis"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
+	"github.com/MarioUrenaGarcia/greenlens/internal/client"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/output"
+	"github.com/MarioUrenaGarcia/greenlens/internal/report"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
 	"github.com/MarioUrenaGarcia/greenlens/internal/units"
@@ -69,14 +72,15 @@ func parseTime(s string, now time.Time) (time.Time, error) {
 
 func newReportCmd(a *app) *cobra.Command {
 	l := a.l
-	var fromS, toS, by, group string
-	var regressions bool
+	var fromS, toS, by, group, htmlPath string
+	var regressions, esg bool
 	cmd := &cobra.Command{
 		Use:   "report",
 		Short: l.T("cli.report.short"),
 		Long:  wrap(l.T("cli.report.long"), helpWidth),
 		Example: "  greenlens report\n  greenlens report --from 7d --by day\n  greenlens report --from 7d --group model\n" +
-			"  greenlens report --from 30d --regressions\n  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
+			"  greenlens report --from 30d --regressions\n  greenlens report --from 2026-10-01 --to 2026-11-01 --esg --html report.html\n" +
+			"  greenlens report --from 2026-10-01 --to 2026-11-01 --output csv",
 		Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			now := time.Now()
@@ -95,8 +99,14 @@ func newReportCmd(a *app) *cobra.Command {
 			if group != "" && (group != store.ByBackend && group != store.ByModel && group != store.ByConsumer || by != "none") {
 				return help.New(help.GL0005, "flag", "--group", "value", group, "command", cmd.CommandPath())
 			}
-			if regressions && (group != "" || by != "none") {
+			if regressions && (group != "" || by != "none" || esg) {
 				return help.New(help.GL0005, "flag", "--regressions", "value", "true", "command", cmd.CommandPath())
+			}
+			if esg && (group != "" || by != "none") {
+				return help.New(help.GL0005, "flag", "--esg", "value", "true", "command", cmd.CommandPath())
+			}
+			if htmlPath != "" && !esg {
+				return help.New(help.GL0005, "flag", "--html", "value", htmlPath, "command", cmd.CommandPath())
 			}
 			cfg, _, err := a.config()
 			if err != nil {
@@ -105,6 +115,16 @@ func newReportCmd(a *app) *cobra.Command {
 			c, err := a.agent(cmd.Context(), cfg)
 			if err != nil {
 				return err
+			}
+			if esg {
+				if htmlPath != "" {
+					return a.savePage(cmd, c, "esg", from, to, "", "", htmlPath)
+				}
+				rep, err := c.ESGReport(cmd.Context(), from, to, "")
+				if err != nil {
+					return err
+				}
+				return a.writeESG(cmd, rep)
 			}
 			if regressions {
 				rg, err := c.Regressions(cmd.Context(), from, to)
@@ -178,6 +198,8 @@ func newReportCmd(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&by, "by", "none", l.T("cli.report.flag.by"))
 	cmd.Flags().StringVar(&group, "group", "", l.T("cli.report.flag.group"))
 	cmd.Flags().BoolVar(&regressions, "regressions", false, l.T("cli.report.flag.regressions"))
+	cmd.Flags().BoolVar(&esg, "esg", false, l.T("cli.report.flag.esg"))
+	cmd.Flags().StringVar(&htmlPath, "html", "", l.T("cli.report.flag.html"))
 	return cmd
 }
 
@@ -393,4 +415,82 @@ func (a *app) writeRegressions(cmd *cobra.Command, rg api.Regressions) error {
 		}
 	}
 	return nil
+}
+
+// savePage writes a report as a printable page, in the language of the
+// command.
+func (a *app) savePage(cmd *cobra.Command, c *client.Client, kind string, from, to time.Time, group, unit, path string) error {
+	page, err := c.ReportPage(cmd.Context(), kind, from, to, group, unit, a.l.Lang())
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, page, 0o600); err != nil {
+		return help.New(help.GL0019, "path", path, "detail", err.Error()).Wrap(err)
+	}
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), a.l.T("cli.report.written", "path", path))
+	return err
+}
+
+// writeESG prints the environmental report: its totals, then the backends
+// and the models.
+func (a *app) writeESG(cmd *cobra.Command, rep report.ESGReport) error {
+	l := a.l
+	sum := output.Grid{Header: []string{l.T("report.summary"), ""}}
+	add := func(key, v string) { sum.Rows = append(sum.Rows, []string{l.T(key), v}) }
+	add("report.esg.components", units.Energy(rep.ComponentsJ, a.raw))
+	add("report.esg.facility", strconv.FormatFloat(rep.FacilityKWh, 'f', 3, 64)+" kWh")
+	add("report.esg.scope2", units.CO2e(rep.Indicators.CO2eG, a.raw))
+	if c := rep.Indicators.Cost; c != nil {
+		add("report.cost", units.Money(*c, rep.Factors.Currency, a.raw))
+	}
+	if w := rep.Indicators.WaterL; w != nil {
+		add("report.water", strconv.FormatFloat(*w, 'f', 2, 64)+" L")
+	}
+	add("report.esg.measured", strconv.FormatFloat(100*rep.MeasuredShare, 'f', 1, 64)+"%")
+	add("report.esg.unattributed", units.Energy(rep.UnattributedJ, a.raw))
+	if g := rep.SCI.SCI.GPerUnit; g != nil {
+		sum.Rows = append(sum.Rows, []string{l.T("report.esg.sci", "unit", l.T("report.unit."+rep.SCI.SCI.Unit)), units.CO2e(*g, a.raw)})
+	}
+	groupGrid := func(rows []report.ESGGroup, models bool) output.Grid {
+		g := output.Grid{Header: []string{l.T("cli.col.backend")}}
+		if models {
+			g.Header = append(g.Header, l.T("cli.col.model"))
+		}
+		g.Header = append(g.Header, l.T("cli.col.energy"), "CO2e", l.T("cli.col.joules_per_token"))
+		for _, r := range rows {
+			row := []string{r.Backend}
+			if models {
+				row = append(row, dash(r.Model))
+			}
+			jpt := "-"
+			if r.JPerToken > 0 {
+				jpt = units.Energy(r.JPerToken, a.raw)
+			}
+			g.Rows = append(g.Rows, append(row, units.Energy(r.EnergyJ, a.raw), units.CO2e(r.Indicators.CO2eG, a.raw), jpt))
+		}
+		return g
+	}
+	if a.out() != output.Table {
+		return output.Write(cmd.OutOrStdout(), a.out(), rep, sum)
+	}
+	w := cmd.OutOrStdout()
+	_, _ = fmt.Fprintln(w, l.T("cli.report.period", "from", rep.From.Local().Format(time.DateTime), "to", rep.To.Local().Format(time.DateTime)))
+	_, _ = fmt.Fprintln(w)
+	if err := output.WriteGrid(w, sum); err != nil {
+		return err
+	}
+	for _, sec := range []struct {
+		rows   []report.ESGGroup
+		models bool
+	}{{rep.Backends, false}, {rep.Models, true}} {
+		if len(sec.rows) > 0 {
+			_, _ = fmt.Fprintln(w)
+			if err := output.WriteGrid(w, groupGrid(sec.rows, sec.models)); err != nil {
+				return err
+			}
+		}
+	}
+	_, _ = fmt.Fprintln(w)
+	_, err := fmt.Fprintln(w, wrap(l.T("cli.report.esg_method"), helpWidth))
+	return err
 }

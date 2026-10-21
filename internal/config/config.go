@@ -380,17 +380,23 @@ func Load(path string, getenv func(string) string) (Config, string, error) {
 	if err := cfg.Validate(); err != nil {
 		return cfg, path, err
 	}
-	return cfg, path, cfg.resolve()
+	return cfg, path, cfg.resolve(getenv)
 }
 
 // resolve reads what the configuration names beyond itself: the hourly
 // profile and the time zone.
-func (c *Config) resolve() error {
+func (c *Config) resolve(getenv func(string) string) error {
 	ind := &c.Indicators
 	// The zone of the system is read on first use; reading it now does so
-	// before the agent confines its file access.
+	// before the agent confines its file access. Its name, when it can be
+	// found, makes reports say where their times are.
 	_, _ = time.Now().In(time.Local).Zone()
 	ind.Location = time.Local
+	if name := systemZone(getenv); ind.Timezone == "" && name != "" {
+		if loc, err := time.LoadLocation(name); err == nil {
+			ind.Location = loc
+		}
+	}
 	if ind.Timezone != "" {
 		loc, err := time.LoadLocation(ind.Timezone)
 		if err != nil {
@@ -406,6 +412,28 @@ func (c *Config) resolve() error {
 		ind.Profile = p
 	}
 	return nil
+}
+
+// systemZone names the time zone of the system: TZ, the zone file that
+// /etc/localtime links to, or /etc/timezone. It is empty when none says.
+func systemZone(getenv func(string) string) string {
+	if tz := strings.TrimPrefix(getenv("TZ"), ":"); tz != "" {
+		if _, name, ok := strings.Cut(tz, "zoneinfo/"); ok {
+			return name
+		}
+		if !strings.HasPrefix(tz, "/") {
+			return tz
+		}
+	}
+	if target, err := os.Readlink("/etc/localtime"); err == nil {
+		if _, name, ok := strings.Cut(target, "zoneinfo/"); ok {
+			return name
+		}
+	}
+	if b, err := os.ReadFile("/etc/timezone"); err == nil {
+		return strings.TrimSpace(string(b))
+	}
+	return ""
 }
 
 // periods converts the tariff periods, which Validate has checked.

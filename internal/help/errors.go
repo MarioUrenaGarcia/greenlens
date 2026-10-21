@@ -40,6 +40,7 @@ const (
 	GL0016 Code = "GL0016" // the terminal interface needs a terminal
 	GL0017 Code = "GL0017" // unknown metric asked to explain
 	GL0018 Code = "GL0018" // no access token with this id or name
+	GL0019 Code = "GL0019" // report file cannot be written
 
 	GL1001 Code = "GL1001" // no measured energy source
 	GL1002 Code = "GL1002" // RAPL counters readable only by root
@@ -113,6 +114,7 @@ var exitCodes = map[Code]int{
 	GL0016: ExitUsage,
 	GL0017: ExitUsage,
 	GL0018: ExitError,
+	GL0019: ExitError,
 	GL1001: ExitNoSource,
 	GL1002: ExitPermission,
 	GL1003: ExitPermission,

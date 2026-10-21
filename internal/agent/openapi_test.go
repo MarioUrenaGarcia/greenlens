@@ -158,7 +158,15 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	q.Set("group_by", "model")
 	q.Set("unit", "request")
 	get("reports", sock, api.PathReports+"?"+q.Encode())
-	get("reports", sock, api.PathReports+"?kind=esg&"+q.Encode())
+	esg := url.Values{"kind": {"esg"}, "from": q["from"], "to": q["to"]}
+	get("reports", sock, api.PathReports+"?"+esg.Encode())
+	get("reports", sock, api.PathReports+"?kind=pdf&"+esg.Encode())
+	esg.Set("format", "html")
+	esg.Set("lang", "es")
+	if resp, body := sock.do("GET", api.PathReports+"?"+esg.Encode(), nil); resp.code != 200 || !strings.HasPrefix(resp.header.Get("Content-Type"), "text/html") ||
+		!strings.Contains(resp.header.Get("Content-Security-Policy"), "style-src 'sha256-") || !strings.Contains(string(body), "Reporte ambiental") {
+		t.Errorf("html report: %d %v %.200s", resp.code, resp.header, body)
+	}
 	rq := url.Values{"from": {now.Add(-30 * 24 * time.Hour).Format(time.RFC3339)}, "to": {now.Add(time.Minute).Format(time.RFC3339)}}
 	get("regressions", sock, api.PathRegressions+"?"+rq.Encode())
 	get("regressions", sock, api.PathRegressions+"?from=now")

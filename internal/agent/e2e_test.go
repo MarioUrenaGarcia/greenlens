@@ -6,13 +6,16 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -503,6 +506,50 @@ func TestInterfaceEndToEnd(t *testing.T) {
 			t.Fatalf("benchmarks: %d %s", resp.code, body)
 		}
 		g.audit("benchmarks after a run", "en")
+	})
+
+	t.Run("printable reports", func(t *testing.T) {
+		g.t = t
+		for _, kind := range []string{"esg", "sci"} {
+			q := url.Values{"kind": {kind}, "format": {"html"}, "lang": {"en"}, "group_by": {"model"},
+				"from": {time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)}, "to": {time.Now().Add(time.Minute).UTC().Format(time.RFC3339)}}
+			if kind == "esg" {
+				q.Del("group_by")
+			}
+			g.navigate(g.base + api.PathReports + "?" + q.Encode())
+			g.waitFor(`document.querySelector("main h1")`)
+			// The accent of the headings shows that the style passed the
+			// policy of the page.
+			var color string
+			g.eval(`getComputedStyle(document.querySelector("h1")).color`, &color)
+			if color != "rgb(9, 101, 63)" {
+				t.Errorf("%s: style not applied, h1 is %s", kind, color)
+			}
+			g.audit("report "+kind, "en")
+			// A4 is 794 px wide at 96 dpi; nothing may stick out of it.
+			if err := g.p.Call(g.ctx, "Emulation.setDeviceMetricsOverride", map[string]any{"width": 794, "height": 1123, "deviceScaleFactor": 1, "mobile": false}, nil); err != nil {
+				t.Fatal(err)
+			}
+			var scroll int
+			g.eval(`document.documentElement.scrollWidth - innerWidth`, &scroll)
+			if scroll > 0 {
+				t.Errorf("%s: %d px wider than A4", kind, scroll)
+			}
+			var pdf struct {
+				Data string `json:"data"`
+			}
+			if err := g.p.Call(g.ctx, "Page.printToPDF", map[string]any{"preferCSSPageSize": true, "printBackground": true}, &pdf); err != nil {
+				t.Fatal(err)
+			}
+			if b, err := base64.StdEncoding.DecodeString(pdf.Data); err != nil || !bytes.HasPrefix(b, []byte("%PDF-")) || len(b) < 2000 {
+				t.Errorf("%s: printing gave %d bytes, %v", kind, len(b), err)
+			}
+			if err := g.p.Call(g.ctx, "Emulation.setDeviceMetricsOverride", map[string]any{"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": false}, nil); err != nil {
+				t.Fatal(err)
+			}
+		}
+		g.navigate(g.base + "/#/summary")
+		g.waitFor(`document.querySelector("nav.sidebar")`)
 	})
 
 	t.Run("efficient mode", func(t *testing.T) {

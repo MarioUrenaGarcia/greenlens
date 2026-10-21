@@ -564,6 +564,8 @@ total = "total"
 factor = "Emission factor: {value} gCO2e/kWh ({source})."
 estimated = "Part of the energy is estimated, not measured."
 system_levels = "Platform and wall values include the components and are not added to them."
+written = "Report written to {path}; open it in a browser to read or print it."
+esg_method = "Scope 2 emissions of the GHG Protocol, location-based: the electricity of the components with the PUE at the intensity of the grid. The market-based method needs the factors of the supplier and is not reported."
 
 [cli.report.flag]
 from = "Start of the period"
@@ -571,6 +573,8 @@ to = "End of the period"
 by = "Group by none, hour or day"
 group = "Report by backend, model or consumer instead of by domain"
 regressions = "List the days whose energy per generated token is a regression or an improvement, and the changes of context"
+esg = "Report the environment of the node: Scope 2 emissions, cost, water and SCI, by backend and model"
+html = "Write the report as a printable page to this file"
 
 [cli.token]
 short = "Manage the access tokens of the HTTP API"
@@ -656,6 +660,73 @@ units = "Units"
 1k_generated_tokens = "SCI in grams of CO2e per 1,000 generated tokens."
 request = "SCI in grams of CO2e per request."
 consumer = "SCI in grams of CO2e per consumer."
+
+[report]
+period = "From {from} to {to}, {zone}"
+summary = "Summary"
+cost = "Cost of the electricity"
+water = "Water"
+method = "Method"
+tariff_periods = "The cost follows {count} time-of-use prices, in {zone}."
+yes = "yes"
+no = "no"
+generated = "Generated on {at} by GreenLens {version}."
+missing = "Embodied carbon is not included: the configuration lacks {keys}."
+factor = "{value} gCO2e/kWh, {source}"
+factor_profile = "an hourly profile of the grid in {zone}, hour by hour"
+
+[report.unit]
+1k_generated_tokens = "per 1,000 generated tokens"
+request = "per request"
+consumer = "per consumer"
+
+[report.col]
+domain = "Domain"
+energy = "Energy"
+quality = "Quality"
+added = "Added"
+backend = "Backend"
+model = "Model"
+tokens = "Generated tokens"
+jpt = "J per token"
+emissions = "Emissions"
+scope = "Scope"
+server_share = "Server share"
+gpu_share = "GPU share"
+
+[report.esg]
+title = "Environmental report"
+components = "Electricity of processor, memory and GPU"
+facility = "Electricity with the facility overhead"
+scope2 = "Scope 2 emissions, location-based"
+measured = "Measured share of the energy"
+unattributed = "Energy no backend accounts for"
+sci = "Software Carbon Intensity, {unit}"
+method = "Scope 2 emissions of the GHG Protocol by the location-based method: the electricity of the processor, memory and GPU, with the overhead of the facility (PUE {pue}), at the intensity of the grid, {factor}. The market-based method needs the emission factors of the electricity supplier and is not reported."
+estimated = "Part of the energy comes from an estimate of the processor, not from a meter; the measured share above says how much."
+domains = "Energy by domain"
+domains_caption = "Energy of each domain of the node in the period"
+platform_note = "Platform and wall meters measure the components again, so they are shown but not added."
+backends = "Energy by backend"
+backends_caption = "Energy attributed to each inference backend in the period"
+models = "Energy by model"
+models_caption = "Energy attributed to each model in the period"
+
+[report.sci]
+title = "Software Carbon Intensity"
+value = "SCI, {unit}"
+operational = "Operational emissions, O"
+embodied = "Embodied carbon, M"
+not_included = "not included"
+units = "Functional units, R"
+method = "SCI of ISO/IEC 21031. O is the electricity of the processor, memory and GPU with the overhead of the facility (PUE {pue}) at the intensity of the grid, {factor}. M is the embodied carbon of the server and the GPU spread over their lifetime, in the share of the energy of the node that each scope used. R counts the functional units."
+embodied_params = "Embodied carbon: server {server} kgCO2e, GPU {gpu} kgCO2e, lifetime {years} years."
+caption = "SCI of each group, {unit}"
+
+[report.sci.by]
+backend = "By backend"
+model = "By model"
+consumer = "By consumer"
 
 [cli.license]
 short = "Show the license and the third-party notices"
@@ -994,6 +1065,11 @@ fix = "check server.tls.cert_file and server.tls.key_file: both must be PEM file
 message = "the graphical interface is off"
 cause = "the agent does not serve its HTTP API: server.enabled is false"
 fix = "set server.enabled to true in the configuration of the agent and restart it, for example with 'sudo systemctl restart greenlens'"
+
+[errors.GL0019]
+message = "cannot write the report"
+cause = "{path}: {detail}"
+fix = "choose a file in a directory you can write to"
 
 [errors.GL0009]
 message = "unsupported output format '{value}'"
@@ -1391,6 +1467,10 @@ by_group_consumer = "Energy by consumer"
 no_data = "No energy was stored in this period."
 no_groups = "No energy was attributed in this period."
 footer = "Read at the {resolution} resolution. Generated by GreenLens on {generated}."
+documents = "Environmental and SCI reports"
+documents_intro = "The agent writes them for the same period, with emissions hour by hour, as pages that print on A4 without anything else, or as files."
+document_esg = "Environmental report, Scope 2 of the GHG Protocol"
+document_sci = "Software Carbon Intensity by model"
 
 [gui.config]
 title = "Configuration"

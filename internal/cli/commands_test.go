@@ -432,6 +432,29 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if code, _, errOut := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--regressions", "--group", "model"); code != 2 || !strings.Contains(errOut, "GL0005") {
 		t.Fatalf("regressions with group: %d %s", code, errOut)
 	}
+	// The environmental report, on the terminal, in JSON and as a page.
+	if code, out, _ := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--from", "1h", "--esg"); code != 0 ||
+		!strings.Contains(out, "Scope 2 emissions, location-based") || !strings.Contains(out, "market-based method") {
+		t.Fatalf("esg: %d %s", code, out)
+	}
+	code, out, _ = runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--from", "1h", "--esg", "-o", "json")
+	var esg report.ESGReport
+	if code != 0 || json.Unmarshal([]byte(out), &esg) != nil || esg.ComponentsJ <= 0 || esg.Method != report.MethodScope2Location {
+		t.Fatalf("esg json: %d %s", code, out)
+	}
+	page := filepath.Join(dir, "esg.html")
+	if code, out, errOut := runWith(t, hooks{}, map[string]string{"GREENLENS_LANG": "es"}, "report", "--config", cfgPath, "--from", "1h", "--esg", "--html", page); code != 0 || !strings.Contains(out, page) {
+		t.Fatalf("esg html: %d %s %s", code, out, errOut)
+	}
+	if b, err := os.ReadFile(page); err != nil || !strings.Contains(string(b), `<html lang="es">`) || !strings.Contains(string(b), "Reporte ambiental") {
+		t.Fatalf("esg page: %v %.200s", err, b)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "sci", "--config", cfgPath, "--from", "1h", "--html", filepath.Join(dir, "none", "sci.html")); code != 1 || !strings.Contains(errOut, "GL0019") {
+		t.Fatalf("sci html in a missing directory: %d %s", code, errOut)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "report", "--config", cfgPath, "--html", page); code != 2 || !strings.Contains(errOut, "GL0005") {
+		t.Fatalf("html without esg: %d %s", code, errOut)
+	}
 	if code, out, _ := runWith(t, hooks{}, nil, "proxy", "--config", cfgPath); code != 0 || !strings.Contains(out, "proxy.enabled") {
 		t.Fatalf("proxy off: %d %s", code, out)
 	}

@@ -1,0 +1,52 @@
+{{- /* SPDX-License-Identifier: AGPL-3.0-only */ -}}
+{{- /* Copyright (C) 2026 Mario Ureña García */ -}}
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{t "report.sci.title"}} - GreenLens</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+<main>
+<header>
+<h1>{{t "report.sci.title"}}</h1>
+<p>{{t "report.period" "from" (date .S.From) "to" (date .S.To) "zone" .Zone}}</p>
+</header>
+
+<section aria-labelledby="summary">
+<h2 id="summary">{{t "report.summary"}}</h2>
+<dl class="summary">
+<dt>{{t "report.sci.value" "unit" (t (printf "report.unit.%s" .S.Unit))}}</dt><dd>{{with .S.Node.SCI.GPerUnit}}{{co2e .}}{{else}}-{{end}}</dd>
+<dt>{{t "report.sci.operational"}}</dt><dd>{{co2e .S.Node.SCI.OperationalG}}</dd>
+<dt>{{t "report.sci.embodied"}}</dt><dd>{{with .S.Node.SCI.EmbodiedG}}{{co2e .}}{{else}}{{t "report.sci.not_included"}}{{end}}</dd>
+<dt>{{t "report.sci.units"}}</dt><dd>{{num .S.Node.SCI.Units}}</dd>
+<dt>{{t "report.esg.components"}}</dt><dd>{{energy .S.Node.EnergyJ}}</dd>
+</dl>
+</section>
+
+<section aria-labelledby="method">
+<h2 id="method">{{t "report.method"}}</h2>
+<p>{{t "report.sci.method" "pue" (num .S.Factors.PUE) "factor" .Factor}}</p>
+<p><code>SCI = (O + M) / R</code></p>
+{{if .S.Missing}}<p>{{t "report.missing" "keys" (join .S.Missing)}}</p>{{else}}<p>{{t "report.sci.embodied_params" "server" (numptr .S.Embodied.ServerKgCO2e) "gpu" (numptr .S.Embodied.GPUKgCO2e) "years" (numptr .S.Embodied.LifetimeYears)}}</p>{{end}}
+</section>
+
+{{if .S.Rows}}<section aria-labelledby="groups">
+<h2 id="groups">{{t (printf "report.sci.by.%s" .S.GroupBy)}}</h2>
+<table>
+<caption>{{t "report.sci.caption" "unit" (t (printf "report.unit.%s" .S.Unit))}}</caption>
+<thead><tr><th scope="col">{{t "report.col.scope"}}</th><th scope="col" class="num">{{t "report.col.energy"}}</th><th scope="col" class="num">{{t "report.col.server_share"}}</th><th scope="col" class="num">{{t "report.col.gpu_share"}}</th><th scope="col" class="num">O</th><th scope="col" class="num">M</th><th scope="col" class="num">R</th><th scope="col" class="num">SCI</th></tr></thead>
+<tbody>
+{{range .S.Rows}}<tr><th scope="row">{{.Backend}}{{with .Model}}/{{.}}{{end}}{{with .Consumer}}/{{.}}{{end}}</th><td class="num">{{energy .EnergyJ}}</td><td class="num">{{pct .ServerShare}}</td><td class="num">{{pct .GPUShare}}</td><td class="num">{{co2e .SCI.OperationalG}}</td><td class="num">{{with .SCI.EmbodiedG}}{{co2e .}}{{else}}-{{end}}</td><td class="num">{{num .SCI.Units}}</td><td class="num">{{with .SCI.GPerUnit}}{{co2e .}}{{else}}-{{end}}</td></tr>
+{{end}}</tbody>
+</table>
+</section>{{end}}
+
+<footer>
+<p>{{t "report.generated" "at" (date .Now) "version" .Version}}</p>
+</footer>
+</main>
+</body>
+</html>

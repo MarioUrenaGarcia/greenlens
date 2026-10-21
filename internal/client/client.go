@@ -94,6 +94,10 @@ func (c *Client) do(req *http.Request, v any) error {
 	if v == nil {
 		return nil
 	}
+	if r, ok := v.(*rawBody); ok {
+		*r.b = body
+		return nil
+	}
 	if err := json.Unmarshal(body, v); err != nil {
 		return fmt.Errorf("decode %s: %w", req.URL.Path, err)
 	}
@@ -151,6 +155,41 @@ func (c *Client) SCIReport(ctx context.Context, from, to time.Time, groupBy, uni
 	err := c.get(ctx, api.PathReports, q, &r)
 	return r, err
 }
+
+// ESGReport returns the environmental report of a period; an empty unit
+// takes the configured one for its SCI.
+func (c *Client) ESGReport(ctx context.Context, from, to time.Time, unit string) (report.ESGReport, error) {
+	q := url.Values{"kind": {"esg"}, "from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}}
+	if unit != "" {
+		q.Set("unit", unit)
+	}
+	var r report.ESGReport
+	err := c.get(ctx, api.PathReports, q, &r)
+	return r, err
+}
+
+// ReportPage returns a report as a printable page in a language.
+func (c *Client) ReportPage(ctx context.Context, kind string, from, to time.Time, groupBy, unit, lang string) ([]byte, error) {
+	q := url.Values{"kind": {kind}, "format": {"html"}, "lang": {lang},
+		"from": {from.UTC().Format(time.RFC3339Nano)}, "to": {to.UTC().Format(time.RFC3339Nano)}}
+	if groupBy != "" {
+		q.Set("group_by", groupBy)
+	}
+	if unit != "" {
+		q.Set("unit", unit)
+	}
+	u := url.URL{Scheme: "http", Host: "agent", Path: api.PathReports, RawQuery: q.Encode()}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	var page []byte
+	err = c.do(req, &rawBody{&page})
+	return page, err
+}
+
+// rawBody receives an answer that is not JSON.
+type rawBody struct{ b *[]byte }
 
 // Regressions returns the days of every model in a period judged against
 // their baseline, and the changes of context.

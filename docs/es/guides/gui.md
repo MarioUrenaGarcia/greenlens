@@ -61,10 +61,10 @@ navegador nunca las guarda.
 |---|---|
 | Resumen | la potencia del nodo ahora y en los últimos minutos, por dominio, y la energía del último día, semana o mes |
 | Backends | cada servidor de inferencia encontrado o declarado, con su potencia, tokens por segundo y energía por token |
-| Modelos | la energía por token generado de cada modelo, su historial y la división entre prefill y decode |
+| Modelos | la energía por token generado y el SCI de cada modelo, su historial, la división entre prefill y decode, y los días que son regresiones junto a los cambios de contexto |
 | Consumidores | la energía y los tokens de cada consumidor identificado por el proxy |
 | Benchmarks | ejecuta un benchmark contra un backend, compara dos resultados y expórtalos |
-| Reportes | la energía, las emisiones, el costo y el agua de un periodo, por día u hora y por backend, modelo o consumidor, en CSV o JSON |
+| Reportes | la energía, las emisiones, el costo y el agua de un periodo, por día u hora y por backend, modelo o consumidor, en CSV o JSON, con los reportes ambiental y SCI imprimibles |
 | Fuentes | cada canal de energía, si se usa y por qué no |
 | Configuración | los ajustes del agente, con una vista previa de cada cambio (solo administradores) |
 | Ayuda | esta documentación, con búsqueda |

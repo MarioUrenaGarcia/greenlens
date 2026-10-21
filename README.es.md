@@ -71,6 +71,13 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 - `greenlens backup`, `restore` y `export` copian la base de datos y entregan
   las mediciones a otras herramientas en CSV o JSON, y `greenlens license`
   muestra la licencia y dónde está el código fuente de la versión en uso;
+- `greenlens sci` y `greenlens report --esg` dan la intensidad de carbono del
+  software de ISO/IEC 21031, con el carbono incorporado del hardware, y un
+  reporte ambiental con emisiones de alcance 2 del GHG Protocol, como tablas,
+  JSON o páginas imprimibles; las emisiones y el costo pueden seguir un
+  perfil horario de la red y precios por horario, y `greenlens report
+  --regressions` encuentra los días en que un modelo se volvió menos
+  eficiente;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
   los reportes, la configuración y esta documentación, todo sin internet;

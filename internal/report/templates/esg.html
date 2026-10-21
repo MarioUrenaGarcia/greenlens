@@ -1,0 +1,79 @@
+{{- /* SPDX-License-Identifier: AGPL-3.0-only */ -}}
+{{- /* Copyright (C) 2026 Mario Ureña García */ -}}
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{t "report.esg.title"}} - GreenLens</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+<main>
+<header>
+<h1>{{t "report.esg.title"}}</h1>
+<p>{{t "report.period" "from" (date .R.From) "to" (date .R.To) "zone" .Zone}}</p>
+</header>
+
+<section aria-labelledby="summary">
+<h2 id="summary">{{t "report.summary"}}</h2>
+<dl class="summary">
+<dt>{{t "report.esg.components"}}</dt><dd>{{energy .R.ComponentsJ}}</dd>
+<dt>{{t "report.esg.facility"}}</dt><dd>{{kwh .R.FacilityKWh}}</dd>
+<dt>{{t "report.esg.scope2"}}</dt><dd>{{co2e .R.Indicators.CO2eG}}</dd>
+{{with .R.Indicators.Cost}}<dt>{{t "report.cost"}}</dt><dd>{{money . $.R.Factors.Currency}}</dd>{{end}}
+{{with .R.Indicators.WaterL}}<dt>{{t "report.water"}}</dt><dd>{{liters .}}</dd>{{end}}
+<dt>{{t "report.esg.measured"}}</dt><dd>{{pct .R.MeasuredShare}}</dd>
+<dt>{{t "report.esg.unattributed"}}</dt><dd>{{energy .R.UnattributedJ}}</dd>
+{{with .R.SCI.SCI.GPerUnit}}<dt>{{t "report.esg.sci" "unit" (t (printf "report.unit.%s" $.R.SCI.SCI.Unit))}}</dt><dd>{{co2e .}}</dd>{{end}}
+</dl>
+</section>
+
+<section aria-labelledby="method">
+<h2 id="method">{{t "report.method"}}</h2>
+<p>{{t "report.esg.method" "pue" (num .R.Factors.PUE) "factor" .Factor}}</p>
+{{if .R.Factors.TariffPeriods}}<p>{{t "report.tariff_periods" "count" .R.Factors.TariffPeriods "zone" .Zone}}</p>{{end}}
+{{if lt .R.MeasuredShare 1.0}}<p>{{t "report.esg.estimated"}}</p>{{end}}
+</section>
+
+<section aria-labelledby="domains">
+<h2 id="domains">{{t "report.esg.domains"}}</h2>
+<table>
+<caption>{{t "report.esg.domains_caption"}}</caption>
+<thead><tr><th scope="col">{{t "report.col.domain"}}</th><th scope="col" class="num">{{t "report.col.energy"}}</th><th scope="col">{{t "report.col.quality"}}</th><th scope="col">{{t "report.col.added"}}</th></tr></thead>
+<tbody>
+{{range .R.Domains}}<tr><th scope="row">{{t (printf "domain.%s" .Domain)}}</th><td class="num">{{energy .EnergyJ}}</td><td>{{t (printf "quality.%s" .Quality)}}</td><td>{{if .Component}}{{t "report.yes"}}{{else}}{{t "report.no"}}{{end}}</td></tr>
+{{end}}</tbody>
+</table>
+<p class="muted">{{t "report.esg.platform_note"}}</p>
+</section>
+
+{{if .R.Backends}}<section aria-labelledby="backends">
+<h2 id="backends">{{t "report.esg.backends"}}</h2>
+<table>
+<caption>{{t "report.esg.backends_caption"}}</caption>
+<thead><tr><th scope="col">{{t "report.col.backend"}}</th><th scope="col" class="num">{{t "report.col.energy"}}</th><th scope="col" class="num">{{t "report.col.tokens"}}</th><th scope="col" class="num">{{t "report.col.jpt"}}</th><th scope="col" class="num">{{t "report.col.emissions"}}</th></tr></thead>
+<tbody>
+{{range .R.Backends}}<tr><th scope="row">{{.Backend}}</th><td class="num">{{energy .EnergyJ}}</td><td class="num">{{.GeneratedTokens}}</td><td class="num">{{if .JPerToken}}{{energy .JPerToken}}{{else}}-{{end}}</td><td class="num">{{co2e .Indicators.CO2eG}}</td></tr>
+{{end}}</tbody>
+</table>
+</section>{{end}}
+
+{{if .R.Models}}<section aria-labelledby="models">
+<h2 id="models">{{t "report.esg.models"}}</h2>
+<table>
+<caption>{{t "report.esg.models_caption"}}</caption>
+<thead><tr><th scope="col">{{t "report.col.model"}}</th><th scope="col">{{t "report.col.backend"}}</th><th scope="col" class="num">{{t "report.col.energy"}}</th><th scope="col" class="num">{{t "report.col.tokens"}}</th><th scope="col" class="num">{{t "report.col.jpt"}}</th><th scope="col" class="num">{{t "report.col.emissions"}}</th></tr></thead>
+<tbody>
+{{range .R.Models}}<tr><th scope="row">{{if .Model}}{{.Model}}{{else}}-{{end}}</th><td>{{.Backend}}</td><td class="num">{{energy .EnergyJ}}</td><td class="num">{{.GeneratedTokens}}</td><td class="num">{{if .JPerToken}}{{energy .JPerToken}}{{else}}-{{end}}</td><td class="num">{{co2e .Indicators.CO2eG}}</td></tr>
+{{end}}</tbody>
+</table>
+</section>{{end}}
+
+<footer>
+<p>{{t "report.generated" "at" (date .R.GeneratedAt) "version" .R.Version}}</p>
+{{if .R.SCIMissing}}<p>{{t "report.missing" "keys" (join .R.SCIMissing)}}</p>{{end}}
+</footer>
+</main>
+</body>
+</html>

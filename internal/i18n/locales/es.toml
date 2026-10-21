@@ -563,6 +563,8 @@ period = "Del {from} al {to}"
 total = "total"
 factor = "Factor de emisión: {value} gCO2e/kWh ({source})."
 estimated = "Parte de la energía es estimada, no medida."
+written = "Reporte escrito en {path}; ábrelo en un navegador para leerlo o imprimirlo."
+esg_method = "Emisiones de alcance 2 del GHG Protocol, basadas en ubicación: la electricidad de los componentes con el PUE a la intensidad de la red. El método basado en mercado necesita los factores del proveedor y no se reporta."
 system_levels = "Los valores de plataforma y pared incluyen los componentes y no se suman a ellos."
 
 [cli.report.flag]
@@ -571,6 +573,8 @@ to = "Fin del periodo"
 by = "Agrupa por none, hour o day"
 group = "Reporta por backend, model o consumer en lugar de por dominio"
 regressions = "Lista los días cuya energía por token generado es una regresión o una mejora, y los cambios de contexto"
+esg = "Reporta el ambiente del nodo: emisiones de alcance 2, costo, agua y SCI, por backend y modelo"
+html = "Escribe el reporte como página imprimible en este archivo"
 
 [cli.token]
 short = "Gestiona los tokens de acceso de la API HTTP"
@@ -656,6 +660,73 @@ units = "Unidades"
 1k_generated_tokens = "SCI en gramos de CO2e por cada 1,000 tokens generados."
 request = "SCI en gramos de CO2e por solicitud."
 consumer = "SCI en gramos de CO2e por consumidor."
+
+[report]
+period = "Del {from} al {to}, {zone}"
+summary = "Resumen"
+cost = "Costo de la electricidad"
+water = "Agua"
+method = "Método"
+tariff_periods = "El costo sigue {count} precios por horario, en {zone}."
+yes = "sí"
+no = "no"
+generated = "Generado el {at} por GreenLens {version}."
+missing = "No se incluye el carbono incorporado: a la configuración le falta {keys}."
+factor = "{value} gCO2e/kWh, {source}"
+factor_profile = "un perfil horario de la red en {zone}, hora por hora"
+
+[report.unit]
+1k_generated_tokens = "por cada 1,000 tokens generados"
+request = "por solicitud"
+consumer = "por consumidor"
+
+[report.col]
+domain = "Dominio"
+energy = "Energía"
+quality = "Calidad"
+added = "Sumado"
+backend = "Backend"
+model = "Modelo"
+tokens = "Tokens generados"
+jpt = "J por token"
+emissions = "Emisiones"
+scope = "Ámbito"
+server_share = "Parte del servidor"
+gpu_share = "Parte de la GPU"
+
+[report.esg]
+title = "Reporte ambiental"
+components = "Electricidad de procesador, memoria y GPU"
+facility = "Electricidad con la sobrecarga de la instalación"
+scope2 = "Emisiones de alcance 2, basadas en ubicación"
+measured = "Parte medida de la energía"
+unattributed = "Energía que ningún backend explica"
+sci = "Intensidad de carbono del software, {unit}"
+method = "Emisiones de alcance 2 del GHG Protocol por el método basado en ubicación: la electricidad del procesador, la memoria y la GPU, con la sobrecarga de la instalación (PUE {pue}), a la intensidad de la red, {factor}. El método basado en mercado necesita los factores de emisión del proveedor de electricidad y no se reporta."
+estimated = "Parte de la energía viene de una estimación del procesador, no de un medidor; la parte medida de arriba dice cuánto."
+domains = "Energía por dominio"
+domains_caption = "Energía de cada dominio del nodo en el periodo"
+platform_note = "Los medidores de plataforma y de pared vuelven a medir los componentes, así que se muestran pero no se suman."
+backends = "Energía por backend"
+backends_caption = "Energía atribuida a cada backend de inferencia en el periodo"
+models = "Energía por modelo"
+models_caption = "Energía atribuida a cada modelo en el periodo"
+
+[report.sci]
+title = "Intensidad de carbono del software"
+value = "SCI, {unit}"
+operational = "Emisiones operacionales, O"
+embodied = "Carbono incorporado, M"
+not_included = "no incluido"
+units = "Unidades funcionales, R"
+method = "SCI de ISO/IEC 21031. O es la electricidad del procesador, la memoria y la GPU con la sobrecarga de la instalación (PUE {pue}) a la intensidad de la red, {factor}. M es el carbono incorporado del servidor y de la GPU repartido en su vida útil, en la parte de la energía del nodo que usó cada ámbito. R cuenta las unidades funcionales."
+embodied_params = "Carbono incorporado: servidor {server} kgCO2e, GPU {gpu} kgCO2e, vida útil {years} años."
+caption = "SCI de cada grupo, {unit}"
+
+[report.sci.by]
+backend = "Por backend"
+model = "Por modelo"
+consumer = "Por consumidor"
 
 [cli.license]
 short = "Muestra la licencia y los avisos de terceros"
@@ -994,6 +1065,11 @@ fix = "revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archiv
 message = "la interfaz gráfica está apagada"
 cause = "el agente no sirve su API HTTP: server.enabled es false"
 fix = "pon server.enabled en true en la configuración del agente y reinícialo, por ejemplo con 'sudo systemctl restart greenlens'"
+
+[errors.GL0019]
+message = "no se puede escribir el reporte"
+cause = "{path}: {detail}"
+fix = "elige un archivo en un directorio donde puedas escribir"
 
 [errors.GL0009]
 message = "formato de salida no soportado '{value}'"
@@ -1368,6 +1444,10 @@ canceled = "Se canceló el benchmark de {model}."
 idle = ""
 
 [gui.reports]
+documents = "Reportes ambiental y SCI"
+documents_intro = "El agente los escribe para el mismo periodo, con las emisiones hora por hora, como páginas que se imprimen en A4 sin nada más, o como archivos."
+document_esg = "Reporte ambiental, alcance 2 del GHG Protocol"
+document_sci = "Intensidad de carbono del software por modelo"
 title = "Reportes de energía"
 intro = "Energía, emisiones y costo de un periodo, por dominio y por backend, modelo o consumidor, para imprimir o exportar."
 print = "Imprimir"

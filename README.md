@@ -71,6 +71,12 @@ backends, models and the commands, processes and systemd units you choose:
 - `greenlens backup`, `restore` and `export` copy the database and hand
   measurements to other tools as CSV or JSON, and `greenlens license` shows
   the license and where the source code of the running version is;
+- `greenlens sci` and `greenlens report --esg` give the Software Carbon
+  Intensity of ISO/IEC 21031, with the embodied carbon of the hardware, and
+  an environmental report with Scope 2 emissions of the GHG Protocol, as
+  tables, JSON or printable pages; emissions and cost can follow an hourly
+  profile of the grid and time-of-use prices, and `greenlens report
+  --regressions` finds the days a model became less efficient;
 - `greenlens gui` opens the graphical interface the agent serves, with the
   live power, the backends, models and consumers, benchmarks, reports, the
   configuration and this documentation, all without internet;

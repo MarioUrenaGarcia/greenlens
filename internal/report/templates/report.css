@@ -1,0 +1,132 @@
+/* SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 Mario Ureña García */
+
+/* Printable reports: self-contained, with the fonts of the system, dark
+ * text on white and tables that do not split their rows across pages. */
+@page {
+  size: A4;
+  margin: 16mm 14mm;
+}
+
+:root {
+  color-scheme: light;
+  --ink: #0f2a1e;
+  --muted: #355848;
+  --accent: #09653f;
+  --rule: #b9d3c4;
+  --band: #eef6f1;
+}
+
+html {
+  background: #ffffff;
+  color: var(--ink);
+  font: 10.5pt/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans", "DejaVu Sans", sans-serif;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 182mm;
+  padding: 12mm 0;
+}
+
+h1 {
+  margin: 0 0 2mm;
+  color: var(--accent);
+  font-size: 20pt;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 8mm 0 2mm;
+  color: var(--accent);
+  font-size: 13pt;
+  break-after: avoid;
+}
+
+p {
+  margin: 0 0 2mm;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+dl.summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 1mm 6mm;
+  margin: 0;
+}
+
+dl.summary dt {
+  color: var(--muted);
+}
+
+dl.summary dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2mm 0 3mm;
+  font-variant-numeric: tabular-nums;
+}
+
+caption {
+  text-align: left;
+  color: var(--muted);
+  padding-bottom: 1mm;
+}
+
+th,
+td {
+  padding: 1.2mm 2mm;
+  border-bottom: 0.3mm solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--band);
+  font-weight: 600;
+}
+
+td.num,
+th.num {
+  text-align: right;
+}
+
+td.num {
+  white-space: nowrap;
+}
+
+tr {
+  break-inside: avoid;
+}
+
+code {
+  font-family: ui-monospace, "DejaVu Sans Mono", monospace;
+  font-size: 9.5pt;
+}
+
+footer {
+  margin-top: 10mm;
+  padding-top: 2mm;
+  border-top: 0.3mm solid var(--rule);
+  color: var(--muted);
+  font-size: 9pt;
+}
+
+@media screen and (max-width: 640px) {
+  body {
+    padding: 4mm;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}

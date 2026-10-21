@@ -380,12 +380,21 @@ func TestIndicatorsOverTime(t *testing.T) {
 		!f.Periods[0].Days[time.Friday] || f.Periods[0].Days[time.Saturday] || f.Periods[0].From != 18*60 || f.Periods[0].To != 22*60 {
 		t.Fatalf("factors %+v", f)
 	}
-	// Without a time zone, the zone of the system.
+	// Without a time zone, the zone of the system, by its name.
 	if err := os.WriteFile(cfgPath, []byte("indicators:\n  pue: 1.1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if cfg, _, err := Load(cfgPath, func(string) string { return "" }); err != nil || cfg.Factors().Location != time.Local || cfg.Factors().Varies() {
+	tz := func(k string) string {
+		if k == "TZ" {
+			return ":Europe/Madrid"
+		}
+		return ""
+	}
+	if cfg, _, err := Load(cfgPath, tz); err != nil || cfg.Factors().Location.String() != "Europe/Madrid" || cfg.Factors().Varies() {
 		t.Fatalf("defaults: %v %+v", err, cfg.Factors())
+	}
+	if cfg, _, err := Load(cfgPath, func(string) string { return "" }); err != nil || cfg.Factors().Location == nil {
+		t.Fatalf("zone of the system: %v", err)
 	}
 	for _, tt := range []struct{ yaml, key, want string }{
 		{"indicators:\n  timezone: Mars/Olympus\n", "indicators.timezone", "unknown time zone"},

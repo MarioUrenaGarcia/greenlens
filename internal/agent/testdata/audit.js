@@ -43,7 +43,14 @@
     probe.remove();
     return c;
   };
+  // Pages without the tokens of the interface, such as the printable
+  // reports, have their own plain background.
+  const themed = () => getComputedStyle(document.documentElement).getPropertyValue("--bg-deep").trim() !== "";
   const backdrops = () => {
+    if (!themed()) {
+      const bg = parse(getComputedStyle(document.documentElement).backgroundColor);
+      return [bg && bg.a > 0 ? bg : { r: 255, g: 255, b: 255, a: 1 }];
+    }
     const deep = token("--bg-deep");
     const eff = over(token("--bg-glow-eff"), deep);
     const load = over(token("--bg-glow-load"), deep);
@@ -51,7 +58,8 @@
   };
 
   // layers returns the solid colors painted behind and on el, bottom first,
-  // from the outermost ancestor below body down to el.
+  // from the outermost ancestor below body down to el; html holds the
+  // backdrop.
   const layers = (el) => {
     const out = [];
     for (let n = el; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
