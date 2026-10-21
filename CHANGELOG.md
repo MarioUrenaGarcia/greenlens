@@ -41,6 +41,10 @@ All notable changes to GreenLens are recorded in this file. The format follows
   models, the consumers and the energy sources, with sorting, filtering,
   pause and CSV export; it works from 80 by 24 characters, in ASCII and
   without color.
+- `greenlens explain` describes every value GreenLens reports, with its
+  formula, unit, method and limits; `greenlens help <topic>` explains
+  measurement, attribution, sources, permissions, privacy and configuration;
+  `greenlens completion` prints completion scripts for bash, zsh and fish.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

@@ -50,8 +50,10 @@ func newRoot(a *app) *cobra.Command {
 		newBenchCmd(a),
 		newCalibrateCmd(a),
 		newCompareCmd(a),
+		newCompletionCmd(a),
 		newConfigCmd(a),
 		newDoctorCmd(a),
+		newExplainCmd(a),
 		newMeasureCmd(a),
 		newProxyCmd(a),
 		newReportCmd(a),
@@ -72,10 +74,19 @@ func newHelpCmd(a *app) *cobra.Command {
 		Use:     "help [" + l.T("cli.usage.command_placeholder") + "]",
 		Short:   l.T("cli.help_cmd.short"),
 		Long:    wrap(l.T("cli.help_cmd.long"), helpWidth),
-		Example: "  greenlens help measure\n  greenlens help GL1002",
+		Example: "  greenlens help measure\n  greenlens help attribution\n  greenlens help GL1002",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 && help.IsCode(args[0]) {
 				return a.explainCode(cmd, help.Code(strings.ToUpper(args[0])))
+			}
+			if len(args) == 1 && isTopic(strings.ToLower(args[0])) {
+				return a.writeTopic(cmd, strings.ToLower(args[0]))
+			}
+			if len(args) == 0 {
+				if err := cmd.Root().Help(); err != nil {
+					return err
+				}
+				return a.writeTopics(cmd)
 			}
 			root := cmd.Root()
 			target, rest, err := root.Find(args)

@@ -365,6 +365,160 @@ long = "Abre en la terminal una vista en vivo del agente: la potencia de cada do
 refresh = "Cada cuánto se lee el agente, de 250ms a 1m"
 ascii = "Dibuja solo con ASCII, para terminales sin Unicode"
 
+[cli.topics]
+heading = "Temas de ayuda:"
+more = "Ejecuta 'greenlens help <tema>' para leer uno, 'greenlens explain' para los valores que reporta GreenLens y 'greenlens help GLxxxx' para un código de error."
+related = "Ver también: {commands}"
+
+[cli.explain]
+short = "Explica un valor que reporta GreenLens"
+long = "Explica qué significa un valor, cómo se calcula, su unidad, el método detrás de él y sus límites. Sin argumentos, lista los valores que se pueden explicar."
+placeholder = "valor"
+heading = "Valores que se pueden explicar:"
+more = "Ejecuta 'greenlens explain <valor>' para uno de ellos."
+formula = "Fórmula:"
+unit = "Unidad:"
+method = "Método:"
+limits = "Límites:"
+
+[cli.completion]
+short = "Imprime un script de autocompletado para la shell"
+long = "Imprime el script de autocompletado de greenlens para bash, zsh o fish. Guárdalo donde la shell carga los autocompletados, como en los ejemplos, y abre una shell nueva. Los paquetes lo instalan por ti."
+
+[topic.measurement]
+title = "Cómo se mide la energía"
+body = "GreenLens lee los contadores de energía y los sensores de potencia que expone el kernel de Linux y elige, para cada parte del equipo, una sola fuente, así la misma energía nunca se cuenta dos veces.\n\nLas partes son dominios. Los paquetes de CPU, la memoria y las GPU son componentes y suman la energía del nodo. Los núcleos y el uncore de la CPU son parte de su paquete. Los medidores de plataforma y de pared incluyen los componentes y nunca se suman a ellos; muestran lo que usa el resto del sistema.\n\nLos contadores reportan energía acumulada: GreenLens resta lecturas consecutivas y corrige un contador que vuelve a cero. Los sensores de potencia reportan watts, integrados en el tiempo con la regla del trapecio. Los intervalos se miden con el reloj monotónico.\n\nCada valor lleva su calidad: medido, de un sensor del componente; plataforma, de un medidor de todo el sistema; o estimado, de un modelo cuando no se puede leer nada."
+see = "greenlens doctor, greenlens help sources, greenlens explain node_energy"
+
+[topic.attribution]
+title = "Cómo se atribuye la energía"
+body = "El hardware mide el nodo, no los procesos. En cada muestra, una carga de trabajo recibe la parte de la energía del procesador y de la memoria que corresponde a su parte del tiempo de CPU, y la parte de cada GPU que corresponde a su uso según NVML o las estadísticas DRM de amdgpu, i915 y xe.\n\nattribution.idle_policy decide qué pasa con la energía en reposo: dynamic atribuye solo la energía sobre la línea base de reposo medida por greenlens calibrate; proportional reparte también la energía en reposo; full da toda la energía a las cargas activas; wall parte de un medidor de plataforma o de pared.\n\nCada diez segundos la energía de un backend de inferencia se reparte entre sus modelos según los tokens que procesó cada uno. Cada diez minutos el agente ajusta, para cada modelo, la energía de un token de prompt y de un token generado.\n\nLa suma de lo atribuido nunca supera lo medido."
+see = "greenlens measure, greenlens status, greenlens explain attributed_energy"
+
+[topic.sources]
+title = "Fuentes de energía y cómo se elige una"
+body = "De la más directa a la menos: RAPL de powercap; los contadores power de perf_event; los sensores hwmon de procesadores y de las GPU amdgpu, xe e i915; NVML mediante greenlens-nvml, o nvidia-smi sin él; medidores de potencia ACPI, IPMI DCMI y baterías de laptop para todo el sistema; y, cuando no se puede leer nada, un modelo del procesador.\n\nPara cada dominio, y para cada GPU por su dirección PCI, gana la fuente de mayor prioridad. RAPL y perf_event leen los mismos contadores, así que solo se usa uno. El sensor de un procesador AMD con gráficos integrados cubre todo el procesador y se usa para el paquete solo cuando no se puede leer RAPL.\n\nsources.disable excluye fuentes y sources.force prefiere una para un dominio. greenlens doctor muestra cada canal encontrado, si se usa y por qué no."
+see = "greenlens doctor, greenlens help permissions, greenlens config show"
+
+[topic.permissions]
+title = "Leer los sensores sin root"
+body = "GreenLens nunca se ejecuta como root. Desde el canal lateral Platypus, el kernel solo deja a root leer los contadores RAPL. sudo greenlens setup-permissions --apply se los da al grupo greenlens-power con una regla de udev; sus miembros los leen tras su siguiente inicio de sesión. --perfmon concede en cambio CAP_PERFMON para perf_event, y --ipmi abre el dispositivo IPMI a su grupo.\n\nLos sensores de las GPU AMD e Intel son legibles por cualquier usuario. Las GPU NVIDIA las lee greenlens-nvml, instalado junto a greenlens; el servicio del sistema necesita el drop-in de NVIDIA para abrir sus dispositivos.\n\nEl agente limita su propio acceso a archivos con Landlock: lee /sys, /proc y su configuración, y solo escribe en sus directorios de datos y del socket. Cada paso de setup-permissions muestra su plan antes de cambiar algo."
+see = "greenlens setup-permissions, greenlens doctor"
+
+[topic.privacy]
+title = "Qué guarda GreenLens y qué no"
+body = "Cada valor se calcula y se guarda en este equipo, en la base de datos SQLite del agente. No hay telemetría ni conexiones salientes por defecto: GreenLens solo habla con los servidores de inferencia del nodo y con los endpoints que configures.\n\nLos prompts y las respuestas nunca se guardan ni se registran. El proxy opcional reenvía las peticiones sin cambios y solo lee el modelo y los conteos de tokens de las respuestas. Las claves de los consumidores solo se guardan como un HMAC con una sal local del equipo, o se sustituyen por alias que defines a partir de su SHA-256.\n\nLos benchmarks guardan el SHA-256 de su conjunto de prompts, nunca los prompts. El socket del agente solo está abierto a los miembros de su grupo, y cada calibración y benchmark guardado queda en el registro de auditoría con el usuario que lo envió."
+see = "greenlens proxy, greenlens help configuration"
+
+[topic.configuration]
+title = "Configuración"
+body = "Los valores vienen, de mayor a menor precedencia, de las opciones de la línea de comandos, las variables de entorno GREENLENS_*, el archivo de configuración y los valores por defecto. La variable de una clave es su ruta en mayúsculas: GREENLENS_AGENT_SAMPLE_INTERVAL define agent.sample_interval.\n\nEl archivo del sistema es /etc/greenlens/greenlens.yaml; un usuario puede tener uno en $XDG_CONFIG_HOME/greenlens/greenlens.yaml; --config indica otro. Las claves desconocidas son errores, así un error de escritura nunca pasa desapercibido.\n\ngreenlens config validate revisa un archivo, config show imprime la configuración vigente y config path de dónde viene. El agente recarga el archivo con SIGHUP; el directorio de datos, el socket y la raíz del host solo cambian tras reiniciar."
+see = "greenlens config validate, greenlens config show, greenlens doctor"
+
+[explain.node_power]
+title = "Potencia del nodo"
+what = "La potencia que consumen los componentes del equipo, sus paquetes de CPU, la memoria y las GPU, en la última muestra."
+formula = "P = suma de la energía de los dominios componentes en la muestra / duración de la muestra"
+unit = "watts (W)"
+method = "medida con contadores de energía, integrada desde sensores de potencia, o estimada con el modelo del procesador; la calidad de cada dominio indica cuál"
+limits = "Deja fuera ventiladores, discos, la red y las pérdidas de la fuente de poder; un medidor de plataforma o de pared, cuando existe, los mide."
+
+[explain.node_energy]
+title = "Energía del nodo"
+what = "La energía que usan los componentes del equipo en un periodo, como desde que inició el agente o en un reporte."
+formula = "E = suma en las muestras del aumento de cada contador, corregido cuando vuelve a cero, o de la potencia integrada con la regla del trapecio"
+unit = "joules (J), mostrados como Wh o kWh cuando son grandes"
+method = "medida, integrada o estimada, según la fuente de cada dominio"
+limits = "Los contadores tienen su propia resolución y frecuencia de actualización; las muestras los leen cada segundo por defecto."
+
+[explain.idle_power]
+title = "Potencia en reposo"
+what = "La potencia del equipo en reposo, que la política dynamic resta para atribuir solo la energía del trabajo."
+formula = "mediana (p50) de cada dominio durante la calibración, 60 segundos por defecto; el agente mantiene el percentil 5 de las últimas 24 horas para detectar desviaciones"
+unit = "watts (W)"
+method = "medida por greenlens calibrate"
+limits = "Incluye lo que corría durante la calibración. El agente avisa, tras una hora de muestras, cuando la potencia en reposo se aleja más de 20% de ella."
+
+[explain.dynamic_energy]
+title = "Energía sobre el reposo"
+what = "La energía usada por encima de la línea base de reposo, la parte que agrega el trabajo."
+formula = "E_dinámica = max(0, E - P_reposo x intervalo), en cada muestra"
+unit = "joules (J)"
+method = "derivada de la energía medida y de la calibración"
+limits = "Sin calibración la línea base es cero y cuenta toda la energía. Una muestra bajo el reposo cuenta como cero."
+
+[explain.attributed_energy]
+title = "Energía atribuida a una carga de trabajo"
+what = "La parte de la energía del nodo que pertenece a un backend, un modelo, un consumidor o un proceso."
+formula = "parte = tiempo de CPU de la carga / tiempo de CPU ocupado; E = E_dinámica de paquete y memoria x parte + para cada GPU, su energía sobre el reposo x el uso de la carga"
+unit = "joules (J)"
+method = "attributed_cpu_share, attributed_gpu_process cuando la GPU reporta uso por proceso, token_weighted entre modelos, estimated en partes iguales"
+limits = "El tiempo de CPU no captura el ancho de banda de memoria ni el uso de caché. El uso de una GPU por proceso requiere NVML, o estadísticas DRM que el agente pueda leer."
+
+[explain.joules_per_token]
+title = "Energía por token generado"
+what = "La energía de un modelo dividida entre los tokens que generó; incluye el procesamiento del prompt."
+formula = "J/token = energía atribuida al modelo / tokens generados"
+unit = "joules por token (J/token)"
+method = "a partir de la energía atribuida y de los contadores de tokens del backend o del proxy"
+limits = "Depende del tamaño de lote, la longitud de los prompts y la concurrencia del periodo. greenlens bench la mide en condiciones fijas."
+
+[explain.tokens_per_second]
+title = "Tokens generados por segundo"
+what = "Qué tan rápido genera tokens un modelo entre dos lecturas del agente."
+formula = "tokens/s = aumento de los tokens generados / tiempo entre las lecturas"
+unit = "tokens por segundo"
+method = "a partir de los contadores de tokens"
+limits = "Solo cubre el intervalo de actualización, así que cambia con cada petición."
+
+[explain.token_cost]
+title = "Energía de un token de prompt y de un token generado"
+what = "Cuánta energía cuesta procesar un token de prompt y generar un token, ajustada a partir del uso de cada modelo."
+formula = "energía de un intervalo = a x tokens de prompt + b x tokens generados + c, por mínimos cuadrados sobre las últimas 24 horas"
+unit = "joules por token para a y b; watts para c sobre la duración de un intervalo"
+method = "regression, con intervalos de confianza al 95% de la t de Student"
+limits = "Se reporta a partir de 30 intervalos, cuando R2 alcanza attribution.regression_min_r2 y ningún token cuesta energía negativa. Se excluyen los intervalos ya repartidos por tokens."
+
+[explain.co2e]
+title = "Emisiones"
+what = "Las emisiones de gases de efecto invernadero de la energía usada, según la red eléctrica."
+formula = "gCO2e = kWh x PUE x factor de emisión"
+unit = "gramos de CO2 equivalente (gCO2e)"
+method = "calculadas; el factor por defecto es el FESEN 2024 de México, 444 gCO2e/kWh, publicado por la SEMARNAT"
+limits = "Un factor promedio de la red, no el marginal de la hora; define indicators.emission_factor_g_per_kwh para otra red."
+
+[explain.cost]
+title = "Costo de la electricidad"
+what = "Lo que cuesta la energía usada al precio configurado."
+formula = "costo = kWh x PUE x indicators.tariff.price_per_kwh"
+unit = "la moneda de indicators.tariff.currency"
+method = "calculado, solo cuando hay un precio configurado"
+limits = "Un precio fijo por kWh, sin bloques horarios ni cargos por demanda."
+
+[explain.water]
+title = "Agua"
+what = "El agua que usa la instalación para operar con la energía usada, según su eficiencia en el uso del agua."
+formula = "litros = kWh x indicators.wue_l_per_kwh"
+unit = "litros (L)"
+method = "calculada, solo cuando el factor está configurado"
+limits = "Solo el agua del sitio, no la de la generación eléctrica."
+
+[explain.quality]
+title = "Calidad de un valor"
+what = "Qué tan directamente se obtuvo un valor; se reporta con cada número."
+formula = "medido: de un sensor del componente; plataforma: de un medidor de todo el sistema; estimado: de un modelo"
+unit = "ninguna"
+method = "la fija la fuente de la energía; un valor derivado de varias toma la calidad menos directa"
+limits = "Los valores medidos llevan aun así el error de su sensor, que GreenLens no corrige."
+
+[explain.method]
+title = "Método de un valor"
+what = "Cómo se calculó un valor; se reporta con cada número."
+formula = "measured, integrated, attributed_cpu_share, attributed_gpu_process, token_weighted, regression o estimated"
+unit = "ninguna"
+method = "measured viene de un contador, integrated de un sensor de potencia, los attributed reparten energía entre cargas, token_weighted entre modelos, regression ajusta el costo de los tokens y estimated es un modelo o un reparto en partes iguales"
+limits = "Un valor repartido varias veces lleva el método menos directo."
+
 [cli.proxy]
 short = "Muestra el estado del proxy que cuenta tokens"
 long = "Muestra la dirección, el destino y las peticiones del proxy inverso que el agente ejecuta para servidores que no cuentan tokens, como Ollama. El proxy reenvía las peticiones sin cambios y solo lee los conteos de tokens; actívalo en proxy de la configuración."
@@ -492,6 +646,11 @@ fix = "ejecuta '{command} --help' para ver cómo usarlo"
 message = "greenlens top necesita una terminal"
 cause = "la salida estándar no es una terminal"
 fix = "ejecútalo en una terminal, o usa 'greenlens status' para un resumen que se puede redirigir"
+
+[errors.GL0017]
+message = "no hay explicación para '{metric}'"
+cause = "los valores que se pueden explicar son: {metrics}"
+fix = "ejecuta 'greenlens explain' para listarlos"
 
 [errors.GL1001]
 message = "no hay ninguna fuente de energía medida disponible"

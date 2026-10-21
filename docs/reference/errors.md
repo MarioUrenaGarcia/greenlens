@@ -24,6 +24,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL0014](#gl0014) | cannot find the cgroup of `{unit}` | 1 |
 | [GL0015](#gl0015) | '`{command}`' takes `{want}` arguments | 2 |
 | [GL0016](#gl0016) | greenlens top needs a terminal | 2 |
+| [GL0017](#gl0017) | there is no explanation for '`{metric}`' | 2 |
 | [GL1001](#gl1001) | no measured energy source is available | 3 |
 | [GL1002](#gl1002) | cannot read RAPL energy counters | 5 |
 | [GL1003](#gl1003) | cannot open the perf_event energy counters | 5 |
@@ -163,6 +164,13 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Message:** greenlens top needs a terminal
 - **Cause:** the standard output is not a terminal
 - **Fix:** run it in a terminal, or use 'greenlens status' for a summary that can be piped
+- **Exit code:** 2
+
+## GL0017
+
+- **Message:** there is no explanation for '`{metric}`'
+- **Cause:** the values that can be explained are: `{metrics}`
+- **Fix:** run 'greenlens explain' to list them
 - **Exit code:** 2
 
 ## GL1001

@@ -120,6 +120,29 @@ greenlens compare 3 7
 greenlens compare ollama-11434/llama3.2 ollama-11434/qwen2.5:0.5b --from 7d
 ```
 
+## greenlens completion
+
+Imprime el script de autocompletado de greenlens para bash, zsh o fish. Guárdalo donde la shell carga los autocompletados, como en los ejemplos, y abre una shell nueva. Los paquetes lo instalan por ti.
+
+**Uso**
+
+```text
+greenlens completion bash|zsh|fish [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens completion bash > ~/.local/share/bash-completion/completions/greenlens
+greenlens completion zsh > "${fpath[1]}/_greenlens"
+greenlens completion fish > ~/.config/fish/completions/greenlens.fish
+```
+
 ## greenlens config
 
 Revisa el archivo de configuración, muestra los valores en uso después de los valores por defecto y de las variables de entorno GREENLENS_*, o indica qué archivo se lee.
@@ -221,6 +244,28 @@ greenlens doctor [opciones]
 ```bash
 greenlens doctor
 greenlens doctor --output json
+```
+
+## greenlens explain
+
+Explica qué significa un valor, cómo se calcula, su unidad, el método detrás de él y sus límites. Sin argumentos, lista los valores que se pueden explicar.
+
+**Uso**
+
+```text
+greenlens explain [valor] [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens explain
+greenlens explain joules_per_token
 ```
 
 ## greenlens measure
