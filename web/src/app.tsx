@@ -312,6 +312,9 @@ export function App() {
       ) : phase.kind === "error" ? (
         <main id="main" class="main">
           <ErrorNotice error={phase.error} />
+          <button type="button" class="btn" onClick={() => location.reload()}>
+            {t("gui.error.retry")}
+          </button>
         </main>
       ) : phase.kind === "login" ? (
         <Login expired={route.query.get("expired") === "1"} onSignedIn={() => start()} />

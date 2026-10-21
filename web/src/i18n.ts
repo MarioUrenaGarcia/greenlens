@@ -4,6 +4,7 @@
 // Messages come from the same catalogs as the command line, served by the
 // agent, so the interface has no texts of its own outside them.
 
+import { Unreachable } from "./api";
 import type { Catalog } from "./types";
 
 let messages: Record<string, string> = {};
@@ -35,7 +36,12 @@ export function has(key: string): boolean {
 }
 
 export async function loadCatalog(wanted: string): Promise<void> {
-  const resp = await fetch(`/api/v1/catalogs/${encodeURIComponent(wanted)}`, { credentials: "same-origin" });
+  let resp: Response;
+  try {
+    resp = await fetch(`/api/v1/catalogs/${encodeURIComponent(wanted)}`, { credentials: "same-origin" });
+  } catch (e) {
+    throw new Unreachable(String(e));
+  }
   if (!resp.ok) {
     throw new Error(`catalog ${wanted}: ${resp.status}`);
   }

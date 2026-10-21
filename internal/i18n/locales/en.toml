@@ -1056,6 +1056,8 @@ sign_out = "Sign out"
 
 [gui.error]
 title = "Something went wrong:"
+unreachable = "the agent does not answer. Check that it runs, for example with 'systemctl status greenlens'."
+retry = "Try again"
 
 [gui.help]
 about = "Help about {topic}"

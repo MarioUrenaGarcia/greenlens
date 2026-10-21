@@ -2,8 +2,9 @@
 // Copyright (C) 2026 Mario Ureña García
 
 import type { ComponentChildren } from "preact";
-import { href } from "../router";
+import { Unreachable } from "../api";
 import { t } from "../i18n";
+import { href } from "../router";
 import { icons } from "./icons";
 
 // Panel is a pane of glass with a heading. help names the page of the
@@ -59,7 +60,12 @@ export function Empty(props: { children: ComponentChildren }) {
 }
 
 export function ErrorNotice(props: { error: unknown }) {
-  const msg = props.error instanceof Error ? props.error.message : String(props.error);
+  const msg =
+    props.error instanceof Unreachable
+      ? t("gui.error.unreachable")
+      : props.error instanceof Error
+        ? props.error.message
+        : String(props.error);
   return (
     <div class="notice notice-error" role="alert">
       <strong>{t("gui.error.title")}</strong> {msg}

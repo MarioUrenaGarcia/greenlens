@@ -12,6 +12,9 @@ export class ApiError extends Error {
   }
 }
 
+// Unreachable means the agent did not answer at all.
+export class Unreachable extends Error {}
+
 let csrf = "";
 
 // setCsrf keeps the token that requests of the session must send when they
@@ -32,7 +35,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (body !== undefined) {
     init.body = JSON.stringify(body);
   }
-  const resp = await fetch(path, init);
+  let resp: Response;
+  try {
+    resp = await fetch(path, init);
+  } catch (e) {
+    throw new Unreachable(String(e));
+  }
   if (!resp.ok) {
     let msg = resp.statusText;
     try {

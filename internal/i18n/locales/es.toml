@@ -1056,6 +1056,8 @@ sign_out = "Cerrar sesión"
 
 [gui.error]
 title = "Algo salió mal:"
+unreachable = "el agente no responde. Revisa que esté en ejecución, por ejemplo con 'systemctl status greenlens'."
+retry = "Reintentar"
 
 [gui.help]
 about = "Ayuda sobre {topic}"

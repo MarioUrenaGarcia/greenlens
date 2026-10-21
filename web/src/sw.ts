@@ -3,8 +3,8 @@
 
 // The service worker keeps the files of the interface, so it opens as an
 // application window and shows that the agent is unreachable instead of a
-// browser error. Only those files are kept: answers of the API, the login
-// link and the metrics always go to the agent.
+// browser error. Only those files and the translations are kept: every other
+// answer of the API, the login link and the metrics always go to the agent.
 
 // A module, so this declaration narrows the global self of a worker.
 export {};

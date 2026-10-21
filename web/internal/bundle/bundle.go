@@ -17,6 +17,8 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
+
+	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 )
 
 const jsBanner = `/* SPDX-License-Identifier: AGPL-3.0-only AND MIT
@@ -108,9 +110,14 @@ func Build(webDir, outDir string) error {
 
 // buildWorker compiles the service worker with the list of files it keeps
 // for opening without the agent, and a hash of their contents that names
-// its cache, so a new build replaces the copies of the old one.
+// its cache, so a new build replaces the copies of the old one. The
+// translations are kept too, so the interface can say in its language that
+// the agent does not answer.
 func buildWorker(src, out string) error {
 	shell := []string{"/"}
+	for _, lang := range i18n.Supported {
+		shell = append(shell, "/api/v1/catalogs/"+lang)
+	}
 	h := sha256.New()
 	for _, name := range Files {
 		if name == "sw.js" {
