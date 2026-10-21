@@ -1,11 +1,13 @@
 {{ define "main" }}
 {{- $lang := site.Language.Lang }}
+{{- $demo := printf "%s?lang=%s" ("demo/" | relURL) $lang }}
 <section class="hero">
   <img class="hero-art" src="{{ printf "images/banner-%s.svg" $lang | relURL }}" alt="{{ site.Title }}: {{ .Description }}" width="1200" height="420">
   <p class="status glass">{{ i18n "status" }}</p>
   <p class="cta">
+    <a class="button primary" href="{{ $demo }}">{{ i18n "cta_demo" }}</a>
     {{- with site.GetPage "/docs/tutorials/first-steps" }}
-    <a class="button primary" href="{{ .RelPermalink }}">{{ i18n "cta_start" }}</a>
+    <a class="button" href="{{ .RelPermalink }}">{{ i18n "cta_start" }}</a>
     {{- end }}
     <a class="button" href="{{ site.Params.repo }}">{{ i18n "cta_repo" }}</a>
   </p>
@@ -22,6 +24,23 @@
     </article>
     {{- end }}
   </div>
+</section>
+
+<section class="block">
+  <h2>{{ i18n "gui_title" }}</h2>
+  <p class="lead">{{ i18n "gui_body" }}</p>
+  <a class="shot" href="{{ $demo }}">
+    <picture>
+      <source media="(prefers-color-scheme: light)" srcset="{{ printf "images/screens/summary-light-%s.webp" $lang | relURL }}">
+      <img class="wide" src="{{ printf "images/screens/summary-dark-%s.webp" $lang | relURL }}" alt="{{ i18n "gui_summary" }}" width="1440" height="900" loading="lazy">
+    </picture>
+  </a>
+  <div class="shots">
+    {{- range slice (slice "models" "dark") (slice "model" "dark") (slice "backends" "dark") (slice "reports" "light") }}
+    <a class="shot" href="{{ $demo }}"><img class="wide" src="{{ printf "images/screens/%s-%s-%s.webp" (index . 0) (index . 1) $lang | relURL }}" alt="{{ i18n (printf "gui_%s" (index . 0)) }}" width="1440" height="900" loading="lazy"></a>
+    {{- end }}
+  </div>
+  <p class="cta"><a class="button primary" href="{{ $demo }}">{{ i18n "cta_demo" }}</a></p>
 </section>
 
 <section class="block">

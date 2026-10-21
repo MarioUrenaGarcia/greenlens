@@ -7,11 +7,27 @@ other = "Saltar al contenido"
 [language]
 other = "Idioma"
 [status]
-other = "GreenLens mide la energía de CPU, memoria y GPU, la atribuye a backends de inferencia, modelos, consumidores y procesos, y hace benchmarks de modelos, desde la línea de comandos y una API local."
+other = "GreenLens mide la energía de CPU, memoria y GPU, la atribuye a backends de inferencia, modelos, consumidores y procesos, reporta emisiones y SCI, y hace benchmarks de modelos, desde la línea de comandos, una interfaz de terminal, una interfaz gráfica y una API local."
 [cta_start]
 other = "Empezar"
 [cta_repo]
 other = "Ver en GitHub"
+[cta_demo]
+other = "Abrir la demo"
+[gui_title]
+other = "Mira la interfaz gráfica"
+[gui_body]
+other = "La demo ejecuta la interfaz gráfica en tu navegador sobre un espacio de trabajo simulado: tres servidores de inferencia, cinco modelos y tres equipos durante cinco semanas, con la gráfica de potencia en vivo, reportes y un modelo que se volvió menos eficiente. Todos los valores son inventados; nada viene de una máquina real."
+[gui_summary]
+other = "Resumen del espacio de trabajo simulado: potencia en vivo de CPU, memoria y GPU, energía, emisiones y los modelos que más energía usaron"
+[gui_models]
+other = "Modelos del espacio de trabajo simulado con su energía, tokens, energía por token y SCI"
+[gui_model]
+other = "Un modelo del espacio de trabajo simulado cuya energía por token generado subió después de que cambió su archivo"
+[gui_backends]
+other = "Backends de inferencia del espacio de trabajo simulado con su potencia, energía y modelos"
+[gui_reports]
+other = "Reporte de energía del espacio de trabajo simulado por día y por modelo"
 [features_title]
 other = "Qué hace GreenLens"
 [f_measure_title]

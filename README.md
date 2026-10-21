@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en">Live demo</a> &nbsp;|&nbsp;
   <a href="https://mariourenagarcia.github.io/greenlens/">Documentation</a> &nbsp;|&nbsp;
   <a href="https://mariourenagarcia.github.io/greenlens/docs/tutorials/first-steps/">First steps</a> &nbsp;|&nbsp;
   <a href="README.es.md">Leer en español</a>
@@ -49,6 +50,44 @@ Intensity (ISO/IEC 21031:2024).
       <b>Report</b><br>
       kWh, gCO2e, cost and SCI per thousand tokens, in the command line, a
       terminal interface, a graphical interface, Prometheus and OpenTelemetry.
+    </td>
+  </tr>
+</table>
+
+## Demo
+
+The [demo](https://mariourenagarcia.github.io/greenlens/demo/?lang=en) runs the graphical interface in your browser over
+a simulated workspace: three inference servers, five models and three teams
+over five weeks. Every value is invented; nothing comes from a real machine.
+
+<p align="center">
+  <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en">
+    <picture>
+      <source media="(prefers-color-scheme: light)" srcset="site/static/images/screens/summary-light-en.webp">
+      <img src="site/static/images/screens/summary-dark-en.webp" alt="Summary of the simulated workspace: live power of CPU, memory and GPU, energy, emissions and the models that used the most energy" width="100%">
+    </picture>
+  </a>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en"><img src="site/static/images/screens/models-dark-en.webp" alt="Models of the simulated workspace with their energy, tokens, energy per token and SCI" width="100%"></a><br>
+      Energy, tokens and SCI of every model.
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en"><img src="site/static/images/screens/model-dark-en.webp" alt="A model of the simulated workspace whose energy per generated token rose after its file changed" width="100%"></a><br>
+      Energy per token of a model, with the days it became less efficient.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en"><img src="site/static/images/screens/backends-dark-en.webp" alt="Inference backends of the simulated workspace with their power, energy and models" width="100%"></a><br>
+      Backends, their processes and the energy of each model.
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://mariourenagarcia.github.io/greenlens/demo/?lang=en"><img src="site/static/images/screens/reports-light-en.webp" alt="Energy report of the simulated workspace by day and by model" width="100%"></a><br>
+      Reports by day and by model, to print or export.
     </td>
   </tr>
 </table>

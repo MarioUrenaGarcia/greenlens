@@ -7,11 +7,27 @@ other = "Skip to content"
 [language]
 other = "Language"
 [status]
-other = "GreenLens measures the energy of CPUs, memory and GPUs, attributes it to inference backends, models, consumers and processes, and benchmarks models, from the command line and a local API."
+other = "GreenLens measures the energy of CPUs, memory and GPUs, attributes it to inference backends, models, consumers and processes, reports emissions and SCI, and benchmarks models, from the command line, a terminal interface, a graphical interface and a local API."
 [cta_start]
 other = "Get started"
 [cta_repo]
 other = "View on GitHub"
+[cta_demo]
+other = "Open the demo"
+[gui_title]
+other = "See the graphical interface"
+[gui_body]
+other = "The demo runs the graphical interface in your browser over a simulated workspace: three inference servers, five models and three teams over five weeks, with a live power chart, reports and a model that became less efficient. Every value is invented; nothing comes from a real machine."
+[gui_summary]
+other = "Summary of the simulated workspace: live power of CPU, memory and GPU, energy, emissions and the models that used the most energy"
+[gui_models]
+other = "Models of the simulated workspace with their energy, tokens, energy per token and SCI"
+[gui_model]
+other = "A model of the simulated workspace whose energy per generated token rose after its file changed"
+[gui_backends]
+other = "Inference backends of the simulated workspace with their power, energy and models"
+[gui_reports]
+other = "Energy report of the simulated workspace by day and by model"
 [features_title]
 other = "What GreenLens does"
 [f_measure_title]
