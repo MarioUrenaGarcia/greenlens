@@ -20,10 +20,20 @@ greenlens bench --kind llamacpp --endpoint http://127.0.0.1:8080 --model q.gguf 
 - Generation is greedy, temperature 0, with seed 42 and at most
   `--max-tokens` tokens per prompt, through the native API of Ollama or the
   OpenAI-compatible chat API of the other engines.
-- One warmup pass loads the model; then each of the `--runs` passes is
-  measured from the energy counters, sampled every 100 ms.
-- With a calibration, the energy per token is the energy above idle;
-  without one, it includes idle power and the result says so.
+- For `--warmup` (30 s by default) the prompts are sent without measuring,
+  so the model is loaded and the processor and GPU reach a steady
+  temperature and clock.
+- Each of the `--runs` runs repeats the prompt set as many times as needed
+  to last at least `--min-run` (60 s by default), the same number of times
+  in every run. The power of a GPU changes between short runs even for the
+  same work; one-minute runs average it out.
+- The energy of each run is the energy attributed to the processes of the
+  backend, sampled every 100 ms: their share of the processor and memory
+  energy by CPU time, and their share of each GPU by its use per process.
+  Other processes on the machine do not change it. With a calibration, only
+  the energy above idle counts. When the processes of the backend cannot be
+  found, the energy of the whole node is used and the result says so.
+- Every run also records the energy of each domain of the node.
 
 The result gives, for the energy per generated token, the mean, the
 standard deviation, the coefficient of variation and the 95% confidence
@@ -37,8 +47,8 @@ a processor that warmed up or throttled, or other processes using the CPU.
 - Set the governor to `performance` while benchmarking.
 - Close other workloads; the result reports the share of CPU time that was
   not the backend.
-- Use more runs, or longer prompts, when the coefficient of variation stays
-  high.
+- Use longer runs with `--min-run`, or more runs, when the coefficient of
+  variation stays high.
 
 ## Compare
 

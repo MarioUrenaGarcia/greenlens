@@ -79,7 +79,7 @@ func meter(noise []float64) Meter {
 		if err := fn(); err != nil {
 			return Energy{}, 0, err
 		}
-		e := Energy{TotalJ: 100 + noise[i%len(noise)], IdleJ: 30}
+		e := Energy{TotalJ: 100 + noise[i%len(noise)], IdleJ: 30, BackendJ: 50 + noise[i%len(noise)]/2}
 		i++
 		return e, 2 * time.Second, nil
 	}
@@ -90,7 +90,7 @@ func TestBench(t *testing.T) {
 		srv, calls := server(t, kind)
 		target := Target{Kind: kind, Endpoint: srv.URL, Model: "m"}
 		prompts := DefaultPrompts()
-		r, err := Bench(context.Background(), srv.Client(), target, DefaultParams(), prompts, meter([]float64{0, 1, -1, 0.5, -0.5}), true, nil)
+		r, err := Bench(context.Background(), srv.Client(), target, quick(), prompts, meter([]float64{0, 1, -1, 0.5, -0.5}), BasisDynamic, true, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -106,10 +106,14 @@ func TestBench(t *testing.T) {
 			t.Fatalf("%s: summary %+v %+v", kind, r.Energy, r.JPerToken)
 		}
 	}
-	// Without calibration the energy per token is on the total energy.
+	// On the total energy, and on the energy of the backend.
 	srv, _ := server(t, discovery.Ollama)
-	r, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "m"}, DefaultParams(), []string{"a"}, meter([]float64{0, 2}), false, nil)
-	if err != nil || r.Basis != BasisTotal || math.Abs(r.Runs[0].JPerToken-10) > 1e-12 {
+	r, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "m"}, quick(), []string{"a"}, meter([]float64{0, 2}), BasisTotal, false, nil)
+	if err != nil || r.Basis != BasisTotal || r.Calibrated || math.Abs(r.Runs[0].JPerToken-10) > 1e-12 {
+		t.Fatalf("%+v %v", r, err)
+	}
+	r, err = Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "m"}, quick(), []string{"a"}, meter([]float64{0, 2}), BasisBackend, true, nil)
+	if err != nil || r.Basis != BasisBackend || r.Runs[0].BackendJ != 50 || math.Abs(r.Runs[0].JPerToken-5) > 1e-12 {
 		t.Fatalf("%+v %v", r, err)
 	}
 }
@@ -117,14 +121,14 @@ func TestBench(t *testing.T) {
 func TestBenchErrors(t *testing.T) {
 	srv, _ := server(t, discovery.Ollama)
 	// The backend does not know the model.
-	_, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "missing"}, DefaultParams(), []string{"a"}, meter([]float64{0}), true, nil)
+	_, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "missing"}, quick(), []string{"a"}, meter([]float64{0}), BasisDynamic, true, nil)
 	var re *RequestError
 	if !errors.As(err, &re) || re.Status != http.StatusBadRequest {
 		t.Fatalf("%v", err)
 	}
-	p := DefaultParams()
+	p := quick()
 	p.Runs = 1
-	if _, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "m"}, p, []string{"a"}, meter([]float64{0}), true, nil); err == nil {
+	if _, err := Bench(context.Background(), srv.Client(), Target{Kind: discovery.Ollama, Endpoint: srv.URL, Model: "m"}, p, []string{"a"}, meter([]float64{0}), BasisDynamic, true, nil); err == nil {
 		t.Fatal("one run was accepted")
 	}
 }
@@ -182,10 +186,43 @@ func TestGenerateRecorded(t *testing.T) {
 			t.Fatal(err)
 		}
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
-		tok, err := Generate(context.Background(), srv.Client(), Target{Kind: c.kind, Endpoint: srv.URL, Model: "m"}, DefaultParams(), "p")
+		tok, err := Generate(context.Background(), srv.Client(), Target{Kind: c.kind, Endpoint: srv.URL, Model: "m"}, quick(), "p")
 		srv.Close()
 		if err != nil || tok.Prompt != 34 || tok.Generated != 7 {
 			t.Errorf("%s: %+v %v", c.path, tok, err)
+		}
+	}
+}
+
+// quick are the default parameters without the warmup time and minimum
+// run length, which would make the tests last minutes.
+func quick() Params {
+	p := DefaultParams()
+	p.WarmupS, p.MinRunS = 0, 0
+	return p
+}
+
+func TestRunsLastTheMinimum(t *testing.T) {
+	srv, calls := server(t, discovery.Ollama)
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Millisecond)
+		srv.Config.Handler.ServeHTTP(w, r)
+	}))
+	defer slow.Close()
+	p := quick()
+	p.MinRunS = 0.05
+	r, err := Bench(context.Background(), slow.Client(), Target{Kind: discovery.Ollama, Endpoint: slow.URL, Model: "m"}, p, []string{"a"}, meter([]float64{0}), BasisTotal, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A pass takes a little over 10 ms, so about five make 50 ms; every
+	// run makes the same number.
+	if r.Params.Passes < 3 || r.Params.Passes > 6 || calls.Load() != int64(1+5*r.Params.Passes) {
+		t.Fatalf("%d passes, %d calls", r.Params.Passes, calls.Load())
+	}
+	for _, run := range r.Runs {
+		if run.GeneratedTokens != int64(10*r.Params.Passes) {
+			t.Fatalf("run %+v", run)
 		}
 	}
 }

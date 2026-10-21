@@ -58,11 +58,12 @@ greenlens bench [opciones]
 | `--interval` | Intervalo de muestreo de la energía, de 50ms a 10s | `100ms` |
 | `--kind` | Tipo de backend: ollama, llamacpp, vllm, tgi, sglang, localai u openai | `ollama` |
 | `--max-tokens` | Máximo de tokens generados por prompt | `128` |
+| `--min-run` | Duración mínima de una corrida; cada corrida repite los prompts las veces necesarias | `1m0s` |
 | `--model` | Modelo a medir, con el nombre que le da el backend |  |
 | `--no-save` | No guarda el resultado en el agente |  |
 | `--prompts` | Archivo con un prompt por línea en lugar del conjunto incluido |  |
 | `--runs` | Corridas medidas, de 2 a 100 | `5` |
-| `--warmup` | Corridas previas sin medir, que cargan el modelo | `1` |
+| `--warmup` | Cuánto tiempo enviar prompts antes de medir, para que el modelo esté cargado y el hardware caliente | `30s` |
 
 **Ejemplos**
 

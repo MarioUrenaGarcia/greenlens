@@ -21,11 +21,21 @@ greenlens bench --kind llamacpp --endpoint http://127.0.0.1:8080 --model q.gguf 
 - La generación es determinista, temperatura 0, con semilla 42 y a lo más
   `--max-tokens` tokens por prompt, por la API nativa de Ollama o la API de
   chat compatible con OpenAI de los demás motores.
-- Una pasada de calentamiento carga el modelo; después cada una de las
-  `--runs` pasadas se mide con los contadores de energía, muestreados cada
-  100 ms.
-- Con una calibración, la energía por token es la que está sobre el reposo;
-  sin ella, incluye la potencia en reposo y el resultado lo indica.
+- Durante `--warmup` (30 s por defecto) se envían los prompts sin medir, para
+  que el modelo esté cargado y el procesador y la GPU alcancen una
+  temperatura y una frecuencia estables.
+- Cada una de las `--runs` corridas repite el conjunto de prompts las veces
+  necesarias para durar al menos `--min-run` (60 s por defecto), el mismo
+  número de veces en todas. La potencia de una GPU cambia entre corridas
+  cortas aun con el mismo trabajo; las corridas de un minuto lo promedian.
+- La energía de cada corrida es la atribuida a los procesos del backend,
+  muestreada cada 100 ms: su parte de la energía del procesador y de la
+  memoria según su tiempo de CPU, y su parte de cada GPU según el uso de cada
+  proceso. Los demás procesos del equipo no la cambian. Con una calibración,
+  solo cuenta la energía sobre el reposo. Cuando no se encuentran los
+  procesos del backend, se usa la energía de todo el nodo y el resultado lo
+  indica.
+- Cada corrida registra también la energía de cada dominio del nodo.
 
 El resultado da, para la energía por token generado, la media, la desviación
 estándar, el coeficiente de variación y el intervalo de confianza al 95% de
@@ -40,8 +50,8 @@ calentó o redujo su frecuencia, u otros procesos usando la CPU.
 - Pon el governor en `performance` mientras mides.
 - Cierra otras cargas de trabajo; el resultado reporta la parte del tiempo de
   CPU que no fue del backend.
-- Usa más corridas, o prompts más largos, cuando el coeficiente de variación
-  sigue alto.
+- Usa corridas más largas con `--min-run`, o más corridas, cuando el
+  coeficiente de variación sigue alto.
 
 ## Comparar
 

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -82,12 +83,20 @@ type Params struct {
 	Temperature float64 `json:"temperature"`
 	Seed        int     `json:"seed"`
 	Runs        int     `json:"runs"`
-	Warmup      int     `json:"warmup"`
+	// WarmupS is how long the prompts are sent before measuring, so the
+	// model is loaded and the processor and GPU reach a steady temperature
+	// and clock.
+	WarmupS float64 `json:"warmup_s"`
+	// MinRunS is the shortest a run may last: each run repeats the prompt
+	// set as many times as needed, the same for every run.
+	MinRunS float64 `json:"min_run_s"`
+	// Passes is the number of times each run went through the prompt set.
+	Passes int `json:"passes"`
 }
 
 // DefaultParams are greedy decoding with a fixed seed.
 func DefaultParams() Params {
-	return Params{MaxTokens: 128, Temperature: 0, Seed: 42, Runs: 5, Warmup: 1}
+	return Params{MaxTokens: 128, Temperature: 0, Seed: 42, Runs: 5, WarmupS: 30, MinRunS: 60}
 }
 
 // RequestError is a backend that refused a prompt.
@@ -177,6 +186,13 @@ type Energy struct {
 	// IdleJ is the idle energy over the run, from calibration; zero
 	// without one.
 	IdleJ float64
+	// BackendJ is the energy attributed to the processes of the backend:
+	// their CPU share of the processor and memory energy and their share
+	// of each GPU, above idle when calibrated. Other processes on the
+	// machine do not change it.
+	BackendJ float64
+	// DomainsJ is the energy of each domain measured over the run.
+	DomainsJ map[string]float64
 }
 
 // Meter measures the energy of the node while fn runs.
@@ -184,32 +200,42 @@ type Meter func(fn func() error) (Energy, time.Duration, error)
 
 // Run is one pass over the prompt set.
 type Run struct {
-	EnergyJ         float64 `json:"energy_j"`
-	DynamicJ        float64 `json:"dynamic_j"`
-	DurationS       float64 `json:"duration_s"`
-	PromptTokens    int64   `json:"prompt_tokens"`
-	GeneratedTokens int64   `json:"generated_tokens"`
-	JPerToken       float64 `json:"j_per_generated_token"`
+	EnergyJ         float64            `json:"energy_j"`
+	DynamicJ        float64            `json:"dynamic_j"`
+	BackendJ        float64            `json:"backend_j"`
+	DomainsJ        map[string]float64 `json:"domains_j,omitempty"`
+	DurationS       float64            `json:"duration_s"`
+	PromptTokens    int64              `json:"prompt_tokens"`
+	GeneratedTokens int64              `json:"generated_tokens"`
+	JPerToken       float64            `json:"j_per_generated_token"`
 }
 
-// Bases of the energy per token.
+// Bases of the energy per token, from the most to the least specific:
+// the energy attributed to the backend, the energy of the node above idle,
+// and all the energy of the node.
 const (
+	BasisBackend = "backend"
 	BasisDynamic = "dynamic"
 	BasisTotal   = "total"
 )
 
+// Bases lists every basis.
+var Bases = []string{BasisBackend, BasisDynamic, BasisTotal}
+
 // Result is a finished benchmark.
 type Result struct {
-	ID              int64         `json:"id,omitempty"`
-	StartedAt       time.Time     `json:"started_at"`
-	EndedAt         time.Time     `json:"ended_at"`
-	Target          Target        `json:"target"`
-	Params          Params        `json:"params"`
-	PromptSetSHA256 string        `json:"prompt_set_sha256"`
-	Prompts         int           `json:"prompts"`
-	Context         Context       `json:"context"`
-	Runs            []Run         `json:"runs"`
-	Basis           string        `json:"basis"`
+	ID              int64     `json:"id,omitempty"`
+	StartedAt       time.Time `json:"started_at"`
+	EndedAt         time.Time `json:"ended_at"`
+	Target          Target    `json:"target"`
+	Params          Params    `json:"params"`
+	PromptSetSHA256 string    `json:"prompt_set_sha256"`
+	Prompts         int       `json:"prompts"`
+	Context         Context   `json:"context"`
+	Runs            []Run     `json:"runs"`
+	Basis           string    `json:"basis"`
+	// Calibrated says whether idle energy was subtracted.
+	Calibrated      bool          `json:"calibrated"`
 	Energy          stats.Summary `json:"energy_j"`
 	JPerToken       stats.Summary `json:"j_per_generated_token"`
 	GeneratedTokens int64         `json:"generated_tokens"`
@@ -223,16 +249,13 @@ type Result struct {
 const UnstableCV = 0.10
 
 // Bench runs warmup passes, which are not measured, then the measured
-// runs, and summarizes them. calibrated says whether the meter subtracts a
-// measured idle baseline; the energy per token is then on dynamic energy.
-func Bench(ctx context.Context, c *http.Client, t Target, p Params, prompts []string, m Meter, calibrated bool, progress func(run int)) (Result, error) {
+// runs, and summarizes the energy per token on the given basis.
+// calibrated says whether the meter subtracts a measured idle baseline.
+func Bench(ctx context.Context, c *http.Client, t Target, p Params, prompts []string, m Meter, basis string, calibrated bool, progress func(run int)) (Result, error) {
 	if p.Runs < 2 {
 		return Result{}, errors.New("a benchmark needs at least two runs")
 	}
-	res := Result{Target: t, Params: p, PromptSetSHA256: Hash(prompts), Prompts: len(prompts), StartedAt: time.Now(), Basis: BasisTotal}
-	if calibrated {
-		res.Basis = BasisDynamic
-	}
+	res := Result{Target: t, Params: p, PromptSetSHA256: Hash(prompts), Prompts: len(prompts), StartedAt: time.Now(), Basis: basis, Calibrated: calibrated}
 	pass := func(r *Run) error {
 		for _, pr := range prompts {
 			tok, err := Generate(ctx, c, t, p, pr)
@@ -246,30 +269,48 @@ func Bench(ctx context.Context, c *http.Client, t Target, p Params, prompts []st
 		}
 		return nil
 	}
-	for range p.Warmup {
+	// Warming up also times one pass, which sets how many passes a run
+	// needs to last MinRunS.
+	start := time.Now()
+	var pass1 time.Duration
+	for first := true; first || time.Since(start).Seconds() < p.WarmupS; first = false {
+		t0 := time.Now()
 		if err := pass(nil); err != nil {
 			return res, err
 		}
+		pass1 = time.Since(t0)
+	}
+	res.Params.Passes = max(1, int(math.Ceil(p.MinRunS/max(pass1.Seconds(), 1e-3))))
+	run := func(r *Run) error {
+		for range res.Params.Passes {
+			if err := pass(r); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	var energy, jpt []float64
 	for i := range p.Runs {
 		var r Run
-		e, d, err := m(func() error { return pass(&r) })
+		e, d, err := m(func() error { return run(&r) })
 		if err != nil {
 			return res, err
 		}
-		r.EnergyJ, r.DurationS = e.TotalJ, d.Seconds()
+		r.EnergyJ, r.DurationS, r.BackendJ, r.DomainsJ = e.TotalJ, d.Seconds(), e.BackendJ, e.DomainsJ
 		r.DynamicJ = max(0, e.TotalJ-e.IdleJ)
-		basis := r.EnergyJ
-		if calibrated {
-			basis = r.DynamicJ
+		v := r.EnergyJ
+		switch basis {
+		case BasisBackend:
+			v = r.BackendJ
+		case BasisDynamic:
+			v = r.DynamicJ
 		}
 		if r.GeneratedTokens > 0 {
-			r.JPerToken = basis / float64(r.GeneratedTokens)
+			r.JPerToken = v / float64(r.GeneratedTokens)
 		}
 		res.Runs = append(res.Runs, r)
 		res.GeneratedTokens += r.GeneratedTokens
-		energy = append(energy, basis)
+		energy = append(energy, v)
 		jpt = append(jpt, r.JPerToken)
 		if progress != nil {
 			progress(i + 1)

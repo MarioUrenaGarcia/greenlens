@@ -385,11 +385,11 @@ func validBenchmark(b bench.Result) error {
 		return errors.New("prompt_set_sha256 must be 64 hexadecimal digits")
 	case !b.EndedAt.After(b.StartedAt):
 		return errors.New("a benchmark must end after it starts")
-	case b.Basis != bench.BasisDynamic && b.Basis != bench.BasisTotal:
-		return errors.New("basis must be dynamic or total")
+	case !slices.Contains(bench.Bases, b.Basis):
+		return errors.New("basis must be backend, dynamic or total")
 	}
 	for _, r := range b.Runs {
-		if !finite(r.EnergyJ) || !finite(r.DynamicJ) || !finite(r.DurationS) || !finite(r.JPerToken) || r.GeneratedTokens < 0 || r.PromptTokens < 0 {
+		if !finite(r.EnergyJ) || !finite(r.DynamicJ) || !finite(r.BackendJ) || !finite(r.DurationS) || !finite(r.JPerToken) || r.GeneratedTokens < 0 || r.PromptTokens < 0 {
 			return errors.New("run values must be finite and not negative")
 		}
 	}

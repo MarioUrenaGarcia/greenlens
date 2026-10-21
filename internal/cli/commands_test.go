@@ -297,7 +297,7 @@ func fakeOllama(t *testing.T) string {
 func TestBenchCommand(t *testing.T) {
 	url := fakeOllama(t)
 	env := map[string]string{"HOME": t.TempDir()}
-	code, out, errOut := runWith(t, risingHooks(), env, "bench", "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "3", "--warmup", "0", "--interval", "50ms", "--no-save", "-o", "json")
+	code, out, errOut := runWith(t, risingHooks(), env, "bench", "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "3", "--warmup", "0s", "--min-run", "0s", "--interval", "50ms", "--no-save", "-o", "json")
 	if code != 0 {
 		t.Fatalf("exit %d\n%s", code, errOut)
 	}
@@ -317,7 +317,7 @@ func TestBenchCommand(t *testing.T) {
 		{[]string{"bench", "--model", "m", "--kind", "process"}, 2, "GL0005"},
 		{[]string{"bench", "--model", "m", "--runs", "1"}, 2, "GL0005"},
 		{[]string{"bench", "--model", "m", "--endpoint", "ftp://x"}, 2, "GL0005"},
-		{[]string{"bench", "--endpoint", url, "--model", "missing", "--warmup", "0", "--no-save"}, 4, "GL2003"},
+		{[]string{"bench", "--endpoint", url, "--model", "missing", "--warmup", "0s", "--min-run", "0s", "--no-save"}, 4, "GL2003"},
 		{[]string{"compare", "1"}, 2, "GL0015"},
 	} {
 		code, _, errOut := runWith(t, risingHooks(), env, tt.args...)
@@ -410,7 +410,7 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	url := fakeOllama(t)
 	var ids []string
 	for range 2 {
-		code, out, errOut := runWith(t, risingHooks(), nil, "bench", "--config", cfgPath, "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "2", "--warmup", "0", "--interval", "50ms", "-o", "json")
+		code, out, errOut := runWith(t, risingHooks(), nil, "bench", "--config", cfgPath, "--endpoint", url, "--model", "qwen2.5:0.5b", "--runs", "2", "--warmup", "0s", "--min-run", "0s", "--interval", "50ms", "-o", "json")
 		var r bench.Result
 		if code != 0 || json.Unmarshal([]byte(out), &r) != nil || r.ID == 0 {
 			t.Fatalf("bench: %d %s %s", code, out, errOut)
