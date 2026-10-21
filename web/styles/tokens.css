@@ -1,20 +1,101 @@
 /* SPDX-License-Identifier: AGPL-3.0-only
  * Copyright (C) 2026 Mario Ureña García */
 
-/* Dark palette, the default theme. Amber always means consumption and
- * green always means efficiency; neither is used as decoration. */
-:root {
+/* Design tokens. Amber always means consumption and green always means
+ * efficiency; neither is used as decoration. Fills, lines and borders use
+ * the palette colors; text uses the -text variants, which keep a contrast of
+ * at least 4.5:1 over every glass level with the brightest glow behind it.
+ * In the dark theme the glass sits on a dark base that bounds how bright
+ * the background can make it. */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
   --bg-deep: #0a1f17;
-  --bg-glow-load: rgba(242, 165, 65, 0.18);
-  --bg-glow-eff: rgba(52, 211, 153, 0.16);
+  --bg-glow-load: rgba(242, 165, 65, 0.13);
+  --bg-glow-eff: rgba(52, 211, 153, 0.26);
   --glass-1: rgba(214, 255, 234, 0.07);
   --glass-2: rgba(214, 255, 234, 0.12);
   --glass-3: rgba(214, 255, 234, 0.18);
+  --glass-solid-1: #13291f;
+  --glass-solid-2: #1a3127;
+  --glass-solid-3: #213a2f;
+  --glass-base: rgba(10, 31, 23, 0.7);
   --glass-border: rgba(220, 255, 236, 0.16);
   --glass-highlight: rgba(255, 255, 255, 0.1);
+  --value-bg: rgba(5, 18, 12, 0.55);
   --ink: #e8f7ef;
-  --ink-muted: #9cc4af;
+  --ink-muted: #b3d6c3;
+  --link: #6ee7b7;
   --load: #f2a541;
+  --load-2: #f7cf7d;
+  --load-3: #e07b39;
+  --load-4: #c9a26b;
+  --load-text: #f7c27a;
   --efficiency: #34d399;
+  --eff-text: #7ae8bd;
   --critical: #ef5a5a;
+  --critical-text: #ffb0a8;
+  --focus: #f7cf7d;
+  --shadow-near: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-far-1: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-far-2: 0 16px 40px rgba(0, 0, 0, 0.36);
+  --shadow-far-3: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-deep: #dceee3;
+  --bg-glow-load: rgba(242, 165, 65, 0.22);
+  --bg-glow-eff: rgba(52, 211, 153, 0.22);
+  --glass-1: rgba(255, 255, 255, 0.55);
+  --glass-2: rgba(255, 255, 255, 0.65);
+  --glass-3: rgba(255, 255, 255, 0.75);
+  --glass-solid-1: #f1f8f4;
+  --glass-solid-2: #f6fbf8;
+  --glass-solid-3: #fbfdfc;
+  --glass-base: transparent;
+  --glass-border: rgba(15, 42, 30, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.6);
+  --value-bg: rgba(255, 255, 255, 0.7);
+  --ink: #0f2a1e;
+  --ink-muted: #355848;
+  --link: #0a6b45;
+  --load: #f2a541;
+  --load-2: #f7cf7d;
+  --load-3: #e07b39;
+  --load-4: #c9a26b;
+  --load-text: #9a5a06;
+  --efficiency: #34d399;
+  --eff-text: #0a6b45;
+  --critical: #ef5a5a;
+  --critical-text: #b42323;
+  --focus: #9a5a06;
+  --shadow-near: 0 1px 2px rgba(15, 42, 30, 0.12);
+  --shadow-far-1: 0 8px 24px rgba(15, 42, 30, 0.1);
+  --shadow-far-2: 0 16px 40px rgba(15, 42, 30, 0.14);
+  --shadow-far-3: 0 24px 64px rgba(15, 42, 30, 0.18);
+}
+
+:root {
+  --radius-panel: 20px;
+  --radius-inner: 14px;
+  --radius-control: 8px;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Type scale with a ratio of 1.25. */
+  --step--1: 0.8rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.563rem;
+  --step-3: 1.953rem;
+  --step-4: 2.441rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  /* 0 to 1, set from the power of the node. */
+  --load-level: 0.3;
 }

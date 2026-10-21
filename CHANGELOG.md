@@ -61,6 +61,14 @@ All notable changes to GreenLens are recorded in this file. The format follows
   and managed with `greenlens token`, browser sessions with CSRF
   protection, an audit log, security headers, rate limits and optional TLS.
   The agent refuses to listen beyond loopback while no token exists.
+- The graphical interface, served by the agent: a green glass design with
+  dark and light themes, the live power of the node stacked by domain with
+  a table alternative, the energy, emissions and cost of a period, the
+  models that used the most energy, sign-in with a one-time link or a
+  token, and an efficient mode without blur or animations that turns on by
+  itself on battery. Text keeps a contrast of 4.5:1 over the brightest
+  background, and reduced motion, reduced transparency and more contrast are
+  followed.
 - A live stream of server-sent events on `/api/v1/stream`: the power of
   every domain with each sample and the use of the backends with each
   usage interval, resumable with `Last-Event-ID` from the last 15 minutes.

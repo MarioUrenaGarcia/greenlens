@@ -17,13 +17,20 @@ import (
 
 const jsBanner = `/* SPDX-License-Identifier: AGPL-3.0-only AND MIT
  * Copyright (C) 2026 Mario Ureña García
- * Includes Preact (MIT). See THIRD_PARTY_NOTICES.md. */`
+ * Includes Preact and uPlot (MIT). See THIRD_PARTY_NOTICES.md. */`
 
-const cssBanner = `/* SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2026 Mario Ureña García */`
+const cssBanner = `/* SPDX-License-Identifier: AGPL-3.0-only AND MIT
+ * Copyright (C) 2026 Mario Ureña García
+ * Includes the styles of uPlot (MIT) and loads IBM Plex (SIL OFL 1.1).
+ * See THIRD_PARTY_NOTICES.md. */`
 
 // Files lists the output files of Build, relative to the output directory.
-var Files = []string{"app.css", "index.html", "main.js"}
+// Fonts keep their names, without a content hash, so the list is fixed and
+// the build stays byte-identical.
+var Files = []string{
+	"app.css", "assets/IBMPlexMono-Regular-Latin1.woff2", "assets/IBMPlexSans-Regular-Latin1.woff2",
+	"assets/IBMPlexSans-SemiBold-Latin1.woff2", "index.html", "main.js",
+}
 
 // Build compiles the interface whose sources live under webDir into outDir.
 // The output depends only on the sources: building the same tree twice, from
@@ -51,6 +58,8 @@ func Build(webDir, outDir string) error {
 		Target:            api.ES2022,
 		Platform:          api.PlatformBrowser,
 		JSX:               api.JSXAutomatic,
+		Loader:            map[string]api.Loader{".woff2": api.LoaderFile},
+		AssetNames:        "assets/[name]",
 		JSXImportSource:   "preact",
 		NodePaths:         []string{filepath.Join(src, "third_party")},
 		Charset:           api.CharsetUTF8,

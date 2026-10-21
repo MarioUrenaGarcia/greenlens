@@ -38,7 +38,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 .DEFAULT_GOAL := build
 
 .PHONY: build static-check test vet lint vuln secrets typography headers i18n check-scripts \
-        licenses notices notices-check tidy-check web docs docs-check demo demo-check man \
+        licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check man \
         site hugo tools hooks check clean
 
 # greenlens is static. greenlens-nvml loads the NVIDIA library through the
@@ -99,6 +99,13 @@ tidy-check:
 web:
 	$(GO) run web/build.go
 
+# Strict type check, lint and format of the interface, with the native tools
+# installed by make tools.
+web-check:
+	@test -x $(TSC) -a -x $(BIOME) || { echo "run make tools to install TypeScript and Biome"; exit 1; }
+	cd web && $(TSC) -p tsconfig.json
+	cd web && $(BIOME) check --colors=off src styles
+
 # Reference pages generated from the code.
 docs:
 	$(GO) run ./scripts/gen-docs
@@ -151,8 +158,8 @@ tools:
 hooks:
 	$(GOBIN)/lefthook install
 
-check: tidy-check static-check vet lint test vuln secrets typography headers i18n check-scripts licenses notices-check \
-       docs-check demo-check
+check: tidy-check static-check vet lint web-check test vuln secrets typography headers i18n check-scripts licenses \
+       notices-check docs-check demo-check
 
 clean:
 	rm -rf bin site/public site/resources

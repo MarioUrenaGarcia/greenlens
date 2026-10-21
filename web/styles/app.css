@@ -2,11 +2,723 @@
  * Copyright (C) 2026 Mario Ureña García */
 
 @import "./tokens.css";
+@import "../third_party/uplot/dist/uPlot.min.css";
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../third_party/@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-Regular-Latin1.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../third_party/@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-SemiBold-Latin1.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../third_party/@ibm/plex-mono/fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2") format("woff2");
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg-deep);
   color: var(--ink);
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--step-0);
+  line-height: 1.5;
+}
+
+/* The background is a slow mesh of gradients. The amber glow follows the
+ * power of the node over several seconds; it is the only movement that the
+ * user does not start. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(60vw 50vh at 85% 0%, var(--bg-glow-eff), transparent 70%),
+    radial-gradient(50vw 40vh at 0% 100%, var(--bg-glow-eff), transparent 70%), var(--bg-deep);
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(45vw 45vh at 20% 15%, var(--bg-glow-load), transparent 70%);
+  opacity: var(--load-level);
+  transition: opacity 6s ease;
+}
+
+a {
+  color: var(--link);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0 0 var(--space-3);
+  font-weight: 600;
+}
+
+h1 {
+  font-size: var(--step-3);
+}
+
+h2 {
+  font-size: var(--step-1);
+}
+
+h3 {
+  font-size: var(--step-0);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+.skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -4rem;
+  z-index: 10;
+  padding: var(--space-2) var(--space-4);
+  background: var(--glass-solid-3);
+  color: var(--ink);
+  border-radius: var(--radius-control);
+}
+
+.skip:focus {
+  top: var(--space-4);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Glass: each level of depth has its own blur and its own two shadows, a
+ * wide soft one and a short contact one. */
+.glass {
+  background: linear-gradient(var(--glass-1), var(--glass-1)), var(--glass-base);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-panel);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-far-1),
+    var(--shadow-near);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.glass-2 {
+  background: linear-gradient(var(--glass-2), var(--glass-2)), var(--glass-base);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-far-2),
+    var(--shadow-near);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+.glass-3 {
+  background: linear-gradient(var(--glass-3), var(--glass-3)), var(--glass-base);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-far-3),
+    var(--shadow-near);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+.inner {
+  background: var(--value-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-inner);
+}
+
+/* Layout */
+.shell {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  border-radius: 0 var(--radius-panel) var(--radius-panel) 0;
+  border-left: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--step-1);
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--ink);
+  background: var(--glass-1);
+}
+
+.nav a[aria-current="page"] {
+  color: var(--ink);
+  background: var(--glass-2);
+  font-weight: 600;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+.prefs summary {
+  cursor: pointer;
+  color: var(--ink);
+  padding: var(--space-1) 0;
+}
+
+.prefs[open] summary {
+  margin-bottom: var(--space-2);
+}
+
+.prefs-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.main {
+  padding: var(--space-6);
+  max-width: 90rem;
+  width: 100%;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.page-head p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.panel {
+  padding: var(--space-5);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.panel-head h2 {
+  margin: 0;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.metric {
+  padding: var(--space-4);
+}
+
+.metric-label {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  margin: 0;
+}
+
+.metric-value {
+  font-size: var(--step-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: var(--space-1) 0 0;
+}
+
+.metric-note {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  margin: var(--space-1) 0 0;
+}
+
+.load {
+  color: var(--load-text);
+}
+
+.eff {
+  color: var(--eff-text);
+}
+
+.critical {
+  color: var(--critical-text);
+}
+
+/* The power instrument */
+.instrument {
+  padding: var(--space-5);
+}
+
+.instrument-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-5);
+  align-items: stretch;
+}
+
+.instrument-chart {
+  min-width: 0;
+  overflow: hidden;
+  min-height: 16rem;
+  padding: var(--space-3);
+}
+
+.instrument-now {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 12rem;
+  padding: var(--space-4);
+}
+
+.instrument-now .metric-value {
+  font-size: var(--step-4);
+  color: var(--load-text);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: var(--space-2);
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+/* Controls inherit the type of the page. */
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Tables */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+caption {
+  text-align: left;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  padding-bottom: var(--space-2);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: top;
+}
+
+th {
+  font-weight: 600;
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+td.n,
+th.n {
+  text-align: right;
+}
+
+th button {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+th button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-2);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: var(--glass-3);
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--efficiency);
+  border-color: var(--efficiency);
+  color: #06261a;
+  font-weight: 600;
+}
+
+.btn-icon {
+  padding: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.field label {
+  font-weight: 600;
+  font-size: var(--step--1);
+}
+
+.field .hint {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.input,
+select.input,
+textarea.input {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--glass-border);
+  background: var(--value-bg);
+  color: var(--ink);
+}
+
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.segmented button {
+  border: 0;
+  background: transparent;
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  color: var(--ink-muted);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--glass-3);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.notice {
+  padding: var(--space-4);
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-2);
+}
+
+.notice-error {
+  border-color: var(--critical);
+}
+
+.notice-error strong {
+  color: var(--critical-text);
+}
+
+.empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+}
+
+.login {
+  max-width: 32rem;
+  margin: 10vh auto;
+  padding: var(--space-6);
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+/* uPlot: the theme of the charts follows the tokens. */
+.u-legend {
+  display: none;
+}
+
+.u-axis,
+.u-value {
+  color: var(--ink-muted);
+}
+
+/* Narrow screens: the navigation moves on top. */
+@media (max-width: 52rem) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    border-radius: 0 0 var(--radius-panel) var(--radius-panel);
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .main {
+    padding: var(--space-4);
+  }
+
+  .instrument-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Without backdrop filters, the glass becomes equivalent solid surfaces. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--glass-solid-1);
+  }
+
+  .glass-2 {
+    background: var(--glass-solid-2);
+  }
+
+  .glass-3 {
+    background: var(--glass-solid-3);
+  }
+}
+
+/* Reduced transparency, more contrast and the efficient mode use opaque
+ * surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-2,
+  .glass-3 {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--glass-solid-2);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass,
+  .glass-2,
+  .glass-3,
+  .inner {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--glass-solid-3);
+    border-color: var(--ink-muted);
+  }
+
+  .muted,
+  .metric-label,
+  th {
+    color: var(--ink);
+  }
+}
+
+:root.efficient .glass,
+:root.efficient .glass-2,
+:root.efficient .glass-3 {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-solid-2);
+}
+
+:root.efficient .backdrop::after {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop::after {
+    transition: none;
+  }
+}
+
+@media print {
+  .sidebar,
+  .backdrop,
+  .no-print {
+    display: none;
+  }
+
+  .shell {
+    display: block;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .glass,
+  .glass-2,
+  .glass-3,
+  .inner {
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    border-color: #999999;
+  }
 }

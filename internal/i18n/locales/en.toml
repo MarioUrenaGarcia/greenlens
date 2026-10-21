@@ -983,3 +983,111 @@ fix = "restart it with {flag}; until then its energy is measured but not split b
 message = "the backend refused the benchmark"
 cause = "{endpoint} answered {detail}"
 fix = "check that the model {model} is available in the backend, for Ollama with 'ollama list', and that --kind matches the server"
+
+[gui]
+skip = "Skip to the content"
+loading = "Loading..."
+not_counted = "not counted"
+
+[gui.nav]
+label = "Main"
+summary = "Summary"
+
+[gui.prefs]
+title = "Preferences"
+language = "Language"
+theme = "Theme"
+efficient = "Efficient mode"
+
+[gui.language]
+en = "English"
+es = "Español"
+
+[gui.theme]
+system = "As the system"
+dark = "Dark"
+light = "Light"
+
+[gui.efficient]
+auto = "Automatic, on battery"
+on = "On"
+off = "Off"
+active = "Efficient mode is on: no blur or animations, and the charts redraw every five seconds."
+inactive = "Efficient mode is off."
+
+[gui.role]
+viewer = "viewer"
+operator = "operator"
+admin = "administrator"
+
+[gui.session]
+as = "Signed in as {actor}, {role}"
+sign_out = "Sign out"
+
+[gui.error]
+title = "Something went wrong:"
+
+[gui.help]
+about = "Help about {topic}"
+
+[gui.table]
+sort = "Sort by {column}"
+
+[gui.col]
+time = "Time"
+total = "Total"
+model = "Model"
+backend = "Backend"
+energy = "Energy"
+joules_per_token = "J per generated token"
+generated_tokens = "Generated tokens"
+
+[gui.period]
+label = "Period"
+24h = "Last 24 hours"
+7d = "Last 7 days"
+30d = "Last 30 days"
+
+[gui.live]
+offline = "Live data paused"
+
+[gui.layer]
+package = "CPU"
+dram = "Memory"
+gpu = "GPU"
+rest = "Rest of the system"
+
+[gui.instrument]
+title = "Power of the node"
+now = "Now"
+energy = "Energy in the chart"
+show_table = "Show as a table"
+show_chart = "Show the chart"
+table_caption = "Power of the last 60 samples, newest first"
+label = "Power of the node, stacked by domain, over the last {minutes} minutes; now {power}."
+waiting = "Waiting for the first samples."
+
+[gui.summary]
+title = "Summary"
+measured = "Energy is measured by the sensors of this machine."
+estimated = "Processor energy is estimated from its utilization; values are approximate."
+problems = "{count} problems with the energy sources."
+see_sources = "See the sources"
+energy = "Energy of CPU, memory and GPU"
+energy_note = "Platform and wall meters are left out, since they measure the same energy again."
+co2e = "Emissions"
+factor = "{value} gCO2e/kWh, {source}"
+cost = "Cost"
+no_tariff = "Set indicators.tariff.price_per_kwh to see the cost."
+tariff = "{value} per kWh"
+models = "Models that used the most energy"
+models_caption = "The five models with the most attributed energy in the period"
+no_models = "No energy was attributed to a model in this period. Start an inference server such as Ollama or llama.cpp; GreenLens finds it on its own."
+
+[gui.login]
+intro = "Sign in to see the energy of this node. On the machine of the agent, this command opens the interface already signed in:"
+token_intro = "From another machine, paste an access token created with 'greenlens token create'."
+token = "Access token"
+submit = "Sign in"
+invalid = "The token is not valid. Check that it was copied whole and has not expired or been revoked."
+expired = "The sign-in link was already used or has expired. Run 'greenlens gui' again."

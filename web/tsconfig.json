@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "types": [],
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "paths": {
+      "preact": ["./third_party/preact/src/index.d.ts"],
+      "preact/hooks": ["./third_party/preact/hooks/src/index.d.ts"],
+      "preact/jsx-runtime": ["./third_party/preact/jsx-runtime/src/index.d.ts"],
+      "uplot": ["./third_party/uplot/dist/uPlot.d.ts"]
+    }
+  },
+  "include": ["src"]
+}

@@ -983,3 +983,111 @@ fix = "reinícialo con {flag}; mientras tanto su energía se mide pero no se rep
 message = "el backend rechazó el benchmark"
 cause = "{endpoint} respondió {detail}"
 fix = "verifica que el modelo {model} esté disponible en el backend, en Ollama con 'ollama list', y que --kind corresponda al servidor"
+
+[gui]
+skip = "Saltar al contenido"
+loading = "Cargando..."
+not_counted = "sin contar"
+
+[gui.nav]
+label = "Principal"
+summary = "Resumen"
+
+[gui.prefs]
+title = "Preferencias"
+language = "Idioma"
+theme = "Tema"
+efficient = "Modo eficiente"
+
+[gui.language]
+en = "English"
+es = "Español"
+
+[gui.theme]
+system = "Como el sistema"
+dark = "Oscuro"
+light = "Claro"
+
+[gui.efficient]
+auto = "Automático, con batería"
+on = "Activado"
+off = "Desactivado"
+active = "El modo eficiente está activado: sin desenfoque ni animaciones, y las gráficas se redibujan cada cinco segundos."
+inactive = "El modo eficiente está desactivado."
+
+[gui.role]
+viewer = "lector"
+operator = "operador"
+admin = "administrador"
+
+[gui.session]
+as = "Sesión de {actor}, {role}"
+sign_out = "Cerrar sesión"
+
+[gui.error]
+title = "Algo salió mal:"
+
+[gui.help]
+about = "Ayuda sobre {topic}"
+
+[gui.table]
+sort = "Ordenar por {column}"
+
+[gui.col]
+time = "Hora"
+total = "Total"
+model = "Modelo"
+backend = "Backend"
+energy = "Energía"
+joules_per_token = "J por token generado"
+generated_tokens = "Tokens generados"
+
+[gui.period]
+label = "Periodo"
+24h = "Últimas 24 horas"
+7d = "Últimos 7 días"
+30d = "Últimos 30 días"
+
+[gui.live]
+offline = "Datos en vivo en pausa"
+
+[gui.layer]
+package = "CPU"
+dram = "Memoria"
+gpu = "GPU"
+rest = "Resto del sistema"
+
+[gui.instrument]
+title = "Potencia del nodo"
+now = "Ahora"
+energy = "Energía en la gráfica"
+show_table = "Ver como tabla"
+show_chart = "Ver la gráfica"
+table_caption = "Potencia de las últimas 60 muestras, de la más reciente a la más antigua"
+label = "Potencia del nodo, apilada por dominio, en los últimos {minutes} minutos; ahora {power}."
+waiting = "Esperando las primeras muestras."
+
+[gui.summary]
+title = "Resumen"
+measured = "La energía la miden los sensores de esta máquina."
+estimated = "La energía del procesador se estima a partir de su uso; los valores son aproximados."
+problems = "{count} problemas con las fuentes de energía."
+see_sources = "Ver las fuentes"
+energy = "Energía de CPU, memoria y GPU"
+energy_note = "Se dejan fuera los medidores de plataforma y de pared, que vuelven a medir la misma energía."
+co2e = "Emisiones"
+factor = "{value} gCO2e/kWh, {source}"
+cost = "Costo"
+no_tariff = "Configura indicators.tariff.price_per_kwh para ver el costo."
+tariff = "{value} por kWh"
+models = "Modelos que más energía usaron"
+models_caption = "Los cinco modelos con más energía atribuida en el periodo"
+no_models = "No se atribuyó energía a ningún modelo en este periodo. Inicia un servidor de inferencia como Ollama o llama.cpp; GreenLens lo encuentra solo."
+
+[gui.login]
+intro = "Inicia sesión para ver la energía de este nodo. En la máquina del agente, este comando abre la interfaz con la sesión ya iniciada:"
+token_intro = "Desde otra máquina, pega un token de acceso creado con 'greenlens token create'."
+token = "Token de acceso"
+submit = "Iniciar sesión"
+invalid = "El token no es válido. Revisa que se copió completo y que no caducó ni fue revocado."
+expired = "El enlace de inicio de sesión ya se usó o caducó. Vuelve a ejecutar 'greenlens gui'."
