@@ -110,7 +110,11 @@ make build
 
 The binary is written to `bin/greenlens`. It is statically linked and has no
 runtime dependencies, so it can be copied to any Linux machine of the same
-architecture.
+architecture. Next to it, `bin/greenlens-nvml` reads NVIDIA GPUs: it loads
+the NVIDIA library, so it is linked dynamically, and it is needed only on
+machines with an NVIDIA GPU; keep it in the same directory as `greenlens`.
+
+`make man` writes the manual pages, in English and Spanish, to `dist/man`.
 
 ## Configuration
 
