@@ -10,3 +10,8 @@ const root = document.getElementById("app");
 if (root) {
   render(<App />, root);
 }
+
+// The service worker needs a secure context: localhost, 127.0.0.1 or TLS.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+}

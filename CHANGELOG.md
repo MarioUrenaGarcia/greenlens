@@ -107,6 +107,10 @@ All notable changes to GreenLens are recorded in this file. The format follows
 - Energy reports in the interface: energy, emissions, cost and water of a
   period, by domain per day or hour and by backend, model or consumer,
   printable from the browser and exported as CSV or JSON.
+- The interface can be installed as an application from the browser: a
+  manifest, own icons and a service worker that keeps only the files of
+  the interface, so the window opens and says that the agent does not
+  answer; measurements are never kept by the browser.
 - A live stream of server-sent events on `/api/v1/stream`: the power of
   every domain with each sample and the use of the backends with each
   usage interval, resumable with `Last-Event-ID` from the last 15 minutes.

@@ -24,5 +24,6 @@
       "uplot": ["./third_party/uplot/dist/uPlot.d.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/sw.ts"]
 }

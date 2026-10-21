@@ -38,7 +38,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 .DEFAULT_GOAL := build
 
 .PHONY: build static-check test vet lint vuln secrets typography headers i18n check-scripts \
-        licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check man \
+        licenses notices notices-check tidy-check web web-check docs docs-check demo demo-check icons icons-check man \
         site hugo tools hooks check clean
 
 # greenlens is static. greenlens-nvml loads the NVIDIA library through the
@@ -104,6 +104,7 @@ web:
 web-check:
 	@test -x $(TSC) -a -x $(BIOME) || { echo "run make tools to install TypeScript and Biome"; exit 1; }
 	cd web && $(TSC) -p tsconfig.json
+	cd web && $(TSC) -p tsconfig.sw.json
 	cd web && $(BIOME) check --colors=off src styles
 
 # Reference pages generated from the code.
@@ -139,6 +140,16 @@ demo-check:
 		diff -q "$$tmp/terminal-es.svg" site/static/images/terminal-es.svg >/dev/null \
 		|| { echo "terminal demos are stale; run make demo"; exit 1; }
 
+# Icons of the interface and the desktop launcher.
+icons:
+	$(GO) run ./scripts/gen-icons -out web/assets/icons
+
+icons-check:
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
+		$(GO) run ./scripts/gen-icons -out "$$tmp" && \
+		diff -rq "$$tmp" web/assets/icons >/dev/null \
+		|| { echo "icons are stale; run make icons"; exit 1; }
+
 # Documentation site for GitHub Pages, written to site/public.
 site:
 	$(GOBIN)/hugo --source site --destination public --cleanDestinationDir --minify --baseURL "$(SITE_BASE_URL)"
@@ -159,7 +170,7 @@ hooks:
 	$(GOBIN)/lefthook install
 
 check: tidy-check static-check vet lint web-check test vuln secrets typography headers i18n check-scripts licenses \
-       notices-check docs-check demo-check
+       notices-check docs-check demo-check icons-check
 
 clean:
 	rm -rf bin site/public site/resources

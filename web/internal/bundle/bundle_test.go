@@ -21,7 +21,7 @@ const webDir = "../.."
 // build depends on where it runs.
 func TestDistIsUpToDateAndReproducible(t *testing.T) {
 	copyDir := filepath.Join(t.TempDir(), "web")
-	for _, d := range []string{"src", "styles", "third_party"} {
+	for _, d := range []string{"assets", "src", "styles", "third_party"} {
 		if err := os.CopyFS(filepath.Join(copyDir, d), os.DirFS(filepath.Join(webDir, d))); err != nil {
 			t.Fatal(err)
 		}
