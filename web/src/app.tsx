@@ -141,9 +141,11 @@ function Shell(props: {
   }, [screen]);
   return (
     <div class="shell">
-      <a class="skip" href="#main">
+      {/* The hash holds the route, so skipping to the content moves the
+          focus instead of changing the address. */}
+      <button type="button" class="skip" onClick={() => document.getElementById("main")?.focus()}>
         {t("gui.skip")}
-      </a>
+      </button>
       <nav class="glass glass-2 sidebar" aria-label={t("gui.nav.label")}>
         <a class="brand" href={href()}>
           {icons.logo()} GreenLens
