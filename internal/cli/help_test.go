@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-
-	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 )
 
 func TestHelpTopics(t *testing.T) {
@@ -73,11 +71,10 @@ func TestCompletion(t *testing.T) {
 
 // Every command shows at least two examples in its help.
 func TestEveryCommandHasExamples(t *testing.T) {
-	l, err := i18n.New("en")
+	root, err := Tree("en")
 	if err != nil {
 		t.Fatal(err)
 	}
-	root := newRoot(&app{l: l, getenv: func(string) string { return "" }})
 	var walk func(c *cobra.Command)
 	walk = func(c *cobra.Command) {
 		for _, sub := range c.Commands() {

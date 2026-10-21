@@ -302,7 +302,7 @@ close = "Pulsa ? o Esc para cerrar."
 
 [cli.bench]
 short = "Mide la energía de un modelo con un benchmark"
-long = "Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. Con una calibración, la energía por token es la que está sobre el reposo."
+long = "Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. La energía de una corrida es la atribuida a los procesos del backend, así otros procesos no la cambian, y con una calibración solo cuenta la energía sobre el reposo."
 no_baseline = "No se encontró una calibración: la energía por token incluye la potencia en reposo. Ejecuta antes 'greenlens calibrate' para obtener resultados comparables entre equipos."
 start = "Benchmark de {model} en {endpoint}: calentamiento de {warmup}, luego {runs} corridas de al menos {min}, cada una repite los {prompts} prompts."
 progress = "Corrida {run} de {runs} terminada."
@@ -518,6 +518,23 @@ formula = "measured, integrated, attributed_cpu_share, attributed_gpu_process, t
 unit = "ninguna"
 method = "measured viene de un contador, integrated de un sensor de potencia, los attributed reparten energía entre cargas, token_weighted entre modelos, regression ajusta el costo de los tokens y estimated es un modelo o un reparto en partes iguales"
 limits = "Un valor repartido varias veces lleva el método menos directo."
+
+[man]
+manual = "Manual de GreenLens"
+name = "NOMBRE"
+synopsis = "SINOPSIS"
+description = "DESCRIPCIÓN"
+commands = "COMANDOS"
+options = "OPCIONES"
+global_options = "OPCIONES GLOBALES"
+examples = "EJEMPLOS"
+see_also = "VÉASE TAMBIÉN"
+
+[man.config]
+short = "archivo de configuración de GreenLens"
+description = "La configuración del agente y de los comandos de GreenLens, en YAML. Los valores vienen, de mayor a menor precedencia, de las opciones de la línea de comandos, las variables de entorno indicadas abajo, este archivo y los valores por defecto. Las claves desconocidas son errores. 'greenlens config validate' revisa un archivo y 'greenlens config show' imprime la configuración vigente."
+default = "Por defecto: {value}"
+env = "Variable: {name}"
 
 [cli.proxy]
 short = "Muestra el estado del proxy que cuenta tokens"

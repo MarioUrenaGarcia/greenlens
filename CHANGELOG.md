@@ -45,6 +45,8 @@ All notable changes to GreenLens are recorded in this file. The format follows
   formula, unit, method and limits; `greenlens help <topic>` explains
   measurement, attribution, sources, permissions, privacy and configuration;
   `greenlens completion` prints completion scripts for bash, zsh and fish.
+- Manual pages in English and Spanish, `greenlens(1)`, one per command and
+  `greenlens.yaml(5)`, written by `make man` in plain ASCII roff.
 - `greenlens agent`: samples every second, stores the data in SQLite with
   one-minute and one-hour rollups, serves a local API on a Unix socket and
   confines itself with Landlock.

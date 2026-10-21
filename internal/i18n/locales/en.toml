@@ -302,7 +302,7 @@ close = "Press ? or Esc to close."
 
 [cli.bench]
 short = "Benchmark the energy of a model"
-long = "Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. With a calibration, the energy per token is on the energy above idle."
+long = "Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. The energy of a run is that attributed to the processes of the backend, so other processes do not change it, and with a calibration only the energy above idle counts."
 no_baseline = "No calibration found: the energy per token includes idle power. Run 'greenlens calibrate' first for results that compare across machines."
 start = "Benchmarking {model} at {endpoint}: warming up for {warmup}, then {runs} runs of at least {min}, each repeating the {prompts} prompts."
 progress = "Run {run} of {runs} done."
@@ -518,6 +518,23 @@ formula = "measured, integrated, attributed_cpu_share, attributed_gpu_process, t
 unit = "none"
 method = "measured comes from a counter, integrated from a power sensor, the attributed ones split energy between workloads, token_weighted between models, regression fits token costs and estimated is a model or an equal split"
 limits = "A value split several times carries the least direct method."
+
+[man]
+manual = "GreenLens Manual"
+name = "NAME"
+synopsis = "SYNOPSIS"
+description = "DESCRIPTION"
+commands = "COMMANDS"
+options = "OPTIONS"
+global_options = "GLOBAL OPTIONS"
+examples = "EXAMPLES"
+see_also = "SEE ALSO"
+
+[man.config]
+short = "configuration file of GreenLens"
+description = "The configuration of the agent and the commands of GreenLens, in YAML. Values come, from the highest precedence to the lowest, from command line flags, the environment variables named below, this file and the defaults. Unknown keys are errors. 'greenlens config validate' checks a file and 'greenlens config show' prints the configuration in effect."
+default = "Default: {value}"
+env = "Variable: {name}"
 
 [cli.proxy]
 short = "Show the state of the token-counting proxy"

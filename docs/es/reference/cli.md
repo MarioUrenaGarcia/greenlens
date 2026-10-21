@@ -42,7 +42,7 @@ greenlens agent --config /etc/greenlens/greenlens.yaml
 
 ## greenlens bench
 
-Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. Con una calibración, la energía por token es la que está sobre el reposo.
+Envía los mismos prompts a un backend varias veces, con decodificación determinista y semilla fija, y mide la energía de cada corrida. Reporta la energía por token generado con su media, desviación estándar, coeficiente de variación e intervalo de confianza al 95%, y las condiciones del equipo. Solo se guarda el SHA-256 de los prompts, nunca los prompts. La energía de una corrida es la atribuida a los procesos del backend, así otros procesos no la cambian, y con una calibración solo cuenta la energía sobre el reposo.
 
 **Uso**
 

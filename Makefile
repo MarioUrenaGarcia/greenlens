@@ -28,7 +28,7 @@ LICENSE_IGNORES  := --ignore github.com/MarioUrenaGarcia/greenlens \
 .DEFAULT_GOAL := build
 
 .PHONY: build static-check test vet lint vuln secrets typography headers i18n check-scripts \
-        licenses notices notices-check tidy-check web docs docs-check demo demo-check \
+        licenses notices notices-check tidy-check web docs docs-check demo demo-check man \
         site hugo tools hooks check clean
 
 # greenlens is static. greenlens-nvml loads the NVIDIA library through the
@@ -98,6 +98,14 @@ docs-check:
 		$(GO) run ./scripts/gen-docs -root "$$tmp/docs" -schema "$$tmp/config.schema.json" && \
 		diff -ru docs "$$tmp/docs" && diff -u api/config.schema.json "$$tmp/config.schema.json" \
 		|| { echo "generated documentation is stale; run make docs"; exit 1; }
+
+# Manual pages in English and Spanish, for packages: dist/man/man1,
+# dist/man/man5 and the same under dist/man/es.
+MAN_DATE ?= $(shell git log -1 --format=%cs 2>/dev/null)
+MAN_VERSION ?= $(shell git describe --tags --always 2>/dev/null)
+
+man:
+	$(GO) run ./scripts/gen-man -out dist/man -date "$(MAN_DATE)" -version "$(MAN_VERSION)"
 
 # Animated terminal sessions shown in the README and on the site.
 DEMOS := site/static/images/terminal-en.svg site/static/images/terminal-es.svg

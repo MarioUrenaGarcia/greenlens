@@ -42,7 +42,7 @@ greenlens agent --config /etc/greenlens/greenlens.yaml
 
 ## greenlens bench
 
-Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. With a calibration, the energy per token is on the energy above idle.
+Send the same prompts to a backend several times, with greedy decoding and a fixed seed, and measure the energy of each run. It reports the energy per generated token with its mean, standard deviation, coefficient of variation and 95% confidence interval, and the conditions of the machine. Only the SHA-256 of the prompts is stored, never the prompts. The energy of a run is that attributed to the processes of the backend, so other processes do not change it, and with a calibration only the energy above idle counts.
 
 **Usage**
 

@@ -112,7 +112,13 @@ make build
 
 El binario queda en `bin/greenlens`. Está enlazado de forma estática y no
 tiene dependencias en tiempo de ejecución, así que se puede copiar a
-cualquier equipo Linux de la misma arquitectura.
+cualquier equipo Linux de la misma arquitectura. Junto a él,
+`bin/greenlens-nvml` lee las GPU NVIDIA: carga la biblioteca de NVIDIA, por
+eso se enlaza de forma dinámica, y solo hace falta en equipos con GPU NVIDIA;
+mantenlo en el mismo directorio que `greenlens`.
+
+`make man` escribe las páginas del manual, en inglés y en español, en
+`dist/man`.
 
 ## Configuración
 
