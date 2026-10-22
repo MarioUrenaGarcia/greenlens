@@ -11,7 +11,8 @@ import { t } from "../i18n";
 import { add, factorNote, priced, tariffNote, zero } from "../indicators";
 import { useLive } from "../live";
 import { href } from "../router";
-import type { ChannelEnergy, Indicators, Status, UsageEnergy } from "../types";
+import type { Alert, Alerts, ChannelEnergy, Indicators, Status, UsageEnergy } from "../types";
+import { AlertState, alertValue, series } from "../components/alert";
 
 export type Period = "24h" | "7d" | "30d";
 const periodMs: Record<Period, number> = { "24h": 864e5, "7d": 7 * 864e5, "30d": 30 * 864e5 };
@@ -79,6 +80,7 @@ export function Summary(props: { status: Status }) {
           onChange={setPeriod}
         />
       </div>
+      <ActiveAlerts changes={live.alertChanges} />
       {problems > 0 ? (
         <p class="notice">
           {t("gui.summary.problems", { count: problems })}{" "}
@@ -145,5 +147,43 @@ export function Summary(props: { status: Status }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+// ActiveAlerts lists the alerts that are firing or pending, when there are
+// any, with a link to the alerts screen.
+function ActiveAlerts(props: { changes: number }) {
+  const [active, setActive] = useState<Alert[]>([]);
+  const [error, setError] = useState<unknown>(null);
+  useEffect(() => {
+    let stale = false;
+    api
+      .request<Alerts>("GET", "/api/v1/alerts")
+      .then((d) => {
+        if (stale) return;
+        setActive(d.active);
+        setError(null);
+      })
+      .catch((e: unknown) => !stale && setError(e));
+    return () => {
+      stale = true;
+    };
+  }, [props.changes]);
+  if (error) return <ErrorNotice error={error} />;
+  if (active.length === 0) return null;
+  return (
+    <Panel title={t("gui.alerts.active")} help="guides/alerts">
+      <ul class="rules">
+        {active.map((a) => (
+          <li key={`${a.rule}/${series(a.labels)}`}>
+            <AlertState state={a.state} /> <strong>{a.rule}</strong> {series(a.labels)}:{" "}
+            {alertValue(a.expr, a.value)}
+          </li>
+        ))}
+      </ul>
+      <p>
+        <a href={href("alerts")}>{t("gui.alerts.see_all")}</a>
+      </p>
+    </Panel>
   );
 }

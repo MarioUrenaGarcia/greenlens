@@ -29,7 +29,7 @@ interface ConfigDoc {
   restart_keys: string[];
 }
 
-interface Preview {
+export interface Preview {
   yaml: string;
   valid: boolean;
   errors: { key?: string; message: string }[];
@@ -84,6 +84,61 @@ function Input(props: { f: Field; value: string; onChange: (v: string) => void; 
       value={props.value}
       onInput={(e) => props.onChange((e.target as HTMLInputElement).value)}
     />
+  );
+}
+
+// ConfigResult shows a previewed configuration file: its problems, or the
+// file to install when the agent cannot write its own.
+export function ConfigResult(props: { preview: Preview; writable: boolean; help: string }) {
+  const { preview } = props;
+  return (
+    <Panel
+      title={preview.applied ? t("gui.config.applied") : t("gui.config.result")}
+      level={2}
+      help={props.help}
+    >
+      {preview.errors.length > 0 ? (
+        <div class="notice notice-error" role="alert">
+          <strong>{t("gui.config.invalid")}</strong>
+          <ul>
+            {preview.errors.map((e) => (
+              <li key={`${e.key}-${e.message}`}>
+                {e.key ? <code>{e.key}</code> : null} {e.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p role="status">{preview.applied ? t("gui.config.applied_note") : t("gui.config.valid")}</p>
+      )}
+      {preview.needs_restart ? <p class="notice">{t("gui.config.restart")}</p> : null}
+      {preview.yaml ? (
+        <>
+          <pre class="inner" style={{ padding: "var(--space-3)", overflowX: "auto" }}>
+            <code>{preview.yaml}</code>
+          </pre>
+          {!props.writable && preview.valid ? (
+            <>
+              <button
+                type="button"
+                class="btn"
+                onClick={() => save("greenlens.yaml", "application/yaml", preview.yaml)}
+              >
+                {t("gui.config.download")}
+              </button>
+              <p>{t("gui.config.install")}</p>
+              <pre class="inner" style={{ padding: "var(--space-3)", overflowX: "auto" }}>
+                <code>
+                  {
+                    "sudo install -m 0644 greenlens.yaml /etc/greenlens/greenlens.yaml\nsudo systemctl reload greenlens"
+                  }
+                </code>
+              </pre>
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -171,53 +226,7 @@ export function Config() {
       ) : null}
       {error ? <ErrorNotice error={error} /> : null}
       {preview ? (
-        <Panel
-          title={preview.applied ? t("gui.config.applied") : t("gui.config.result")}
-          level={2}
-          help="reference/configuration"
-        >
-          {preview.errors.length > 0 ? (
-            <div class="notice notice-error" role="alert">
-              <strong>{t("gui.config.invalid")}</strong>
-              <ul>
-                {preview.errors.map((e) => (
-                  <li key={`${e.key}-${e.message}`}>
-                    {e.key ? <code>{e.key}</code> : null} {e.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p role="status">{preview.applied ? t("gui.config.applied_note") : t("gui.config.valid")}</p>
-          )}
-          {preview.needs_restart ? <p class="notice">{t("gui.config.restart")}</p> : null}
-          {preview.yaml ? (
-            <>
-              <pre class="inner" style={{ padding: "var(--space-3)", overflowX: "auto" }}>
-                <code>{preview.yaml}</code>
-              </pre>
-              {!doc.writable && preview.valid ? (
-                <>
-                  <button
-                    type="button"
-                    class="btn"
-                    onClick={() => save("greenlens.yaml", "application/yaml", preview.yaml)}
-                  >
-                    {t("gui.config.download")}
-                  </button>
-                  <p>{t("gui.config.install")}</p>
-                  <pre class="inner" style={{ padding: "var(--space-3)", overflowX: "auto" }}>
-                    <code>
-                      {
-                        "sudo install -m 0644 greenlens.yaml /etc/greenlens/greenlens.yaml\nsudo systemctl reload greenlens"
-                      }
-                    </code>
-                  </pre>
-                </>
-              ) : null}
-            </>
-          ) : null}
-        </Panel>
+        <ConfigResult preview={preview} writable={doc.writable} help="reference/configuration" />
       ) : null}
       {[...sections.entries()].map(([section, fields]) => (
         <details key={section} class="glass panel" open={fields.some((f) => f.key in changes)}>

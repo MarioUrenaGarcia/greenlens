@@ -53,7 +53,12 @@ debe sostenerse la comparación, como `30s`, `10m` o `1h`; sin él la alerta se
 dispara de inmediato. Los nombres son únicos. Los umbrales de arriba son un
 punto de partida: elige los que correspondan a tus modelos y a tu hardware.
 
-Recarga el agente para aplicar las reglas.
+Recarga el agente para aplicar las reglas, o edítalas en la pantalla
+**Alertas** de la [interfaz gráfica](../gui/) con el rol operator. La pantalla
+muestra el archivo de configuración que producen las reglas, lo escribe
+cuando el agente puede escribir su propio archivo y, si no, entrega el
+archivo para instalarlo. Solo cambia `alerts.rules`; los comentarios y las
+demás claves del archivo se conservan.
 
 ## Notificaciones
 

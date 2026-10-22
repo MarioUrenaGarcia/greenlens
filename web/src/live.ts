@@ -15,10 +15,20 @@ interface State {
   backends: Backends | null;
   benchmark: BenchmarkJob | null;
   calibration: CalibrationJob | null;
+  // alertChanges counts the changes of state of alerts the stream told,
+  // so screens know to read the alerts again.
+  alertChanges: number;
   connected: boolean;
 }
 
-let state: State = { points: [], backends: null, benchmark: null, calibration: null, connected: false };
+let state: State = {
+  points: [],
+  backends: null,
+  benchmark: null,
+  calibration: null,
+  alertChanges: 0,
+  connected: false,
+};
 let lastId = 0;
 let source: EventSource | null = null;
 let throttle = 0;
@@ -68,6 +78,10 @@ function connect(): void {
   });
   es.addEventListener("benchmark", (e: MessageEvent<string>) => {
     state = { ...state, benchmark: JSON.parse(e.data) as BenchmarkJob };
+    emit();
+  });
+  es.addEventListener("alert", () => {
+    state = { ...state, alertChanges: state.alertChanges + 1 };
     emit();
   });
   es.addEventListener("calibration", (e: MessageEvent<string>) => {

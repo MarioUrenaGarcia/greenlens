@@ -57,13 +57,14 @@ browser.
 
 | Screen | Shows |
 |---|---|
-| Summary | the power of the node now and over the last minutes, by domain, and the energy of the last day, week or month |
+| Summary | the power of the node now and over the last minutes, by domain, the energy of the last day, week or month, and the active alerts |
 | Backends | every inference server found or declared, with its power, tokens per second and energy per token |
 | Models | the energy per generated token and the SCI of each model, its history, the split between prefill and decode, and the days that are regressions next to the changes of context |
 | Consumers | the energy and tokens of each consumer identified by the proxy |
 | Benchmarks | run a benchmark against a backend, compare two results and export them |
 | Reports | the energy, emissions, cost and water of a period, by day or hour and by backend, model or consumer, as CSV or JSON, with the printable environmental and SCI reports |
 | Sources | every energy channel, whether it is used and why not |
+| Alerts | the [alerts](../alerts/) firing or pending, those of the period and the rules, which operators edit with a preview of the configuration file |
 | Configuration | the settings of the agent, with a preview of each change (administrators only) |
 | Help | this documentation, with search |
 | About | the version, the license, the components and what the interface itself consumes |

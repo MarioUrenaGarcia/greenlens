@@ -508,6 +508,27 @@ func TestInterfaceEndToEnd(t *testing.T) {
 		g.audit("benchmarks after a run", "en")
 	})
 
+	t.Run("alert rules", func(t *testing.T) {
+		g.t = t
+		g.show("alerts")
+		click := func(text string) {
+			t.Helper()
+			g.eval(fmt.Sprintf(`[...document.querySelectorAll("main button")].find((b) => b.textContent.includes(%q)).click()`, text), nil)
+		}
+		click("Add a rule")
+		g.waitFor(`document.querySelector("fieldset.rule")`)
+		g.audit("alert rule editor", "en")
+		g.focusType("#rule-0-threshold", "250")
+		click("Preview the rules")
+		g.waitFor(`document.querySelector("main pre code")`)
+		var yaml string
+		g.eval(`document.querySelector("main pre code").textContent`, &yaml)
+		if !strings.Contains(yaml, `name: "rule_1"`) || !strings.Contains(yaml, "threshold: 250") || !strings.Contains(yaml, `expr: "node_power_watts"`) {
+			t.Errorf("previewed file:\n%s", yaml)
+		}
+		g.audit("alert rule preview", "en")
+	})
+
 	t.Run("printable reports", func(t *testing.T) {
 		g.t = t
 		// Spanish text runs longer, so both languages must fit the page.

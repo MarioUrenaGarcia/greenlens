@@ -121,8 +121,8 @@ backends, models and the commands, processes and systemd units you choose:
   journald, syslog or a signed webhook to an internal address, with
   equivalent rules for Prometheus and Alertmanager;
 - `greenlens gui` opens the graphical interface the agent serves, with the
-  live power, the backends, models and consumers, benchmarks, reports, the
-  configuration and this documentation, all without internet;
+  live power, the backends, models and consumers, benchmarks, reports,
+  alerts, the configuration and this documentation, all without internet;
 - every message is available in English and Spanish, and every error has a
   code, a cause and a fix.
 

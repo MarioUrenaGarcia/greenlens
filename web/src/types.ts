@@ -338,3 +338,42 @@ export interface Regressions {
   models: { backend: string; model: string; days: Finding[] }[];
   events: ContextEvent[];
 }
+
+export interface AlertRule {
+  name: string;
+  expr: string;
+  op: string;
+  threshold: number;
+  for: string;
+  match?: Record<string, string>;
+}
+
+export interface Alert {
+  id: number;
+  rule: string;
+  expr: string;
+  op: string;
+  threshold: number;
+  for_s: number;
+  labels: Record<string, string>;
+  state: "pending" | "firing" | "resolved";
+  value: number;
+  started_at: string;
+  fired_at?: string;
+  resolved_at?: string;
+}
+
+export interface Alerts {
+  schema_version: number;
+  evaluated_at?: string;
+  every_s: number;
+  signals: { name: string; labels: string[] }[];
+  operators: string[];
+  rules: AlertRule[];
+  sinks: string[];
+  config_writable: boolean;
+  active: Alert[];
+  from: string;
+  to: string;
+  history: Alert[];
+}

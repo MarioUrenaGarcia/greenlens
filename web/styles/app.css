@@ -821,3 +821,59 @@ textarea.input {
 .links li + li {
   margin-top: var(--space-2);
 }
+
+/* Alerts: firing ones are critical, pending ones load. */
+.alert-firing {
+  color: var(--critical-text);
+  font-weight: 600;
+}
+
+.alert-pending {
+  color: var(--load-text);
+  font-weight: 600;
+}
+
+.alert-resolved {
+  color: var(--ink);
+}
+
+.rule {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-inner);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rule legend {
+  font-weight: 600;
+  padding: 0 var(--space-2);
+}
+
+.rule-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.rule-fields label {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+  min-width: 0;
+}
+
+.rule-fields .input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.rule > .btn {
+  justify-self: start;
+}
+
+.rules {
+  margin: 0;
+  padding-left: var(--space-5);
+}

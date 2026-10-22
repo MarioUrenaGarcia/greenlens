@@ -18,6 +18,7 @@ import {
 } from "./prefs";
 import { href, useRoute } from "./router";
 import { About, selfPower } from "./screens/about";
+import { AlertsScreen } from "./screens/alerts";
 import { BackendsScreen } from "./screens/backends";
 import { Benchmarks } from "./screens/benchmarks";
 import { Config } from "./screens/config";
@@ -58,6 +59,7 @@ const screens: Screen[] = [
     render: ({ status, session }) => <Benchmarks status={status} role={session.role} />,
   },
   { id: "sources", icon: icons.sources, render: ({ status }) => <Sources status={status} /> },
+  { id: "alerts", icon: icons.alerts, render: ({ session }) => <AlertsScreen role={session.role} /> },
   { id: "config", icon: icons.config, admin: true, render: () => <Config /> },
   {
     id: "help",

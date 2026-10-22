@@ -44,6 +44,7 @@ var screens = []screen{
 	{"reports", "reports", []string{"light"}},
 	{"benchmarks", "benchmarks", nil},
 	{"sources", "sources", nil},
+	{"alerts", "alerts", nil},
 	{"help", "help", nil},
 	{"about", "about", nil},
 }

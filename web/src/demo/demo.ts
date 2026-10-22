@@ -8,6 +8,9 @@
 // is never part of the agent.
 
 import type {
+  Alert,
+  AlertRule,
+  Alerts,
   Backend,
   Benchmark,
   BenchmarkJob,
@@ -468,6 +471,25 @@ function sci(from: number, to: number, groupBy: string) {
 
 const zone = () => ws.factors.time_zone;
 
+// zoneOffsetMs is how far the time zone of the agent is ahead of UTC at ms.
+function zoneOffsetMs(ms: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone(),
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(ms));
+  const v = (type: string) => Number(parts.find((x) => x.type === type)?.value);
+  return (
+    Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second")) -
+    Math.floor(ms / 1000) * 1000
+  );
+}
+
 function localDay(ms: number): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: zone(),
@@ -531,6 +553,119 @@ function regressions(from: number, to: number, backend: string | null, model: st
     .map((e) => ({ ...e, at: iso(Date.parse(e.at) + shift) }))
     .filter((e) => Date.parse(e.at) >= from - 24 * hourMs && Date.parse(e.at) < to);
   return { schema_version: 1, from: iso(from), to: iso(to), time_zone: zone(), params: p, models, events };
+}
+
+// The alerts of the demo come from its own data: vLLM above 40 W through
+// the busy hours, and the days the regression of llama3.2:3b stands out.
+const demoRules: AlertRule[] = [
+  {
+    name: "vllm_busy",
+    expr: "backend_power_watts",
+    op: ">",
+    threshold: 40,
+    for: "5m",
+    match: { backend: "vllm-8000" },
+  },
+  { name: "efficiency_regression", expr: "model_jpt_zscore", op: ">", threshold: 3, for: "30m" },
+  { name: "energy_source_down", expr: "source_up", op: "<", threshold: 1, for: "1m" },
+];
+
+function alertsDoc(fromQ: number, toQ: number): Alerts {
+  const t = now();
+  const to = Number.isNaN(toQ) ? t : Math.min(toQ, t);
+  const from = Number.isNaN(fromQ) ? to - 7 * 24 * hourMs : fromQ;
+  const history: Alert[] = [];
+  const active: Alert[] = [];
+  let id = 1;
+  const vllm = ws.models.filter((m) => m.backend === "vllm-8000");
+  const powerAtHour = (h: number) => vllm.reduce((a, m) => a + sum(m.energy_j, h, h + hourMs), 0) / 3600;
+  const busy = demoRules[0] as AlertRule;
+  let run: { start: number; value: number } | null = null;
+  const first = Math.floor(from / hourMs) * hourMs;
+  for (let h = first; h <= to; h += hourMs) {
+    const w =
+      h + hourMs > t ? (backends().find((b) => b.name === "vllm-8000")?.power_w ?? 0) : powerAtHour(h);
+    if (w > busy.threshold) {
+      run = run ?? { start: h, value: w };
+      run.value = w;
+      continue;
+    }
+    if (run) {
+      history.push({
+        id: id++,
+        rule: busy.name,
+        expr: busy.expr,
+        op: busy.op,
+        threshold: busy.threshold,
+        for_s: 300,
+        labels: { backend: "vllm-8000" },
+        state: "resolved",
+        value: w,
+        started_at: iso(run.start),
+        fired_at: iso(run.start + 5 * 6e4),
+        resolved_at: iso(h),
+      });
+      run = null;
+    }
+  }
+  if (run) {
+    active.push({
+      id: id++,
+      rule: busy.name,
+      expr: busy.expr,
+      op: busy.op,
+      threshold: busy.threshold,
+      for_s: 300,
+      labels: { backend: "vllm-8000" },
+      state: "firing",
+      value: run.value,
+      started_at: iso(run.start),
+      fired_at: iso(run.start + 5 * 6e4),
+    });
+  }
+  const reg = demoRules[1] as AlertRule;
+  for (const m of regressions(from, to, "ollama-11434", "llama3.2:3b").models) {
+    for (const d of m.days) {
+      if (d.status !== "regression" || d.z === undefined) continue;
+      const start =
+        Date.parse(`${d.day}T00:00:00Z`) - zoneOffsetMs(Date.parse(`${d.day}T12:00:00Z`)) + 2 * hourMs;
+      history.push({
+        id: id++,
+        rule: reg.name,
+        expr: reg.expr,
+        op: reg.op,
+        threshold: reg.threshold,
+        for_s: 1800,
+        labels: { backend: m.backend, model: m.model },
+        state: "resolved",
+        value: d.z,
+        started_at: iso(start),
+        fired_at: iso(start + 30 * 6e4),
+        resolved_at: iso(start + 22 * hourMs),
+      });
+    }
+  }
+  history.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
+  return {
+    schema_version: 1,
+    evaluated_at: iso(t),
+    every_s: 15,
+    signals: [
+      { name: "node_power_watts", labels: [] },
+      { name: "backend_power_watts", labels: ["backend"] },
+      { name: "model_joules_per_token", labels: ["backend", "model"] },
+      { name: "model_jpt_zscore", labels: ["backend", "model"] },
+      { name: "source_up", labels: ["source"] },
+    ],
+    operators: [">", ">=", "<", "<="],
+    rules: demoRules,
+    sinks: ["log", "webhook"],
+    config_writable: false,
+    active,
+    from: iso(from),
+    to: iso(to),
+    history: [...active, ...history].filter((a) => a.fired_at),
+  };
 }
 
 // A benchmark run from the interface plays out in a few seconds.
@@ -698,6 +833,8 @@ async function handle(method: string, url: URL, body: string | null): Promise<Re
         : json(sci(from, to, q.get("group_by") ?? ""));
     case "/api/v1/regressions":
       return json(regressions(from, to, q.get("backend"), q.get("model")));
+    case "/api/v1/alerts":
+      return json(alertsDoc(from, to));
     case "/api/v1/benchmarks":
       return json({ schema_version: 1, benchmarks: benchmarks() });
     case "/api/v1/benchmarks/run":

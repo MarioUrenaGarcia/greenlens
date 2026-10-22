@@ -52,7 +52,12 @@ comparison must hold, such as `30s`, `10m` or `1h`; without it the alert
 fires at once. Names are unique. The thresholds above are starting points:
 choose those that fit your models and hardware.
 
-Reload the agent to apply the rules.
+Reload the agent to apply the rules, or edit them in the **Alerts** screen
+of the [graphical interface](../gui/) with the operator role. The screen
+previews the configuration file the rules produce, writes it when the agent
+can write its own file, and otherwise gives the file to install. Only
+`alerts.rules` changes; the comments and the other keys of the file are
+kept.
 
 ## Notifications
 

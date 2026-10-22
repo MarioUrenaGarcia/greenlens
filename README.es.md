@@ -124,7 +124,8 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
   interna, con reglas equivalentes para Prometheus y Alertmanager;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
-  los reportes, la configuración y esta documentación, todo sin internet;
+  los reportes, las alertas, la configuración y esta documentación, todo
+  sin internet;
 - cada mensaje está en inglés y en español, y cada error tiene un código, una
   causa y una solución.
 

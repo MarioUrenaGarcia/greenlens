@@ -52,6 +52,13 @@ export const icons = {
       <path d="M8 7h.01M8 17h.01" />
     </Svg>
   ),
+  alerts: () => (
+    <Svg>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+      <path d="M12 3v2" />
+    </Svg>
+  ),
   consumers: () => (
     <Svg>
       <circle cx="9" cy="8" r="3" />

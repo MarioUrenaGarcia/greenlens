@@ -1195,6 +1195,7 @@ reports = "Reports"
 config = "Configuration"
 help = "Help"
 welcome = "First steps"
+alerts = "Alerts"
 
 [gui.prefs]
 title = "Preferences"
@@ -1396,10 +1397,60 @@ r2 = "R2 {r2} over {n} intervals of the last day"
 banner = "Demo with a simulated workspace: the backends, models, hardware and every value are invented."
 readonly = "the demo shows a simulated workspace and cannot change it"
 
+[gui.alerts]
+title = "Alerts"
+intro = "Rules are judged every {seconds} seconds: an alert is pending while its comparison holds, fires once it has held for the time of its rule, and is resolved when it stops holding."
+sinks = "Notifications go to: {sinks}."
+no_sinks = "No notification is sent: every sink is off."
+active = "Active alerts"
+active_caption = "Alerts that are firing or pending, firing first"
+none_active = "No alert is pending or firing."
+no_rules = "There are no alert rules. Add one below, or under alerts.rules in the configuration."
+history = "Alerts in the period"
+history_caption = "Alerts that fired and started in the period, the latest first"
+no_history = "No alert fired in this period."
+rules = "Rules"
+add = "Add a rule"
+preview = "Preview the rules"
+read_only_role = "Changing the rules needs the operator role."
+rule_n = "Rule {n}"
+remove = "Remove rule {name}"
+for = "for {duration}"
+see_all = "See every alert"
+up = "returning values"
+down = "no values"
+node = "the node"
 
+[gui.alerts.field]
+name = "Name"
+expr = "Signal"
+op = "Comparison"
+threshold = "Threshold"
+for = "For"
+for_doc = "How long the comparison must hold, such as 30s, 10m or 1h; 0s fires at once."
+match = "Only where {label} is"
 
+[gui.alerts.col]
+state = "State"
+rule = "Rule"
+series = "Series"
+condition = "Condition"
+value = "Value"
+since = "Since"
+fired = "Fired"
+resolved = "Resolved"
 
+[gui.alerts.state]
+pending = "Pending"
+firing = "Firing"
+resolved = "Resolved"
 
+[gui.alerts.signal]
+node_power_watts = "Power of the node"
+backend_power_watts = "Power of the backend"
+model_joules_per_token = "Energy per generated token, last 15 minutes"
+model_jpt_zscore = "Z-score of today's energy per token"
+source_up = "Energy source"
 
 [gui.regress]
 title = "Regressions of the energy per token"
