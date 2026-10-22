@@ -130,7 +130,8 @@ y un minuto de espera.
 
 `greenlens status` lista las alertas disparadas o pendientes.
 `greenlens export alerts --from 30d` las escribe junto con el historial del
-periodo como CSV, o como JSON con `--output json`.
+periodo como CSV, o como JSON con `--output json`. `greenlens top` las
+muestra en su quinta vista.
 
 ## Con Prometheus y Alertmanager
 

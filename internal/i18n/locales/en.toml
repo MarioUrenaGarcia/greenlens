@@ -276,6 +276,7 @@ node = "Node"
 backends = "Backends"
 consumers = "Consumers"
 sources = "Sources"
+alerts = "Alerts"
 
 [tui.key]
 next = "next view"
@@ -304,13 +305,23 @@ channel = "Channel"
 domain = "Domain"
 quality = "Quality"
 reason = "Status"
+state = "State"
+rule = "Rule"
+series = "Series"
+value = "Value"
+since = "Since"
 
+[tui.alert_state]
+pending = "pending"
+firing = "FIRING"
+resolved = "resolved"
 
 [tui.empty]
 node = "The agent reports no energy domain yet."
 backends = "No inference backend found. Declare yours under backends in the configuration if discovery cannot see it."
 consumers = "No consumer attribution. Set proxy.consumer_header and send requests through the proxy to see the energy of each consumer."
 sources = "The agent reports no energy source."
+alerts = "No alert is pending or firing, and none fired in the last day."
 
 [tui.help]
 title = "greenlens top"
@@ -318,6 +329,7 @@ node = "Node: the power of every domain over the last minutes and the energy sin
 backends = "Backends and models: the power of each backend in the last usage interval and, since the agent started, the energy of every model, its energy per generated token, the tokens it generates per second, and the emissions of that energy."
 consumers = "Consumers: the energy and tokens of each consumer the proxy identifies, over the last day. Consumers are named by an HMAC of a request header or by an alias."
 sources = "Sources: every energy channel the agent found, whether it is used and why not."
+alerts = "Alerts: those firing or pending, then those resolved in the last day, with the value of their series. The rules are in the configuration and in the graphical interface."
 close = "Press ? or Esc to close."
 
 [cli.bench]

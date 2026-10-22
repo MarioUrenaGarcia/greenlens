@@ -276,6 +276,7 @@ node = "Nodo"
 backends = "Backends"
 consumers = "Consumidores"
 sources = "Fuentes"
+alerts = "Alertas"
 
 [tui.key]
 next = "vista siguiente"
@@ -304,13 +305,23 @@ channel = "Canal"
 domain = "Dominio"
 quality = "Calidad"
 reason = "Estado"
+state = "Estado"
+rule = "Regla"
+series = "Serie"
+value = "Valor"
+since = "Desde"
 
+[tui.alert_state]
+pending = "pendiente"
+firing = "DISPARADA"
+resolved = "resuelta"
 
 [tui.empty]
 node = "El agente todavía no reporta ningún dominio de energía."
 backends = "No se encontró ningún backend de inferencia. Declara el tuyo en backends de la configuración si el descubrimiento no lo ve."
 consumers = "Sin atribución por consumidor. Define proxy.consumer_header y envía las peticiones por el proxy para ver la energía de cada consumidor."
 sources = "El agente no reporta ninguna fuente de energía."
+alerts = "Ninguna alerta está pendiente ni disparada, y ninguna se disparó en el último día."
 
 [tui.help]
 title = "greenlens top"
@@ -318,6 +329,7 @@ node = "Nodo: la potencia de cada dominio en los últimos minutos y la energía 
 backends = "Backends y modelos: la potencia de cada backend en el último intervalo de uso y, desde que inició el agente, la energía de cada modelo, su energía por token generado, los tokens que genera por segundo y las emisiones de esa energía."
 consumers = "Consumidores: la energía y los tokens de cada consumidor que identifica el proxy, en el último día. Los consumidores se nombran por un HMAC de una cabecera de la petición o por un alias."
 sources = "Fuentes: cada canal de energía que encontró el agente, si se usa y por qué no."
+alerts = "Alertas: las disparadas o pendientes, luego las resueltas en el último día, con el valor de su serie. Las reglas están en la configuración y en la interfaz gráfica."
 close = "Pulsa ? o Esc para cerrar."
 
 [cli.bench]

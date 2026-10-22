@@ -1,0 +1,24 @@
+[1mGreenLens[m  1 Nodo   2 Backends   3 Consumidores   4 Fuentes  [1;7m 5 Alertas [m
+Nodo [1m121 W[m, medido  |  2 backends  |  agente v0.3.0
+ [1mEstado ^ [m  [1mRegla             [m  [1mSerie                 [m  [1mValor    [m  [1mDesde       [m 
+ DISPARADA  high_jpt            backend=ollama-1143...  6.214      10-20 12:18  
+ pendiente  node_busy           -                       312.5      10-20 12:29  
+ resuelta   vllm_busy           backend=vllm-8000       38.1       10-20 09:35  
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
+
+
+[1m1-5[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     

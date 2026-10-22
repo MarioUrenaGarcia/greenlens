@@ -17,10 +17,11 @@ greenlens top --refresh 5s
 | Backends | `2` | every backend and model: power, energy, energy per generated token, tokens per second, CO2e and, with a tariff, cost |
 | Consumers | `3` | the energy and tokens of each consumer identified by the proxy over the last day |
 | Sources | `4` | every energy channel, whether it is used and why not, and the problems found |
+| Alerts | `5` | the [alerts](../alerts/) firing or pending, then those resolved in the last day |
 
 | Key | Action |
 |---|---|
-| `Tab`, `Shift+Tab`, `1` to `4` | change the view |
+| `Tab`, `Shift+Tab`, `1` to `5` | change the view |
 | `Up`, `Down`, `j`, `k` | move in a table |
 | `s` | change the sort column |
 | `/` | filter the rows; `Enter` keeps the filter, `Esc` clears it |

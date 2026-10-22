@@ -1,12 +1,14 @@
-[1mGreenLens[m  1 Node   2 Backends   3 Consumers  [1;7m 4 Sources [m               18:30:00
+[1mGreenLens[m  1 Node   2 Backends   3 Consumers   4 Sources  [1;7m 5 Alerts [m    18:30:00
 Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
 [1mgreenlens top[m
 
-Sources: every energy channel the agent found, whether it is used and why not.
+Alerts: those firing or pending, then those resolved in the last day, with the
+value of their series. The rules are in the configuration and in the graphical
+interface.
 
 [1mtab[m       next view        [1ms[m sort      
 [1mshift+tab[m previous view    [1m/[m filter    
-[1m1-4[m       views            [1mp[m pause     
+[1m1-5[m       views            [1mp[m pause     
 [1mup/k[m      up               [1me[m export CSV
 [1mdown/j[m    down             [1m?[m help      
                            [1mq[m quit      
@@ -19,6 +21,4 @@ Press ? or Esc to close.
 
 
 
-
-
-[1m1-4[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              
+[1m1-5[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              

@@ -1,4 +1,4 @@
-[1mGreenLens[m  1 Node  [1;7m 2 Backends [m  3 Consumers   4 Sources                18:30:00
+[1mGreenLens[m  1 Node  [1;7m 2 Backends [m  3 Consumers   4 Sources   5 Alerts     18:30:00
 Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
  [1mBackend / model ^   [m  [1mPower    [m  [1mEnergy   [m  [1mJ/token  [m  [1mtok/s  [m  [1mCO2e       [m 
  llamacpp-18080        9.40 W     3352 J                -        0.41 gCO2e     
@@ -21,4 +21,4 @@ Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
 
 
 
-[1m1-4[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              
+[1m1-5[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              

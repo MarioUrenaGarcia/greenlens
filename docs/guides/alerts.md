@@ -130,7 +130,8 @@ a minute apart.
 
 `greenlens status` lists the alerts that are firing or pending.
 `greenlens export alerts --from 30d` writes them and the history of the
-period as CSV, or as JSON with `--output json`.
+period as CSV, or as JSON with `--output json`. `greenlens top` shows them
+in its fifth view.
 
 ## With Prometheus and Alertmanager
 

@@ -15,6 +15,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
@@ -86,7 +87,7 @@ func (f fake) Status(context.Context) (api.Status, error) {
 	// factors they are those of the whole energy.
 	fs := indicators.Default()
 	fs.TariffPerKWh = f.price
-	st.Factors = api.Factors{EmissionGPerKWh: fs.EmissionGPerKWh, PUE: fs.PUE, Currency: fs.Currency, TariffPerKWh: f.price}
+	st.Factors = api.Factors{EmissionGPerKWh: fs.EmissionGPerKWh, PUE: fs.PUE, Currency: fs.Currency, TariffPerKWh: f.price, TimeZone: "America/Mexico_City"}
 	for i := range st.Backends {
 		b := &st.Backends[i]
 		b.Indicators = fs.Compute(b.EnergyJ)
@@ -99,6 +100,21 @@ func (f fake) Status(context.Context) (api.Status, error) {
 func (f fake) Live(context.Context) (api.Live, error) { return live(), f.err }
 func (f fake) BackendUsage(context.Context, time.Time, time.Time, string) (api.BackendUsage, error) {
 	return consumers(), f.err
+}
+
+func (f fake) Alerts(context.Context, time.Time, time.Time) (api.Alerts, error) {
+	fired, started, resolved := t0.Add(-12*time.Minute), t0.Add(-3*time.Hour), t0.Add(-2*time.Hour)
+	firedOld := started.Add(5 * time.Minute)
+	return api.Alerts{SchemaVersion: 1, EveryS: 15,
+		Active: []alerts.Alert{
+			{ID: 3, Rule: "high_jpt", Expr: alerts.ModelJPerToken, Op: ">", Threshold: 5, Labels: map[string]string{"backend": "ollama-11434", "model": "qwen2.5:7b"},
+				State: alerts.Firing, Value: 6.214, StartedAt: fired.Add(-10 * time.Minute), FiredAt: &fired},
+			{ID: 4, Rule: "node_busy", Expr: alerts.NodePowerW, Op: ">", Threshold: 300, Labels: map[string]string{}, State: alerts.Pending, Value: 312.5, StartedAt: t0.Add(-time.Minute)},
+		},
+		History: []alerts.Alert{
+			{ID: 2, Rule: "vllm_busy", Expr: alerts.BackendPowerW, Op: ">", Threshold: 40, Labels: map[string]string{"backend": "vllm-8000"},
+				State: alerts.Resolved, Value: 38.1, StartedAt: started, FiredAt: &firedOld, ResolvedAt: &resolved},
+		}}, f.err
 }
 
 func localizer(t *testing.T, lang string) *i18n.Localizer {

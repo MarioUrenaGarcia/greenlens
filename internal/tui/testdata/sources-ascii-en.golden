@@ -1,4 +1,4 @@
-[1mGreenLens[m  1 Node   2 Backends   3 Consumers  [1;7m 4 Sources [m               18:30:00
+[1mGreenLens[m  1 Node   2 Backends   3 Consumers  [1;7m 4 Sources [m  5 Alerts     18:30:00
 Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
  [1mChannel ^               [m  [1mDomain        [m  [1mQuality  [m  [1mStatus                   [m 
  nvidia_smi:0000:01:00.0   GPU             measured   nvml already measures ... 
@@ -21,4 +21,4 @@ Node [1m121 W[m, measured  |  2 backends  |  agent v0.3.0
 
 
 
-[1m1-4[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              
+[1m1-5[m views  [1m/[m filter  [1ms[m sort  [1mp[m pause  [1me[m export CSV  [1m?[m help  [1mq[m quit              

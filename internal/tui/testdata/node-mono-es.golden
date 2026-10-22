@@ -1,4 +1,4 @@
-[1mGreenLens[m [1;7m 1 Nodo [m  2 Backends   3 Consumidores   4 Fuentes             18:30:00
+[1mGreenLens[m [1;7m 1 Nodo [m  2 Backends   3 Consumidores   4 Fuentes   5 Alertas 
 Nodo [1m121 W[m, medido  |  2 backends  |  agente v0.3.0
   100 W                                                                         
                                                                                 
@@ -21,4 +21,4 @@ Dominio                  Potencia Desde el inicio  Calidad
 * Paquete de CPU       [1m    42.5 W[m [1m     42.2 Wh[m  medido
 + GPU                  [1m    78.2 W[m [1m     72.2 Wh[m  medido
 
-[1m1-4[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     
+[1m1-5[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     

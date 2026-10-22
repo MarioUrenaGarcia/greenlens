@@ -1,12 +1,14 @@
-[1mGreenLens[m  1 Nodo   2 Backends   3 Consumidores  [1;7m 4 Fuentes [m            18:30:00
+[1mGreenLens[m  1 Nodo   2 Backends   3 Consumidores   4 Fuentes  [1;7m 5 Alertas [m
 Nodo [1m121 W[m, medido  |  2 backends  |  agente v0.3.0
 [1mgreenlens top[m
 
-Fuentes: cada canal de energia que encontro el agente, si se usa y por que no.
+Alertas: las disparadas o pendientes, luego las resueltas en el ultimo dia,
+con el valor de su serie. Las reglas estan en la configuracion y en la
+interfaz grafica.
 
 [1mtab[m       vista siguiente    [1ms[m ordenar     
 [1mshift+tab[m vista anterior     [1m/[m filtrar     
-[1m1-4[m       vistas             [1mp[m pausa       
+[1m1-5[m       vistas             [1mp[m pausa       
 [1mup/k[m      arriba             [1me[m exportar CSV
 [1mdown/j[m    abajo              [1m?[m ayuda       
                              [1mq[m salir       
@@ -19,6 +21,4 @@ Pulsa ? o Esc para cerrar.
 
 
 
-
-
-[1m1-4[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     
+[1m1-5[m vistas  [1m/[m filtrar  [1ms[m ordenar  [1mp[m pausa  [1me[m exportar CSV  [1m?[m ayuda  [1mq[m salir     

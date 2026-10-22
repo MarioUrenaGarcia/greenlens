@@ -10,7 +10,10 @@ package tui
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +23,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/i18n"
 	"github.com/MarioUrenaGarcia/greenlens/internal/store"
@@ -36,6 +40,7 @@ type Source interface {
 	Status(ctx context.Context) (api.Status, error)
 	Live(ctx context.Context) (api.Live, error)
 	BackendUsage(ctx context.Context, from, to time.Time, groupBy string) (api.BackendUsage, error)
+	Alerts(ctx context.Context, from, to time.Time) (api.Alerts, error)
 }
 
 // Usage reports the CPU time, in clock ticks, and the resident memory of
@@ -63,10 +68,11 @@ const (
 	viewBackends
 	viewConsumers
 	viewSources
+	viewAlerts
 	viewCount
 )
 
-var viewKeys = [viewCount]string{"node", "backends", "consumers", "sources"}
+var viewKeys = [viewCount]string{"node", "backends", "consumers", "sources", "alerts"}
 
 type tickMsg time.Time
 
@@ -75,6 +81,7 @@ type dataMsg struct {
 	status    api.Status
 	live      api.Live
 	consumers api.BackendUsage
+	alerts    api.Alerts
 	err       error
 }
 
@@ -89,7 +96,7 @@ func newKeys(l *i18n.Localizer) keyMap {
 	k := keyMap{
 		next:   b("next", "tab"),
 		prev:   b("prev", "shift+tab"),
-		views:  b("views", "1", "2", "3", "4"),
+		views:  b("views", "1", "2", "3", "4", "5"),
 		up:     b("up", "up", "k"),
 		down:   b("down", "down", "j"),
 		sort:   b("sort", "s"),
@@ -99,7 +106,7 @@ func newKeys(l *i18n.Localizer) keyMap {
 		help:   b("help", "?"),
 		quit:   b("quit", "q", "ctrl+c"),
 	}
-	k.views.SetHelp("1-4", l.T("tui.key.views"))
+	k.views.SetHelp("1-5", l.T("tui.key.views"))
 	k.up.SetHelp("up/k", l.T("tui.key.up"))
 	k.down.SetHelp("down/j", l.T("tui.key.down"))
 	return k
@@ -146,6 +153,7 @@ type model struct {
 	status    api.Status
 	live      api.Live
 	consumers api.BackendUsage
+	alerts    api.Alerts
 
 	prevTokens map[string]int64
 	prevAt     time.Time
@@ -200,7 +208,7 @@ func (m *model) tick() tea.Cmd {
 
 // fetch reads the agent without holding up the interface.
 func (m *model) fetch() tea.Cmd {
-	src, now, wantConsumers := m.o.Source, m.o.Now(), m.view == viewConsumers
+	src, now, wantConsumers, wantAlerts := m.o.Source, m.o.Now(), m.view == viewConsumers, m.view == viewAlerts
 	started := m.status.StartedAt
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -218,6 +226,9 @@ func (m *model) fetch() tea.Cmd {
 				from = now.Add(-24 * time.Hour)
 			}
 			d.consumers, d.err = src.BackendUsage(ctx, from, now.Add(time.Second), store.ByConsumer)
+		}
+		if wantAlerts {
+			d.alerts, d.err = src.Alerts(ctx, now.Add(-24*time.Hour), now.Add(time.Second))
 		}
 		return d
 	}
@@ -248,11 +259,14 @@ func (m *model) receive(d dataMsg) {
 	if d.err != nil {
 		return
 	}
-	consumers := m.consumers
+	consumers, alerts := m.consumers, m.alerts
 	if m.view == viewConsumers {
 		consumers = d.consumers
 	}
-	m.have, m.at, m.status, m.live, m.consumers = true, d.at, d.status, d.live, consumers
+	if m.view == viewAlerts {
+		alerts = d.alerts
+	}
+	m.have, m.at, m.status, m.live, m.consumers, m.alerts = true, d.at, d.status, d.live, consumers, alerts
 	m.updateRates()
 	m.updateSelf()
 	m.layout()
@@ -527,6 +541,8 @@ func (m *model) rows() []row {
 		rs = m.consumerRows()
 	case viewSources:
 		rs = m.sourceRows()
+	case viewAlerts:
+		rs = m.alertRows()
 	default:
 		return nil
 	}
@@ -566,6 +582,15 @@ func (m *model) columns() []column {
 			{l.T("tui.col.domain"), 14, false, "domain"},
 			{l.T("tui.col.quality"), 9, false, "quality"},
 			{l.T("tui.col.reason"), 25, false, "reason"},
+		}
+	case viewAlerts:
+		// One cell of padding on each side: the widths add up to 70.
+		return []column{
+			{l.T("tui.col.state"), 9, false, "state"},
+			{l.T("tui.col.rule"), 18, false, "rule"},
+			{l.T("tui.col.series"), 22, false, "labels"},
+			{l.T("tui.col.value"), 9, true, "value"},
+			{l.T("tui.col.since"), 12, false, "fired_at"},
 		}
 	case viewNode, viewCount:
 		// The node is a chart, not a table.
@@ -636,6 +661,50 @@ func (m *model) consumerRows() []row {
 			keys:  []float64{0, 0, u.EnergyJ, float64(u.GeneratedTokens), jpt},
 			csv:   []string{u.Consumer, u.Backend, num(u.EnergyJ), fmt.Sprint(u.GeneratedTokens), num(jpt)},
 		})
+	}
+	return rs
+}
+
+// zone is the time zone of the agent, which its days and reports follow.
+func (m *model) zone() *time.Location {
+	if loc, err := time.LoadLocation(m.status.Factors.TimeZone); err == nil && m.status.Factors.TimeZone != "" {
+		return loc
+	}
+	return time.Local
+}
+
+// alertRows lists the active alerts, then those that fired in the last
+// day and were resolved.
+func (m *model) alertRows() []row {
+	var rs []row
+	add := func(a alerts.Alert) {
+		at := a.StartedAt
+		if a.FiredAt != nil {
+			at = *a.FiredAt
+		}
+		var labels []string
+		for _, k := range slices.Sorted(maps.Keys(a.Labels)) {
+			labels = append(labels, k+"="+a.Labels[k])
+		}
+		series := strings.Join(labels, ",")
+		if series == "" {
+			series = "-"
+		}
+		value := strconv.FormatFloat(a.Value, 'g', 4, 64)
+		rs = append(rs, row{
+			group: fmt.Sprint(a.ID),
+			cells: []string{m.l.T("tui.alert_state." + a.State), a.Rule, series, value, at.In(m.zone()).Format("01-02 15:04")},
+			keys:  []float64{0, 0, 0, a.Value, float64(at.Unix())},
+			csv:   []string{a.State, a.Rule, series, num(a.Value), at.UTC().Format(time.RFC3339)},
+		})
+	}
+	for _, a := range m.alerts.Active {
+		add(a)
+	}
+	for _, a := range m.alerts.History {
+		if a.State == alerts.Resolved {
+			add(a)
+		}
 	}
 	return rs
 }
