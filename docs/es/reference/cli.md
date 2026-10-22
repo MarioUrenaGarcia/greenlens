@@ -306,6 +306,30 @@ greenlens export [opciones]
 | Opción | Descripción | Por defecto |
 |---|---|---|
 
+## greenlens export alerts
+
+Exporta las alertas pendientes o disparadas, y las que se dispararon y empezaron en el periodo, de la más reciente a la más antigua, con su regla, las etiquetas de su serie, el valor en su último cambio de estado y cuándo empezaron, se dispararon y se resolvieron.
+
+**Uso**
+
+```text
+greenlens export alerts [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--from` | Inicio del periodo | `7d` |
+| `--to` | Fin del periodo | `now` |
+
+**Ejemplos**
+
+```bash
+greenlens export alerts --from 30d > alerts.csv
+greenlens export alerts --output json
+```
+
 ## greenlens export benchmarks
 
 Exporta los benchmarks guardados, del más reciente al más antiguo, con su energía por token generado, desviación estándar, coeficiente de variación e intervalo de confianza al 95%. La salida JSON conserva cada corrida.

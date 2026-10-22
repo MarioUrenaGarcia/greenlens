@@ -4,11 +4,13 @@
 package agent
 
 import (
+	"maps"
 	"net/http"
 	"runtime"
 	"slices"
 	"strings"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/prometheus"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -187,7 +189,31 @@ func (a *Agent) metrics() []prometheus.Family {
 	self := prometheus.Family{Name: "greenlens_self_energy_joules_total", Help: "Energy attributed to the agent itself.", Type: prometheus.Counter,
 		Samples: []prometheus.Sample{{Value: selfJ}}}
 
-	fams := []prometheus.Family{nodeEnergy, nodePower, idle, unattributed, backendEnergy, modelEnergy, modelTokens, jpt, consumers, emissions, sci, cost, water, up}
+	zscore := prometheus.Family{Name: "greenlens_model_jpt_zscore", Help: "Z-score of the energy per generated token of each model today against the days before it.", Type: prometheus.Gauge}
+	firing := prometheus.Family{Name: "greenlens_alerts_firing", Help: "Alerts firing for each rule.", Type: prometheus.Gauge}
+	a.alerting.mu.Lock()
+	zs := slices.Clone(a.alerting.z)
+	count := map[string]int{}
+	for _, r := range a.alerting.engine.Rules() {
+		count[r.Name] = 0
+	}
+	for _, al := range a.alerting.engine.Active() {
+		if al.State == alerts.Firing {
+			count[al.Rule]++
+		}
+	}
+	a.alerting.mu.Unlock()
+	slices.SortFunc(zs, func(x, y alerts.Series) int {
+		return strings.Compare(x.Labels["backend"]+"/"+x.Labels["model"], y.Labels["backend"]+"/"+y.Labels["model"])
+	})
+	for _, z := range zs {
+		zscore.Samples = append(zscore.Samples, prometheus.Sample{Labels: L("backend", z.Labels["backend"], "model", z.Labels["model"]), Value: z.Value})
+	}
+	for _, rule := range slices.Sorted(maps.Keys(count)) {
+		firing.Samples = append(firing.Samples, prometheus.Sample{Labels: L("rule", rule), Value: float64(count[rule])})
+	}
+
+	fams := []prometheus.Family{nodeEnergy, nodePower, idle, unattributed, backendEnergy, modelEnergy, modelTokens, jpt, zscore, consumers, emissions, sci, cost, water, up, firing}
 	fams = append(fams, a.collectors.Families()...)
 	return append(fams, self, build)
 }

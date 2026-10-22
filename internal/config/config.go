@@ -29,6 +29,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
@@ -71,6 +72,7 @@ type Config struct {
 	Server      Server      `yaml:"server"`
 	Indicators  Indicators  `yaml:"indicators"`
 	Analysis    Analysis    `yaml:"analysis"`
+	Alerts      Alerts      `yaml:"alerts"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
 }
@@ -257,6 +259,47 @@ type Regression struct {
 	MinGeneratedTokens int     `yaml:"min_generated_tokens"`
 }
 
+// Alerts configures the alert rules and where their notifications go.
+type Alerts struct {
+	Rules []AlertRule `yaml:"rules"`
+	Sinks AlertSinks  `yaml:"sinks"`
+}
+
+// AlertRule compares a signal with a threshold; see the alerts package.
+type AlertRule struct {
+	Name      string            `yaml:"name"`
+	Expr      string            `yaml:"expr"`
+	Op        string            `yaml:"op"`
+	Threshold float64           `yaml:"threshold"`
+	For       Duration          `yaml:"for"`
+	Match     map[string]string `yaml:"match"`
+}
+
+// AlertSinks lists where notifications go. The log is on by default; the
+// others are opt-in.
+type AlertSinks struct {
+	Log      bool         `yaml:"log"`
+	Journald bool         `yaml:"journald"`
+	Syslog   bool         `yaml:"syslog"`
+	Webhook  AlertWebhook `yaml:"webhook"`
+}
+
+// AlertWebhook posts notifications to an internal URL.
+type AlertWebhook struct {
+	Enabled   bool   `yaml:"enabled"`
+	URL       string `yaml:"url"`
+	TokenFile string `yaml:"token_file"`
+}
+
+// AlertRules returns the rules for the alert engine.
+func (c Config) AlertRules() []alerts.Rule {
+	out := make([]alerts.Rule, 0, len(c.Alerts.Rules))
+	for _, r := range c.Alerts.Rules {
+		out = append(out, alerts.Rule{Name: r.Name, Expr: r.Expr, Op: r.Op, Threshold: r.Threshold, For: r.For.D(), Match: r.Match})
+	}
+	return out
+}
+
 // Retention sets how long data is kept at each resolution.
 type Retention struct {
 	Raw      Duration `yaml:"raw"`
@@ -281,6 +324,7 @@ func Defaults() Config {
 		Discovery:   Discovery{Enabled: true, Interval: Duration(10 * time.Second)},
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}, SCI: SCI{FunctionalUnit: indicators.UnitGeneratedTokens}},
 		Analysis:    Analysis{Regression: Regression{BaselineDays: 14, MinBaselineDays: 7, ZThreshold: 3, MinGeneratedTokens: 1000}},
+		Alerts:      Alerts{Sinks: AlertSinks{Log: true}},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
 			Rollup1m: Duration(2160 * time.Hour),
@@ -611,6 +655,24 @@ func (c Config) Validate() error {
 			if p.v != "" && !filepath.IsAbs(p.v) {
 				bad(p.key, "must be an absolute path")
 			}
+		}
+	}
+	for i, r := range c.Alerts.Rules {
+		if err := alerts.ValidateRules([]alerts.Rule{c.AlertRules()[i]}); err != nil {
+			bad(fmt.Sprintf("alerts.rules[%d]", i), err.Error())
+		}
+		for j := range i {
+			if c.Alerts.Rules[j].Name == r.Name {
+				bad(fmt.Sprintf("alerts.rules[%d].name", i), fmt.Sprintf("%q is used twice", r.Name))
+			}
+		}
+	}
+	if w := c.Alerts.Sinks.Webhook; w.Enabled {
+		if err := alerts.CheckURL(w.URL); err != nil {
+			bad("alerts.sinks.webhook.url", err.Error())
+		}
+		if w.TokenFile == "" || !filepath.IsAbs(w.TokenFile) {
+			bad("alerts.sinks.webhook.token_file", "set the absolute path of the file that holds the token")
 		}
 	}
 	if h := c.Proxy.ConsumerHeader; h != "" && !headerName.MatchString(h) {

@@ -4,11 +4,13 @@
 package cli
 
 import (
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/output"
@@ -49,7 +51,7 @@ func newExportCmd(a *app) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
 	}
-	cmd.AddCommand(newExportEnergyCmd(a), newExportUsageCmd(a), newExportBenchmarksCmd(a))
+	cmd.AddCommand(newExportEnergyCmd(a), newExportUsageCmd(a), newExportBenchmarksCmd(a), newExportAlertsCmd(a))
 	return cmd
 }
 
@@ -255,5 +257,70 @@ func newExportBenchmarksCmd(a *app) *cobra.Command {
 		},
 	}
 	cmd.Flags().IntVar(&limit, "limit", 1000, l.T("cli.export.flag.limit"))
+	return cmd
+}
+
+// AlertsExport is the document of greenlens export alerts.
+type AlertsExport struct {
+	SchemaVersion int            `json:"schema_version"`
+	From          time.Time      `json:"from"`
+	To            time.Time      `json:"to"`
+	Active        []alerts.Alert `json:"active"`
+	History       []alerts.Alert `json:"history"`
+}
+
+func newExportAlertsCmd(a *app) *cobra.Command {
+	l := a.l
+	var fromS, toS string
+	cmd := &cobra.Command{
+		Use:   "alerts",
+		Short: l.T("cli.export.alerts.short"),
+		Long:  wrap(l.T("cli.export.alerts.long"), helpWidth),
+		Example: "  greenlens export alerts --from 30d > alerts.csv\n" +
+			"  greenlens export alerts --output json",
+		Args: noArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			now := time.Now()
+			from, err := parseTime(fromS, now)
+			if err != nil {
+				return help.New(help.GL0005, "flag", "--from", "value", fromS, "command", cmd.CommandPath())
+			}
+			to, err := parseTime(toS, now)
+			if err != nil || !from.Before(to) {
+				return help.New(help.GL0005, "flag", "--to", "value", toS, "command", cmd.CommandPath())
+			}
+			cfg, _, err := a.config()
+			if err != nil {
+				return err
+			}
+			c, err := a.agent(cmd.Context(), cfg)
+			if err != nil {
+				return err
+			}
+			al, err := c.Alerts(cmd.Context(), from, to)
+			if err != nil {
+				return err
+			}
+			doc := AlertsExport{SchemaVersion: al.SchemaVersion, From: al.From, To: al.To, Active: al.Active, History: al.History}
+			g := output.Grid{Header: []string{"id", "rule", "state", "expr", "op", "threshold", "for_s", "labels", "value", "started_at", "fired_at", "resolved_at"}}
+			opt := func(t *time.Time) string {
+				if t == nil {
+					return ""
+				}
+				return rfc3339(*t)
+			}
+			for _, x := range append(slices.Clone(al.Active), al.History...) {
+				labels := alertSeries(x.Labels)
+				if labels == "-" {
+					labels = ""
+				}
+				g.Rows = append(g.Rows, []string{strconv.FormatInt(x.ID, 10), x.Rule, x.State, x.Expr, x.Op, float(x.Threshold), float(x.ForS),
+					labels, float(x.Value), rfc3339(x.StartedAt), opt(x.FiredAt), opt(x.ResolvedAt)})
+			}
+			return output.Write(cmd.OutOrStdout(), a.exportFormat(), doc, g)
+		},
+	}
+	cmd.Flags().StringVar(&fromS, "from", "7d", l.T("cli.report.flag.from"))
+	cmd.Flags().StringVar(&toS, "to", "now", l.T("cli.report.flag.to"))
 	return cmd
 }

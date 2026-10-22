@@ -8,6 +8,7 @@ package sandbox
 import (
 	"errors"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -67,5 +68,71 @@ func TestRestrictChild(t *testing.T) {
 	}
 	if _, err := os.ReadFile("/etc/hostname"); !errors.Is(err, fs.ErrPermission) && !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("read /etc/hostname: %v, want permission denied", err)
+	}
+}
+
+// resolveUnixABI is the first Landlock ABI that controls connecting to
+// pathname Unix sockets.
+const resolveUnixABI = 9
+
+func TestSockets(t *testing.T) {
+	// Socket paths are limited to about 100 bytes.
+	dir, err := os.MkdirTemp("", "gls")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	for _, name := range []string{"allowed", "other"} {
+		c, err := net.ListenUnixgram("unixgram", &net.UnixAddr{Name: filepath.Join(dir, name), Net: "unixgram"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = c.Close() })
+	}
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestSocketsChild$", "-test.v") //nolint:gosec // re-runs this test binary
+	cmd.Env = append(os.Environ(), childEnv+"=1", "SOCKDIR="+dir)
+	out, err := cmd.CombinedOutput()
+	if strings.Contains(string(out), "landlock unavailable") {
+		t.Skip("the kernel does not provide Landlock")
+	}
+	if err != nil || !strings.Contains(string(out), "--- PASS: TestSocketsChild") {
+		t.Fatalf("child failed: %v\n%s", err, out)
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.Contains(line, "landlock abi") {
+			t.Log(strings.TrimSpace(line))
+		}
+	}
+}
+
+func TestSocketsChild(t *testing.T) {
+	if os.Getenv(childEnv) != "1" {
+		t.Skip("runs only as the child of TestSockets")
+	}
+	dir := os.Getenv("SOCKDIR")
+	st, err := Restrict(Rules{Sockets: []string{filepath.Join(dir, "allowed"), filepath.Join(dir, "missing")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !st.Enforced {
+		t.Log("landlock unavailable")
+		return
+	}
+	t.Logf("landlock abi %d", st.ABI)
+	send := func(name string) error {
+		var d net.Dialer
+		c, err := d.DialContext(t.Context(), "unixgram", filepath.Join(dir, name)) //nolint:gosec // the sockets this test created
+		if err != nil {
+			return err
+		}
+		defer func() { _ = c.Close() }()
+		_, err = c.Write([]byte("x"))
+		return err
+	}
+	if err := send("allowed"); err != nil {
+		t.Errorf("send to a listed socket: %v", err)
+	}
+	if err := send("other"); st.ABI >= resolveUnixABI && !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("send to another socket with ABI %d: %v, want permission denied", st.ABI, err)
 	}
 }

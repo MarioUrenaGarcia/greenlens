@@ -6,11 +6,16 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
+	"maps"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/api"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
@@ -39,7 +44,18 @@ func newStatusCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return a.writeStatus(cmd, st)
+			if err := a.writeStatus(cmd, st); err != nil {
+				return err
+			}
+			if a.out() != output.Table {
+				return nil
+			}
+			al, err := c.Alerts(cmd.Context(), time.Time{}, time.Time{})
+			if err != nil {
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), a.l.T("cli.status.alerts_unavailable", "detail", err.Error()))
+				return nil
+			}
+			return a.writeActiveAlerts(cmd.OutOrStdout(), al.Active)
 		},
 	}
 }
@@ -183,4 +199,36 @@ func (a *app) writeProblems(w interface{ Write([]byte) (int, error) }, ps []api.
 		}
 	}
 	return nil
+}
+
+// alertSeries names the series of an alert by its labels.
+func alertSeries(labels map[string]string) string {
+	var parts []string
+	for _, k := range slices.Sorted(maps.Keys(labels)) {
+		parts = append(parts, k+"="+labels[k])
+	}
+	if len(parts) == 0 {
+		return "-"
+	}
+	return strings.Join(parts, ",")
+}
+
+// writeActiveAlerts lists the alerts that are firing or pending.
+func (a *app) writeActiveAlerts(w io.Writer, active []alerts.Alert) error {
+	l := a.l
+	if len(active) == 0 {
+		_, err := fmt.Fprintln(w, "\n"+l.T("cli.status.no_alerts"))
+		return err
+	}
+	_, _ = fmt.Fprintln(w, "\n"+a.paint(l.T("cli.status.alerts", "count", strconv.Itoa(len(active))), true))
+	g := output.Grid{Header: []string{l.T("cli.col.rule"), l.T("cli.col.state"), l.T("cli.col.series"), l.T("cli.col.value"), l.T("cli.col.since")}}
+	for _, al := range active {
+		at := al.StartedAt
+		if al.FiredAt != nil {
+			at = *al.FiredAt
+		}
+		g.Rows = append(g.Rows, []string{al.Rule, l.T("cli.alert_state." + al.State), alertSeries(al.Labels),
+			strconv.FormatFloat(al.Value, 'g', 4, 64), at.Local().Format(time.DateTime)})
+	}
+	return output.WriteGrid(w, g)
 }

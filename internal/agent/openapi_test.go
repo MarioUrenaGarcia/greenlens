@@ -268,6 +268,14 @@ func TestResponsesMatchTheSpec(t *testing.T) {
 	post("previewConfig", sock, "POST", api.PathConfigCheck, api.ConfigChange{Changes: map[string]string{"indicators.pue": "lots"}})
 	post("previewConfig", sock, "POST", api.PathConfigCheck, "not an object")
 	post("applyConfig", sock, "PUT", api.PathConfig, api.ConfigChange{Changes: map[string]string{"indicators.pue": "1.2"}})
+	rules := api.AlertRules{Rules: []api.AlertRule{{Name: "hot", Expr: "node_power_watts", Op: ">", Threshold: 500, For: "5m"}}}
+	get("alerts", sock, api.PathAlerts)
+	get("alerts", sock, api.PathAlerts+"?from=nonsense")
+	post("previewAlertRules", sock, "POST", api.PathAlertCheck, rules)
+	post("previewAlertRules", sock, "POST", api.PathAlertCheck, api.AlertRules{Rules: []api.AlertRule{{Name: "x", Expr: "cpu_temperature", Op: ">", For: "soon"}}})
+	post("previewAlertRules", sock, "POST", api.PathAlertCheck, "not an object")
+	// This agent has no configuration file to write.
+	post("applyAlertRules", sock, "PUT", api.PathAlertRules, rules)
 	get("audit", sock, api.PathAudit)
 	get("audit", sock, api.PathAudit+"?limit=5000")
 

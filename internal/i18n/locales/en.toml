@@ -59,6 +59,11 @@ fix = "Fix:"
 exit = "Exit code:"
 
 [cli.col]
+rule = "Rule"
+state = "State"
+series = "Series"
+value = "Value"
+since = "Since"
 domain = "Domain"
 power = "Power"
 energy_since_start = "Energy since start"
@@ -108,7 +113,15 @@ system = "includes the components"
 short = "Run the measuring agent"
 long = "Run the agent in the foreground: it samples the energy sources, stores the measurements and serves the other commands through its local socket. Under systemd it runs as the greenlens service. SIGHUP reloads the configuration and SIGTERM stops it."
 
+[cli.alert_state]
+pending = "pending"
+firing = "firing"
+resolved = "resolved"
+
 [cli.status]
+alerts = "Active alerts: {count}"
+no_alerts = "No alert is pending or firing."
+alerts_unavailable = "Alerts could not be read: {detail}"
 short = "Show the power and state of the running agent"
 long = "Show the power of every domain in the latest sample, the energy since the agent started, the quality of each value, the idle baseline and the consumption of the agent itself."
 agent = "Agent"
@@ -291,6 +304,7 @@ channel = "Channel"
 domain = "Domain"
 quality = "Quality"
 reason = "Status"
+
 
 [tui.empty]
 node = "The agent reports no energy domain yet."
@@ -782,6 +796,10 @@ long = "Export the energy attributed to each backend, model or consumer, with it
 short = "Export the stored benchmarks"
 long = "Export the stored benchmarks, newest first, with their energy per generated token, standard deviation, coefficient of variation and 95% confidence interval. The JSON output keeps every run."
 
+[cli.export.alerts]
+short = "Export the alerts"
+long = "Export the alerts that are pending or firing, and those that fired and started in the period, the latest first, with their rule, the labels of their series, the value at their last change of state and when they started, fired and were resolved."
+
 [cli.export.flag]
 bucket = "Size of each bucket, such as 1m, 1h or 24h, or none for one total"
 group = "Group by backend, model or consumer"
@@ -843,6 +861,22 @@ analysis_regression_baseline_days = "Calendar days before a day that form its ba
 analysis_regression_min_baseline_days = "Fewest days with data in the baseline for a day to be judged."
 analysis_regression_z_threshold = "Standard deviations from the baseline mean that make a day a regression, or an improvement below it."
 analysis_regression_min_generated_tokens = "Fewest generated tokens for a day to count; fewer make its energy per token too uncertain."
+alerts = "Alert rules and where their notifications go."
+alerts_rules = "Alert rules, each compared with its signal every 15 seconds."
+alerts_rules_name = "Name of the rule, unique, shown in notifications and in the history."
+alerts_rules_expr = "Signal the rule compares: node_power_watts, backend_power_watts, model_joules_per_token, model_jpt_zscore or source_up."
+alerts_rules_op = "Comparison with the threshold: >, >=, < or <=."
+alerts_rules_threshold = "Value the signal is compared with, in the unit of the signal."
+alerts_rules_for = "How long the comparison must hold before the alert fires; 0 fires at once."
+alerts_rules_match = "Labels the series must have, such as backend, model or source; without it every series of the signal is judged."
+alerts_sinks = "Where notifications of alerts that fire or are resolved go."
+alerts_sinks_log = "Write notifications to the log of the agent."
+alerts_sinks_journald = "Send notifications to journald, with the fields of the alert; takes effect after a restart."
+alerts_sinks_syslog = "Send notifications to the local syslog daemon through /dev/log; takes effect after a restart."
+alerts_sinks_webhook = "Post notifications as JSON to an internal address."
+alerts_sinks_webhook_enabled = "Turn the webhook on."
+alerts_sinks_webhook_url = "URL that receives the notifications; it must resolve to a loopback, private or link-local address."
+alerts_sinks_webhook_token_file = "File with the token, sent as a bearer credential and used as the key of the HMAC-SHA256 signature; a new path takes effect after a restart."
 indicators_sci = "Software Carbon Intensity, ISO/IEC 21031: the emissions per functional unit."
 indicators_sci_functional_unit = "Unit of the SCI: 1k_generated_tokens, request or consumer."
 indicators_sci_embodied = "Carbon of making the hardware, spread over its lifetime by the energy share of each scope."
@@ -1361,6 +1395,11 @@ r2 = "R2 {r2} over {n} intervals of the last day"
 [gui.demo]
 banner = "Demo with a simulated workspace: the backends, models, hardware and every value are invented."
 readonly = "the demo shows a simulated workspace and cannot change it"
+
+
+
+
+
 
 [gui.regress]
 title = "Regressions of the energy per token"

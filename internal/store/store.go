@@ -294,6 +294,9 @@ func (s *Store) Prune(ctx context.Context, now time.Time, r Retention) (int64, e
 		{`DELETE FROM usage_intervals WHERE ts_ms < ?`, min(now.Add(-r.Raw).UnixMilli(), done(usage1m))},
 		{`DELETE FROM usage_rollups WHERE resolution = '1m' AND bucket_start_ms < ?`, min(now.Add(-r.Rollup1m).UnixMilli(), done(usage1h))},
 		{`DELETE FROM usage_rollups WHERE resolution = '1h' AND bucket_start_ms < ?`, now.Add(-r.Rollup1h).UnixMilli()},
+		// Resolved alerts are kept as long as the hourly rollups they
+		// explain.
+		{`DELETE FROM alert_events WHERE state = 'resolved' AND resolved_ms < ?`, now.Add(-r.Rollup1h).UnixMilli()},
 	} {
 		res, err := s.db.ExecContext(ctx, d.query, d.cutoff)
 		if err != nil {

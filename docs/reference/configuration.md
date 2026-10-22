@@ -108,6 +108,24 @@ Every key of the configuration file, the environment variable that overrides it 
 | `analysis.regression.z_threshold` | `GREENLENS_ANALYSIS_REGRESSION_Z_THRESHOLD` | number | `3` | Standard deviations from the baseline mean that make a day a regression, or an improvement below it. |
 | `analysis.regression.min_generated_tokens` | `GREENLENS_ANALYSIS_REGRESSION_MIN_GENERATED_TOKENS` | integer | `1000` | Fewest generated tokens for a day to count; fewer make its energy per token too uncertain. |
 
+## alerts
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `alerts.rules` | - | list of objects | empty | Alert rules, each compared with its signal every 15 seconds. |
+| `alerts.rules[].name` | - | string | empty | Name of the rule, unique, shown in notifications and in the history. |
+| `alerts.rules[].expr` | - | string | empty | Signal the rule compares: node_power_watts, backend_power_watts, model_joules_per_token, model_jpt_zscore or source_up. |
+| `alerts.rules[].op` | - | string | empty | Comparison with the threshold: &gt;, &gt;=, &lt; or &lt;=. |
+| `alerts.rules[].threshold` | - | number | `0` | Value the signal is compared with, in the unit of the signal. |
+| `alerts.rules[].for` | - | duration | `0s` | How long the comparison must hold before the alert fires; 0 fires at once. |
+| `alerts.rules[].match` | - | map of strings | empty | Labels the series must have, such as backend, model or source; without it every series of the signal is judged. |
+| `alerts.sinks.log` | `GREENLENS_ALERTS_SINKS_LOG` | bool | `true` | Write notifications to the log of the agent. |
+| `alerts.sinks.journald` | `GREENLENS_ALERTS_SINKS_JOURNALD` | bool | `false` | Send notifications to journald, with the fields of the alert; takes effect after a restart. |
+| `alerts.sinks.syslog` | `GREENLENS_ALERTS_SINKS_SYSLOG` | bool | `false` | Send notifications to the local syslog daemon through /dev/log; takes effect after a restart. |
+| `alerts.sinks.webhook.enabled` | `GREENLENS_ALERTS_SINKS_WEBHOOK_ENABLED` | bool | `false` | Turn the webhook on. |
+| `alerts.sinks.webhook.url` | `GREENLENS_ALERTS_SINKS_WEBHOOK_URL` | string | empty | URL that receives the notifications; it must resolve to a loopback, private or link-local address. |
+| `alerts.sinks.webhook.token_file` | `GREENLENS_ALERTS_SINKS_WEBHOOK_TOKEN_FILE` | string | empty | File with the token, sent as a bearer credential and used as the key of the HMAC-SHA256 signature; a new path takes effect after a restart. |
+
 ## retention
 
 | Key | Environment variable | Type | Default | Description |

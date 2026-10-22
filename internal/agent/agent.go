@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/backends"
@@ -83,6 +84,8 @@ type Options struct {
 	Reload <-chan struct{}
 	// UsageInterval replaces usage.Interval, for tests.
 	UsageInterval time.Duration
+	// AlertInterval replaces how often alert rules are judged, for tests.
+	AlertInterval time.Duration
 	// RegressionEvery replaces regressionEvery, for tests.
 	RegressionEvery time.Duration
 }
@@ -108,8 +111,11 @@ type Agent struct {
 	collectors *prometheus.Collectors
 
 	stream *stream
-	bjob   *benchJob
-	cjob   *calJob
+	// alerting holds the alert engine; dispatch delivers notifications.
+	alerting *alerting
+	dispatch *alerts.Dispatcher
+	bjob     *benchJob
+	cjob     *calJob
 	// selfReload asks the loop to reload the configuration, after the
 	// interface changed it.
 	selfReload     chan struct{}
@@ -252,6 +258,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 		a.calib = &c
 	}
 	a.startContext(ctx)
+	a.setupAlerts(ctx)
 	return a, nil
 }
 
@@ -360,6 +367,8 @@ func (a *Agent) confine() {
 	if root != "/" {
 		ro = append(ro, "/proc")
 	}
+	alertRO, sockets := alertPaths(a.cfg)
+	ro = append(ro, alertRO...)
 	rw := []string{a.dataDir, filepath.Dir(a.sockPath)}
 	// A configuration the agent may change from the interface needs its
 	// directory writable, for the new file it renames over the old one.
@@ -371,7 +380,7 @@ func (a *Agent) confine() {
 	if d := filepath.Dir(a.tokens.Path()); d != a.dataDir {
 		rw = append(rw, d)
 	}
-	st, err := sandbox.Restrict(sandbox.Rules{ReadOnly: ro, ReadWrite: rw})
+	st, err := sandbox.Restrict(sandbox.Rules{ReadOnly: ro, ReadWrite: rw, Sockets: sockets})
 	switch {
 	case err != nil:
 		a.log.Warn("file access confinement failed", "error", err)
@@ -410,6 +419,12 @@ func (a *Agent) serve(ctx context.Context) error {
 	workerCtx, stopWorker := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopWorker()
 	go a.usageWorker(workerCtx)
+	dispatchCtx, stopDispatch := context.WithCancel(context.WithoutCancel(ctx))
+	dispatched := make(chan struct{})
+	go func() {
+		a.dispatch.Run(dispatchCtx)
+		close(dispatched)
+	}()
 	srv := &http.Server{
 		Handler:           a.handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -476,6 +491,8 @@ func (a *Agent) serve(ctx context.Context) error {
 	if rerr := a.st.Rollup(shutdown, time.Now().Add(time.Minute)); rerr != nil {
 		a.log.Warn("final rollup", "error", rerr)
 	}
+	stopDispatch()
+	<-dispatched
 	_ = os.Remove(a.sockPath)
 	if cerr := a.close(); cerr != nil {
 		a.log.Warn("closing", "error", cerr)
@@ -507,6 +524,12 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 	defer discover.Stop()
 	hour := time.NewTicker(time.Hour)
 	defer hour.Stop()
+	alertEveryD := alertEvery
+	if a.o.AlertInterval > 0 {
+		alertEveryD = a.o.AlertInterval
+	}
+	alertTick := time.NewTicker(alertEveryD)
+	defer alertTick.Stop()
 	lastCheck := time.Now()
 	doReload := func() {
 		if d := a.reload(ctx); d != interval && d > 0 {
@@ -547,6 +570,8 @@ func (a *Agent) loop(ctx context.Context, reload <-chan struct{}, serveErr <-cha
 			a.checkWrap()
 		case <-hour.C:
 			a.hourly(ctx, &lastCheck)
+		case now := <-alertTick.C:
+			a.evaluateAlerts(ctx, now)
 		case <-reload:
 			doReload()
 		case <-a.selfReload:
@@ -717,6 +742,7 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 			a.o.Level.Set(lv)
 		}
 	}
+	a.reloadAlerts(ctx, old, &cfg)
 	a.mu.Lock()
 	a.cfg = cfg
 	a.mu.Unlock()

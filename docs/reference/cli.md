@@ -306,6 +306,30 @@ greenlens export [flags]
 | Option | Description | Default |
 |---|---|---|
 
+## greenlens export alerts
+
+Export the alerts that are pending or firing, and those that fired and started in the period, the latest first, with their rule, the labels of their series, the value at their last change of state and when they started, fired and were resolved.
+
+**Usage**
+
+```text
+greenlens export alerts [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--from` | Start of the period | `7d` |
+| `--to` | End of the period | `now` |
+
+**Examples**
+
+```bash
+greenlens export alerts --from 30d > alerts.csv
+greenlens export alerts --output json
+```
+
 ## greenlens export benchmarks
 
 Export the stored benchmarks, newest first, with their energy per generated token, standard deviation, coefficient of variation and 95% confidence interval. The JSON output keeps every run.

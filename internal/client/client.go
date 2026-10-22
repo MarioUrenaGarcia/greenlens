@@ -200,6 +200,21 @@ func (c *Client) Regressions(ctx context.Context, from, to time.Time) (api.Regre
 	return r, err
 }
 
+// Alerts returns the alert rules, the active alerts and those that fired
+// in [from, to); zero times leave the period to the agent.
+func (c *Client) Alerts(ctx context.Context, from, to time.Time) (api.Alerts, error) {
+	q := url.Values{}
+	if !from.IsZero() {
+		q.Set("from", from.UTC().Format(time.RFC3339Nano))
+	}
+	if !to.IsZero() {
+		q.Set("to", to.UTC().Format(time.RFC3339Nano))
+	}
+	var a api.Alerts
+	err := c.get(ctx, api.PathAlerts, q, &a)
+	return a, err
+}
+
 // SaveBenchmark stores a benchmark in the agent and returns it with its id.
 func (c *Client) SaveBenchmark(ctx context.Context, b bench.Result) (bench.Result, error) {
 	body, err := json.Marshal(b)

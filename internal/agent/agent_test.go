@@ -88,7 +88,7 @@ func startAgentWith(t *testing.T, cfgPath string, change func(*config.Config)) *
 			Config: cfg, ConfigPath: cfgPath, Getenv: func(string) string { return "" },
 			Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Version: "test",
 			Sources: []source.Source{&fake{}}, HostFS: sourcetest.Host(t, "amd-zen4-desktop"),
-			NoSandbox: true, Ready: ready, Reload: r.reload,
+			NoSandbox: true, Ready: ready, Reload: r.reload, AlertInterval: 100 * time.Millisecond,
 		})
 	}()
 	select {

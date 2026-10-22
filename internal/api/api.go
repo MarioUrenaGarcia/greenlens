@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/analysis"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/bench"
@@ -53,6 +54,9 @@ const (
 	PathConfig       = "/api/v1/config"
 	PathHelp         = "/api/v1/help"
 	PathConfigCheck  = "/api/v1/config/preview"
+	PathAlerts       = "/api/v1/alerts"
+	PathAlertRules   = "/api/v1/alerts/rules"
+	PathAlertCheck   = "/api/v1/alerts/rules/preview"
 	PathHealth       = "/healthz"
 	PathReady        = "/readyz"
 )
@@ -435,6 +439,46 @@ type ConfigPreview struct {
 	Errors        []ConfigError `json:"errors"`
 	NeedsRestart  bool          `json:"needs_restart"`
 	Applied       bool          `json:"applied"`
+}
+
+// AlertRule is an alert rule as the API and the interface edit it; For is
+// a duration such as "10m".
+type AlertRule struct {
+	Name      string            `json:"name"`
+	Expr      string            `json:"expr"`
+	Op        string            `json:"op"`
+	Threshold float64           `json:"threshold"`
+	For       string            `json:"for"`
+	Match     map[string]string `json:"match,omitempty"`
+}
+
+// AlertRules is the body of PUT PathAlertRules and POST PathAlertCheck.
+type AlertRules struct {
+	Rules []AlertRule `json:"rules"`
+}
+
+// AlertSignal is a signal rules can compare, with the labels of its
+// series.
+type AlertSignal struct {
+	Name   string   `json:"name"`
+	Labels []string `json:"labels"`
+}
+
+// Alerts is the document of GET PathAlerts: the rules, the alerts that are
+// pending or firing, and those that fired in the period.
+type Alerts struct {
+	SchemaVersion int            `json:"schema_version"`
+	EvaluatedAt   *time.Time     `json:"evaluated_at,omitempty"`
+	EveryS        float64        `json:"every_s"`
+	Signals       []AlertSignal  `json:"signals"`
+	Operators     []string       `json:"operators"`
+	Rules         []AlertRule    `json:"rules"`
+	Sinks         []string       `json:"sinks"`
+	Writable      bool           `json:"config_writable"`
+	Active        []alerts.Alert `json:"active"`
+	From          time.Time      `json:"from"`
+	To            time.Time      `json:"to"`
+	History       []alerts.Alert `json:"history"`
 }
 
 // HelpIndex lists the pages of the embedded documentation.

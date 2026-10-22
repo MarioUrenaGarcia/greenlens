@@ -22,7 +22,10 @@ import (
 )
 
 // restartKeys change only when the agent starts again.
-var restartKeys = []string{"agent.data_dir", "agent.socket", "agent.host_root", "proxy.", "server."}
+// The log daemons and the token file of the webhook must be reachable
+// when the agent confines its own file access at start.
+var restartKeys = []string{"agent.data_dir", "agent.socket", "agent.host_root", "proxy.", "server.",
+	"alerts.sinks.journald", "alerts.sinks.syslog", "alerts.sinks.webhook.token_file"}
 
 // configWritable reports whether the agent may change its configuration
 // file: it must have one, and its user must be able to write the file and
@@ -97,24 +100,7 @@ func (a *Agent) preview(r *http.Request) (api.ConfigPreview, map[string]string, 
 		return out, body.Changes, nil
 	}
 	out.YAML = string(edited)
-	cfg := config.Defaults()
-	if err := config.Parse(edited, &cfg); err != nil {
-		out.Errors = append(out.Errors, api.ConfigError{Message: err.Error()})
-		return out, body.Changes, nil
-	}
-	for _, e := range help.Flatten(cfg.Validate()) {
-		he := help.As(e)
-		ce := api.ConfigError{Message: e.Error()}
-		for i := 0; i+1 < len(he.Args); i += 2 {
-			switch he.Args[i] {
-			case "key":
-				ce.Key = fmt.Sprint(he.Args[i+1])
-			case "detail":
-				ce.Message = fmt.Sprint(he.Args[i+1])
-			}
-		}
-		out.Errors = append(out.Errors, ce)
-	}
+	out.Errors = append(out.Errors, checkConfig(edited)...)
 	out.Valid = len(out.Errors) == 0
 	for k := range body.Changes {
 		if slices.ContainsFunc(restartKeys, func(p string) bool { return k == p || strings.HasSuffix(p, ".") && strings.HasPrefix(k, p) }) {
@@ -149,31 +135,7 @@ func (a *Agent) handleConfigApply(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, out)
 		return
 	}
-	path := a.o.ConfigPath
-	mode := fs.FileMode(0o600)
-	if st, err := os.Stat(path); err == nil {
-		mode = st.Mode().Perm()
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".greenlens-*.yaml")
-	if err == nil {
-		_, err = tmp.WriteString(out.YAML)
-		if err == nil {
-			err = tmp.Chmod(mode)
-		}
-		if err == nil {
-			err = tmp.Sync()
-		}
-		if cerr := tmp.Close(); err == nil {
-			err = cerr
-		}
-		if err == nil {
-			err = os.Rename(tmp.Name(), path)
-		}
-		if err != nil {
-			_ = os.Remove(tmp.Name())
-		}
-	}
-	if err != nil {
+	if err := a.writeConfig(out.YAML); err != nil {
 		a.log.Error("writing the configuration failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "writing the configuration failed")
 		return
@@ -192,4 +154,60 @@ func (a *Agent) handleConfigApply(w http.ResponseWriter, r *http.Request) {
 	}
 	out.Applied = true
 	writeJSON(w, http.StatusOK, out)
+}
+
+// writeConfig writes a new configuration file next to the old one, with
+// its permissions, and renames it over it, so a crash never leaves half a
+// file.
+func (a *Agent) writeConfig(content string) error {
+	path := a.o.ConfigPath
+	mode := fs.FileMode(0o600)
+	if st, err := os.Stat(path); err == nil {
+		mode = st.Mode().Perm()
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".greenlens-*.yaml")
+	if err != nil {
+		return err
+	}
+	_, err = tmp.WriteString(content)
+	if err == nil {
+		err = tmp.Chmod(mode)
+	}
+	if err == nil {
+		err = tmp.Sync()
+	}
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmp.Name(), path)
+	}
+	if err != nil {
+		_ = os.Remove(tmp.Name())
+	}
+	return err
+}
+
+// checkConfig parses a configuration file and validates it as the agent
+// would at start, and returns its problems by key.
+func checkConfig(data []byte) []api.ConfigError {
+	cfg := config.Defaults()
+	if err := config.Parse(data, &cfg); err != nil {
+		return []api.ConfigError{{Message: err.Error()}}
+	}
+	var out []api.ConfigError
+	for _, e := range help.Flatten(cfg.Validate()) {
+		he := help.As(e)
+		ce := api.ConfigError{Message: e.Error()}
+		for i := 0; i+1 < len(he.Args); i += 2 {
+			switch he.Args[i] {
+			case "key":
+				ce.Key = fmt.Sprint(he.Args[i+1])
+			case "detail":
+				ce.Message = fmt.Sprint(he.Args[i+1])
+			}
+		}
+		out = append(out, ce)
+	}
+	return out
 }

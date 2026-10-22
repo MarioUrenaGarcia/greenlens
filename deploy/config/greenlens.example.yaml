@@ -162,6 +162,43 @@ analysis:
     z_threshold: 3
     min_generated_tokens: 1000
 
+# Alert rules compare a signal with a threshold every 15 seconds. An alert
+# is pending while the comparison holds, fires once it has held for the
+# duration of "for", and is resolved when it stops holding. expr is one of
+# node_power_watts, backend_power_watts, model_joules_per_token,
+# model_jpt_zscore and source_up; match keeps the series with those labels.
+alerts:
+  rules: []
+  # rules:
+  #   - name: high_joules_per_token
+  #     expr: model_joules_per_token
+  #     op: ">"
+  #     threshold: 5.0
+  #     for: 10m
+  #   - name: efficiency_regression
+  #     expr: model_jpt_zscore
+  #     op: ">"
+  #     threshold: 3.0
+  #     for: 30m
+  #   - name: energy_source_down
+  #     expr: source_up
+  #     op: "<"
+  #     threshold: 1
+  #     for: 1m
+  #     match:
+  #       source: rapl
+  sinks:
+    log: true
+    journald: false
+    syslog: false
+    # Posts each notification as JSON to an internal address, with the
+    # token of the file as a bearer credential and an HMAC-SHA256
+    # signature of the body.
+    webhook:
+      enabled: false
+      url: ""
+      token_file: ""
+
 retention:
   raw: 168h
   rollup_1m: 2160h

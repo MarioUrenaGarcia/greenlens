@@ -32,6 +32,7 @@ func Restrict(r Rules) (Status, error) {
 	err = landlock.V10.BestEffort().RestrictPaths(
 		landlock.RODirs(r.ReadOnly...),
 		landlock.RWDirs(r.ReadWrite...),
+		landlock.ROFiles(r.Sockets...).WithResolveUnix().IgnoreIfMissing(),
 	)
 	if err != nil {
 		return Status{ABI: abi}, fmt.Errorf("apply landlock rules: %w", err)

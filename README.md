@@ -116,6 +116,10 @@ backends, models and the commands, processes and systemd units you choose:
   tables, JSON or printable pages; emissions and cost can follow an hourly
   profile of the grid and time-of-use prices, and `greenlens report
   --regressions` finds the days a model became less efficient;
+- alert rules watch the power of the node and of each backend, the energy
+  per token, its regressions and the energy sources, and notify the log,
+  journald, syslog or a signed webhook to an internal address, with
+  equivalent rules for Prometheus and Alertmanager;
 - `greenlens gui` opens the graphical interface the agent serves, with the
   live power, the backends, models and consumers, benchmarks, reports, the
   configuration and this documentation, all without internet;

@@ -13,6 +13,9 @@ Mediciones de energía del nodo, sus backends de inferencia y modelos, que el ag
 | Método | Ruta | Rol | Resumen |
 |---|---|---|---|
 | `GET` | `/api/v1/about` | viewer | Versión, licencia y código fuente del agente en ejecución |
+| `GET` | `/api/v1/alerts` | viewer | Las reglas de alerta, las alertas activas y las que se dispararon en un periodo |
+| `PUT` | `/api/v1/alerts/rules` | operator | Reemplaza las reglas de alerta en el archivo de configuración y lo recarga |
+| `POST` | `/api/v1/alerts/rules/preview` | operator | El archivo de configuración que producirían nuevas reglas de alerta, revisado |
 | `GET` | `/api/v1/audit` | admin | Acciones de operadores y administradores, de la más reciente a la más antigua |
 | `GET` | `/api/v1/backends` | viewer | Backends y modelos con su uso desde que inició el agente |
 | `GET` | `/api/v1/backup` | admin | Copia consistente de la base de datos |
@@ -64,6 +67,66 @@ Rol: `viewer`
 |---|---|---|
 | `200` | La descripción de la versión en ejecución. | [About](#about) |
 | `401` | No hay una sesión o un token válidos. | [Error](#error) |
+
+### GET /api/v1/alerts
+
+Las reglas de alerta, las alertas activas y las que se dispararon en un periodo. Las reglas vigentes con las señales que pueden comparar, las alertas pendientes o disparadas, y las alertas que se dispararon y empezaron en el periodo, de la más reciente a la más antigua, hasta 500. Sin from y to, el periodo son los últimos siete días.
+
+Rol: `viewer`
+
+**Parámetros**
+
+| Nombre | En | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `from` | query | string (date-time) | no | Inicio del periodo del historial, RFC 3339. |
+| `to` | query | string (date-time) | no | Fin del periodo del historial, RFC 3339. |
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | Las reglas y las alertas. | [Alerts](#alerts) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### PUT /api/v1/alerts/rules
+
+Reemplaza las reglas de alerta en el archivo de configuración y lo recarga. Solo cambia alerts.rules; los comentarios y las demás claves del archivo se conservan. Como con la configuración, solo cuando el agente puede escribir su archivo.
+
+Rol: `operator`
+
+**Documento**: [AlertRules](#alertrules)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | Se escribió el archivo y se recargó la configuración. | [ConfigPreview](#configpreview) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
+| `409` | El agente no puede escribir su archivo de configuración. | [Error](#error) |
+| `422` | Las reglas vuelven inválida la configuración; no se escribió nada. | [ConfigPreview](#configpreview) |
+| `500` | El agente no pudo completar la solicitud; su registro tiene los detalles. | [Error](#error) |
+
+### POST /api/v1/alerts/rules/preview
+
+El archivo de configuración que producirían nuevas reglas de alerta, revisado.
+
+Rol: `operator`
+
+**Documento**: [AlertRules](#alertrules)
+
+**Respuestas**
+
+| Estado | Descripción | Documento |
+|---|---|---|
+| `200` | El archivo resultante y sus problemas. | [ConfigPreview](#configpreview) |
+| `400` | La solicitud no es válida. | [Error](#error) |
+| `401` | No hay una sesión o un token válidos. | [Error](#error) |
+| `403` | El rol no alcanza, o falló la comprobación CSRF. | [Error](#error) |
 
 ### GET /api/v1/audit
 
@@ -733,6 +796,65 @@ La versión en ejecución, su licencia y su código fuente.
 | `third_party` | lista de object | sí | Componentes de terceros incluidos. |
 | `version` | string | sí | Versión del agente. |
 | `revision` | string | no | Commit desde el que se compiló el agente. |
+
+### Alert
+
+Una alerta, una regla y las etiquetas de una serie.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `expr` | string | sí | Señal de la regla. |
+| `for_s` | number | sí | Duración de la regla en segundos. |
+| `id` | integer | sí | Identificador de la alerta. |
+| `labels` | mapa de string | sí | Etiquetas de la serie. |
+| `op` | string | sí | Comparación de la regla. |
+| `rule` | string | sí | Nombre de la regla. |
+| `started_at` | string (date-time) | sí | Cuándo empezó a sostenerse la comparación. |
+| `state` | `pending`, `firing`, `resolved` | sí | Estado de la alerta. |
+| `threshold` | number | sí | Umbral de la regla. |
+| `value` | number | sí | Valor de la serie en el último cambio de estado. |
+| `fired_at` | string (date-time) | no | Cuándo se disparó la alerta. |
+| `resolved_at` | string (date-time) | no | Cuándo se resolvió la alerta. |
+
+### AlertRule
+
+Una regla de alerta.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `expr` | `node_power_watts`, `backend_power_watts`, `model_joules_per_token`, `model_jpt_zscore`, `source_up` | sí | Señal que compara la regla. |
+| `for` | string | sí | Cuánto debe sostenerse la comparación antes de disparar la alerta, como 10m. |
+| `name` | string | sí | Nombre de la regla |
+| `op` | `>`, `>=`, `<`, `<=` | sí | Comparación con el umbral. |
+| `threshold` | number | sí | Valor con el que se compara la señal. |
+| `match` | mapa de string | no | Etiquetas que deben tener las series. |
+
+### AlertRules
+
+Las reglas de alerta que reemplazan las de la configuración.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `rules` | lista de [AlertRule](#alertrule) | sí | Cada regla. |
+
+### Alerts
+
+Las reglas de alerta, las alertas activas y el historial de un periodo.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `active` | lista de [Alert](#alert) | sí | Alertas pendientes o disparadas, primero las disparadas. |
+| `config_writable` | boolean | sí | Si el agente puede escribir su archivo de configuración. |
+| `every_s` | number | sí | Segundos entre evaluaciones. |
+| `from` | string (date-time) | sí | Inicio del periodo del historial. |
+| `history` | lista de [Alert](#alert) | sí | Alertas que se dispararon y empezaron en el periodo, de la más reciente a la más antigua. |
+| `operators` | lista de string | sí | Las comparaciones aceptadas. |
+| `rules` | lista de [AlertRule](#alertrule) | sí | Las reglas vigentes. |
+| `schema_version` | integer | sí | Versión del documento. |
+| `signals` | lista de object | sí | Las señales que pueden comparar las reglas. |
+| `sinks` | lista de string | sí | Adónde van las notificaciones. |
+| `to` | string (date-time) | sí | Fin del periodo del historial. |
+| `evaluated_at` | string (date-time) | no | Cuándo se juzgaron las reglas por última vez. |
 
 ### Audit
 

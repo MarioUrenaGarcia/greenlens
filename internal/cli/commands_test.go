@@ -493,7 +493,19 @@ func TestCommandsAgainstAnAgent(t *testing.T) {
 	if lines := strings.Split(strings.TrimSpace(out), "\n"); code != 0 || len(lines) != 3 || !strings.HasPrefix(lines[0], "id,started_at") {
 		t.Fatalf("export benchmarks: %d %s %s", code, out, errOut)
 	}
-	for _, args := range [][]string{{"usage", "--bucket", "30s"}, {"usage", "--from", "30d", "--bucket", "1m"}, {"usage", "--group", "team"}, {"benchmarks", "--limit", "0"}} {
+	code, out, errOut = runWith(t, hooks{}, nil, "export", "alerts", "--config", cfgPath)
+	if lines := strings.Split(strings.TrimSpace(out), "\n"); code != 0 || lines[0] != "id,rule,state,expr,op,threshold,for_s,labels,value,started_at,fired_at,resolved_at" {
+		t.Fatalf("export alerts: %d %s %s", code, out, errOut)
+	}
+	code, out, errOut = runWith(t, hooks{}, nil, "export", "alerts", "--config", cfgPath, "-o", "json")
+	var ae AlertsExport
+	if code != 0 || json.Unmarshal([]byte(out), &ae) != nil || ae.Active == nil || ae.History == nil {
+		t.Fatalf("export alerts json: %d %s %s", code, out, errOut)
+	}
+	if code, out, _ := runWith(t, hooks{}, nil, "status", "--config", cfgPath); code != 0 || !strings.Contains(out, "No alert is pending or firing.") {
+		t.Fatalf("status without alerts: %d %s", code, out)
+	}
+	for _, args := range [][]string{{"usage", "--bucket", "30s"}, {"usage", "--from", "30d", "--bucket", "1m"}, {"usage", "--group", "team"}, {"benchmarks", "--limit", "0"}, {"alerts", "--from", "later"}} {
 		if code, _, errOut := runWith(t, hooks{}, nil, append([]string{"export", "--config", cfgPath}, args...)...); code != 2 || !strings.Contains(errOut, "GL0005") {
 			t.Fatalf("export %v: %d %s", args, code, errOut)
 		}

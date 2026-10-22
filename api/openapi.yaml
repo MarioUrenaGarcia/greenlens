@@ -37,6 +37,7 @@ tags:
   - name: measurements
   - name: reports
   - name: benchmarks
+  - name: alerts
   - name: access
   - name: administration
 
@@ -864,6 +865,109 @@ paths:
               schema: {$ref: "#/components/schemas/HelpPage"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
+  /api/v1/alerts:
+    get:
+      operationId: alerts
+      tags: [alerts]
+      summary: The alert rules, the active alerts and those that fired in a period
+      x-summary-es: Las reglas de alerta, las alertas activas y las que se dispararon en un periodo
+      description: >-
+        The rules in force with the signals they can compare, the alerts that are
+        pending or firing, and the alerts that fired and started in the period, the
+        latest first, at most 500. Without from and to, the period is the last seven
+        days.
+      x-description-es: >-
+        Las reglas vigentes con las señales que pueden comparar, las alertas
+        pendientes o disparadas, y las alertas que se dispararon y empezaron en el
+        periodo, de la más reciente a la más antigua, hasta 500. Sin from y to, el
+        periodo son los últimos siete días.
+      x-greenlens-role: viewer
+      parameters:
+        - name: from
+          in: query
+          description: Start of the period of the history, RFC 3339.
+          x-description-es: Inicio del periodo del historial, RFC 3339.
+          schema: {type: string, format: date-time}
+        - name: to
+          in: query
+          description: End of the period of the history, RFC 3339.
+          x-description-es: Fin del periodo del historial, RFC 3339.
+          schema: {type: string, format: date-time}
+      responses:
+        "200":
+          description: The rules and the alerts.
+          x-description-es: Las reglas y las alertas.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Alerts"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/alerts/rules:
+    put:
+      operationId: applyAlertRules
+      tags: [alerts]
+      summary: Replace the alert rules in the configuration file and reload it
+      x-summary-es: Reemplaza las reglas de alerta en el archivo de configuración y lo recarga
+      description: >-
+        Only alerts.rules changes; the comments and every other key of the file are
+        kept. As with the configuration, only when the agent can write its file.
+      x-description-es: >-
+        Solo cambia alerts.rules; los comentarios y las demás claves del archivo se
+        conservan. Como con la configuración, solo cuando el agente puede escribir su
+        archivo.
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AlertRules"}
+      responses:
+        "200":
+          description: The file was written and the configuration reloaded.
+          x-description-es: Se escribió el archivo y se recargó la configuración.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409":
+          description: The agent cannot write its configuration file.
+          x-description-es: El agente no puede escribir su archivo de configuración.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: The rules make the configuration invalid; nothing was written.
+          x-description-es: Las reglas vuelven inválida la configuración; no se escribió nada.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "500": {$ref: "#/components/responses/ServerError"}
+  /api/v1/alerts/rules/preview:
+    post:
+      operationId: previewAlertRules
+      tags: [alerts]
+      summary: The configuration file that new alert rules would produce, checked
+      x-summary-es: El archivo de configuración que producirían nuevas reglas de alerta, revisado
+      x-greenlens-role: operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AlertRules"}
+      responses:
+        "200":
+          description: The resulting file and its problems.
+          x-description-es: El archivo resultante y sus problemas.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ConfigPreview"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
   /api/v1/config:
     get:
       operationId: config
@@ -1476,6 +1580,105 @@ components:
           x-description-es: Valores por clave.
           additionalProperties: {type: string}
 
+    AlertRule:
+      type: object
+      description: An alert rule.
+      x-description-es: Una regla de alerta.
+      additionalProperties: false
+      required: [name, expr, op, threshold, for]
+      properties:
+        name: {type: string, description: Name of the rule, unique., x-description-es: Nombre de la regla, único.}
+        expr:
+          type: string
+          enum: [node_power_watts, backend_power_watts, model_joules_per_token, model_jpt_zscore, source_up]
+          description: Signal the rule compares.
+          x-description-es: Señal que compara la regla.
+        op: {type: string, enum: [">", ">=", "<", "<="], description: Comparison with the threshold., x-description-es: Comparación con el umbral.}
+        threshold: {type: number, description: Value the signal is compared with., x-description-es: Valor con el que se compara la señal.}
+        for: {type: string, description: "How long the comparison must hold before the alert fires, such as 10m.", x-description-es: "Cuánto debe sostenerse la comparación antes de disparar la alerta, como 10m."}
+        match:
+          type: object
+          description: Labels the series must have.
+          x-description-es: Etiquetas que deben tener las series.
+          additionalProperties: {type: string}
+    AlertRules:
+      type: object
+      description: The alert rules that replace those of the configuration.
+      x-description-es: Las reglas de alerta que reemplazan las de la configuración.
+      additionalProperties: false
+      required: [rules]
+      properties:
+        rules:
+          type: array
+          description: Every rule.
+          x-description-es: Cada regla.
+          items: {$ref: "#/components/schemas/AlertRule"}
+    Alert:
+      type: object
+      description: One alert, a rule and the labels of one series.
+      x-description-es: Una alerta, una regla y las etiquetas de una serie.
+      additionalProperties: false
+      required: [id, rule, expr, op, threshold, for_s, labels, state, value, started_at]
+      properties:
+        id: {type: integer, description: Identifier of the alert., x-description-es: Identificador de la alerta.}
+        rule: {type: string, description: Name of the rule., x-description-es: Nombre de la regla.}
+        expr: {type: string, description: Signal of the rule., x-description-es: Señal de la regla.}
+        op: {type: string, description: Comparison of the rule., x-description-es: Comparación de la regla.}
+        threshold: {type: number, description: Threshold of the rule., x-description-es: Umbral de la regla.}
+        for_s: {type: number, description: Duration of the rule in seconds., x-description-es: Duración de la regla en segundos.}
+        labels:
+          type: object
+          description: Labels of the series.
+          x-description-es: Etiquetas de la serie.
+          additionalProperties: {type: string}
+        state: {type: string, enum: [pending, firing, resolved], description: State of the alert., x-description-es: Estado de la alerta.}
+        value: {type: number, description: Value of the series at the latest change of state., x-description-es: Valor de la serie en el último cambio de estado.}
+        started_at: {type: string, format: date-time, description: When the comparison started to hold., x-description-es: Cuándo empezó a sostenerse la comparación.}
+        fired_at: {type: string, format: date-time, description: When the alert fired., x-description-es: Cuándo se disparó la alerta.}
+        resolved_at: {type: string, format: date-time, description: When the alert was resolved., x-description-es: Cuándo se resolvió la alerta.}
+    Alerts:
+      type: object
+      description: The alert rules, the active alerts and the history of a period.
+      x-description-es: Las reglas de alerta, las alertas activas y el historial de un periodo.
+      additionalProperties: false
+      required: [schema_version, every_s, signals, operators, rules, sinks, config_writable, active, from, to, history]
+      properties:
+        schema_version: {type: integer, description: Version of the document., x-description-es: Versión del documento.}
+        evaluated_at: {type: string, format: date-time, description: When the rules were last judged., x-description-es: Cuándo se juzgaron las reglas por última vez.}
+        every_s: {type: number, description: Seconds between evaluations., x-description-es: Segundos entre evaluaciones.}
+        signals:
+          type: array
+          description: The signals rules can compare.
+          x-description-es: Las señales que pueden comparar las reglas.
+          items:
+            type: object
+            description: A signal and the labels of its series.
+            x-description-es: Una señal y las etiquetas de sus series.
+            additionalProperties: false
+            required: [name, labels]
+            properties:
+              name: {type: string, description: Name of the signal., x-description-es: Nombre de la señal.}
+              labels: {type: array, items: {type: string}, description: Labels of its series., x-description-es: Etiquetas de sus series.}
+        operators: {type: array, items: {type: string}, description: The accepted comparisons., x-description-es: Las comparaciones aceptadas.}
+        rules:
+          type: array
+          description: The rules in force.
+          x-description-es: Las reglas vigentes.
+          items: {$ref: "#/components/schemas/AlertRule"}
+        sinks: {type: array, items: {type: string}, description: Where notifications go., x-description-es: Adónde van las notificaciones.}
+        config_writable: {type: boolean, description: Whether the agent can write its configuration file., x-description-es: Si el agente puede escribir su archivo de configuración.}
+        active:
+          type: array
+          description: Alerts that are pending or firing, firing first.
+          x-description-es: Alertas pendientes o disparadas, primero las disparadas.
+          items: {$ref: "#/components/schemas/Alert"}
+        from: {type: string, format: date-time, description: Start of the period of the history., x-description-es: Inicio del periodo del historial.}
+        to: {type: string, format: date-time, description: End of the period of the history., x-description-es: Fin del periodo del historial.}
+        history:
+          type: array
+          description: Alerts that fired and started in the period, the latest first.
+          x-description-es: Alertas que se dispararon y empezaron en el periodo, de la más reciente a la más antigua.
+          items: {$ref: "#/components/schemas/Alert"}
     ConfigPreview:
       type: object
       description: The file that changes produce and its problems.

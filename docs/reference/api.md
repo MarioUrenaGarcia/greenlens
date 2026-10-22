@@ -13,6 +13,9 @@ Energy measurements of the node, its inference backends and models, served by th
 | Method | Path | Role | Summary |
 |---|---|---|---|
 | `GET` | `/api/v1/about` | viewer | Version, license and source code of the running agent |
+| `GET` | `/api/v1/alerts` | viewer | The alert rules, the active alerts and those that fired in a period |
+| `PUT` | `/api/v1/alerts/rules` | operator | Replace the alert rules in the configuration file and reload it |
+| `POST` | `/api/v1/alerts/rules/preview` | operator | The configuration file that new alert rules would produce, checked |
 | `GET` | `/api/v1/audit` | admin | Actions of operators and administrators, newest first |
 | `GET` | `/api/v1/backends` | viewer | Backends and models with their use since the agent started |
 | `GET` | `/api/v1/backup` | admin | Consistent copy of the database |
@@ -64,6 +67,66 @@ Role: `viewer`
 |---|---|---|
 | `200` | The description of the running version. | [About](#about) |
 | `401` | No valid session or token. | [Error](#error) |
+
+### GET /api/v1/alerts
+
+The alert rules, the active alerts and those that fired in a period. The rules in force with the signals they can compare, the alerts that are pending or firing, and the alerts that fired and started in the period, the latest first, at most 500. Without from and to, the period is the last seven days.
+
+Role: `viewer`
+
+**Parameters**
+
+| Name | In | Type | Required | Description |
+|---|---|---|---|---|
+| `from` | query | string (date-time) | no | Start of the period of the history, RFC 3339. |
+| `to` | query | string (date-time) | no | End of the period of the history, RFC 3339. |
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The rules and the alerts. | [Alerts](#alerts) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### PUT /api/v1/alerts/rules
+
+Replace the alert rules in the configuration file and reload it. Only alerts.rules changes; the comments and every other key of the file are kept. As with the configuration, only when the agent can write its file.
+
+Role: `operator`
+
+**Document**: [AlertRules](#alertrules)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The file was written and the configuration reloaded. | [ConfigPreview](#configpreview) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
+| `409` | The agent cannot write its configuration file. | [Error](#error) |
+| `422` | The rules make the configuration invalid; nothing was written. | [ConfigPreview](#configpreview) |
+| `500` | The agent could not complete the request; its log has the details. | [Error](#error) |
+
+### POST /api/v1/alerts/rules/preview
+
+The configuration file that new alert rules would produce, checked.
+
+Role: `operator`
+
+**Document**: [AlertRules](#alertrules)
+
+**Responses**
+
+| Status | Description | Document |
+|---|---|---|
+| `200` | The resulting file and its problems. | [ConfigPreview](#configpreview) |
+| `400` | The request is not valid. | [Error](#error) |
+| `401` | No valid session or token. | [Error](#error) |
+| `403` | The role is not enough, or the CSRF check failed. | [Error](#error) |
 
 ### GET /api/v1/audit
 
@@ -733,6 +796,65 @@ The running version, its license and its source code.
 | `third_party` | list of object | yes | Third-party components included. |
 | `version` | string | yes | Version of the agent. |
 | `revision` | string | no | Commit the agent was built from. |
+
+### Alert
+
+One alert, a rule and the labels of one series.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `expr` | string | yes | Signal of the rule. |
+| `for_s` | number | yes | Duration of the rule in seconds. |
+| `id` | integer | yes | Identifier of the alert. |
+| `labels` | map of string | yes | Labels of the series. |
+| `op` | string | yes | Comparison of the rule. |
+| `rule` | string | yes | Name of the rule. |
+| `started_at` | string (date-time) | yes | When the comparison started to hold. |
+| `state` | `pending`, `firing`, `resolved` | yes | State of the alert. |
+| `threshold` | number | yes | Threshold of the rule. |
+| `value` | number | yes | Value of the series at the latest change of state. |
+| `fired_at` | string (date-time) | no | When the alert fired. |
+| `resolved_at` | string (date-time) | no | When the alert was resolved. |
+
+### AlertRule
+
+An alert rule.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `expr` | `node_power_watts`, `backend_power_watts`, `model_joules_per_token`, `model_jpt_zscore`, `source_up` | yes | Signal the rule compares. |
+| `for` | string | yes | How long the comparison must hold before the alert fires, such as 10m. |
+| `name` | string | yes | Name of the rule |
+| `op` | `>`, `>=`, `<`, `<=` | yes | Comparison with the threshold. |
+| `threshold` | number | yes | Value the signal is compared with. |
+| `match` | map of string | no | Labels the series must have. |
+
+### AlertRules
+
+The alert rules that replace those of the configuration.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `rules` | list of [AlertRule](#alertrule) | yes | Every rule. |
+
+### Alerts
+
+The alert rules, the active alerts and the history of a period.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `active` | list of [Alert](#alert) | yes | Alerts that are pending or firing, firing first. |
+| `config_writable` | boolean | yes | Whether the agent can write its configuration file. |
+| `every_s` | number | yes | Seconds between evaluations. |
+| `from` | string (date-time) | yes | Start of the period of the history. |
+| `history` | list of [Alert](#alert) | yes | Alerts that fired and started in the period, the latest first. |
+| `operators` | list of string | yes | The accepted comparisons. |
+| `rules` | list of [AlertRule](#alertrule) | yes | The rules in force. |
+| `schema_version` | integer | yes | Version of the document. |
+| `signals` | list of object | yes | The signals rules can compare. |
+| `sinks` | list of string | yes | Where notifications go. |
+| `to` | string (date-time) | yes | End of the period of the history. |
+| `evaluated_at` | string (date-time) | no | When the rules were last judged. |
 
 ### Audit
 

@@ -26,6 +26,121 @@
       },
       "type": "object"
     },
+    "alerts": {
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "description": "Alert rules, each compared with its signal every 15 seconds.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expr": {
+                "description": "Signal the rule compares: node_power_watts, backend_power_watts, model_joules_per_token, model_jpt_zscore or source_up.",
+                "enum": [
+                  "node_power_watts",
+                  "backend_power_watts",
+                  "model_joules_per_token",
+                  "model_jpt_zscore",
+                  "source_up"
+                ],
+                "type": "string"
+              },
+              "for": {
+                "description": "How long the comparison must hold before the alert fires; 0 fires at once.",
+                "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+                "type": "string"
+              },
+              "match": {
+                "additionalProperties": {
+                  "enum": [
+                    "rapl",
+                    "perf_event",
+                    "hwmon",
+                    "hwmon_gpu",
+                    "nvml",
+                    "nvidia_smi",
+                    "acpi_power_meter",
+                    "ipmi",
+                    "battery",
+                    "estimate"
+                  ],
+                  "type": "string"
+                },
+                "description": "Labels the series must have, such as backend, model or source; without it every series of the signal is judged.",
+                "propertyNames": {
+                  "enum": [
+                    "package",
+                    "dram",
+                    "gpu",
+                    "psys",
+                    "platform"
+                  ]
+                },
+                "type": "object"
+              },
+              "name": {
+                "description": "Name of the rule, unique, shown in notifications and in the history.",
+                "type": "string"
+              },
+              "op": {
+                "description": "Comparison with the threshold: \u003e, \u003e=, \u003c or \u003c=.",
+                "enum": [
+                  "\u003e",
+                  "\u003e=",
+                  "\u003c",
+                  "\u003c="
+                ],
+                "type": "string"
+              },
+              "threshold": {
+                "description": "Value the signal is compared with, in the unit of the signal.",
+                "type": "number"
+              }
+            },
+            "required": null,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "sinks": {
+          "additionalProperties": false,
+          "properties": {
+            "journald": {
+              "description": "Send notifications to journald, with the fields of the alert; takes effect after a restart.",
+              "type": "boolean"
+            },
+            "log": {
+              "description": "Write notifications to the log of the agent.",
+              "type": "boolean"
+            },
+            "syslog": {
+              "description": "Send notifications to the local syslog daemon through /dev/log; takes effect after a restart.",
+              "type": "boolean"
+            },
+            "webhook": {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "description": "Turn the webhook on.",
+                  "type": "boolean"
+                },
+                "token_file": {
+                  "description": "File with the token, sent as a bearer credential and used as the key of the HMAC-SHA256 signature; a new path takes effect after a restart.",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "URL that receives the notifications; it must resolve to a loopback, private or link-local address.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "analysis": {
       "additionalProperties": false,
       "properties": {

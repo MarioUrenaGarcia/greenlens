@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+#
+# Alerting rules for Prometheus and Alertmanager that match the signals of
+# the alert rules of the agent. 5 J per generated token and a z-score of 3
+# are starting points: set the thresholds that fit your models.
+groups:
+  - name: greenlens
+    rules:
+      - alert: GreenLensEnergySourceDown
+        expr: greenlens_source_up == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Energy source {{ $labels.source }} returns no values on {{ $labels.instance }}"
+          description: "The agent cannot read this source; greenlens doctor explains why and how to fix it."
+      # The energy per generated token of each model over the last 15
+      # minutes, with at least 100 generated tokens, as model_joules_per_token.
+      - alert: GreenLensHighJoulesPerToken
+        expr: >-
+          (
+            sum by (instance, backend, model) (rate(greenlens_model_energy_joules_total[15m]))
+            / sum by (instance, backend, model) (rate(greenlens_model_tokens_total{type="generated"}[15m]))
+          ) > 5
+          and sum by (instance, backend, model) (increase(greenlens_model_tokens_total{type="generated"}[15m])) >= 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.model }} of {{ $labels.backend }} uses {{ $value | humanize }} J per generated token on {{ $labels.instance }}"
+      - alert: GreenLensEfficiencyRegression
+        expr: greenlens_model_jpt_zscore > 3
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The energy per token of {{ $labels.model }} of {{ $labels.backend }} is {{ $value | humanize }} standard deviations above its baseline"
+          description: "greenlens report --regressions lists the days and the changes of context around them."
+      - alert: GreenLensAlertFiring
+        expr: greenlens_alerts_firing > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "The agent rule {{ $labels.rule }} is firing on {{ $labels.instance }}"

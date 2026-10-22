@@ -12,6 +12,10 @@ type Rules struct {
 	ReadOnly []string
 	// ReadWrite trees can be read, written and modified.
 	ReadWrite []string
+	// Sockets are pathname Unix sockets of other processes the caller
+	// connects to or sends datagrams to, such as journald; missing ones
+	// are skipped.
+	Sockets []string
 }
 
 // Status reports what Restrict applied.

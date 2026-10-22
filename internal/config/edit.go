@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"strconv"
@@ -64,17 +65,9 @@ func valueText(v reflect.Value) string {
 // for their environment variable, as Values returns them. The result is
 // not validated: parse it and call Validate.
 func Edit(data []byte, changes map[string]string) ([]byte, error) {
-	var doc yaml.Node
-	if len(bytes.TrimSpace(data)) > 0 {
-		if err := yaml.Unmarshal(data, &doc); err != nil {
-			return nil, err
-		}
-	}
-	if doc.Kind == 0 {
-		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
-	}
-	if doc.Kind != yaml.DocumentNode || len(doc.Content) != 1 || doc.Content[0].Kind != yaml.MappingNode {
-		return nil, errors.New("the configuration must be a YAML mapping")
+	doc, err := parseDoc(data)
+	if err != nil {
+		return nil, err
 	}
 	types := map[string]string{}
 	for _, f := range Fields() {
@@ -104,16 +97,74 @@ func Edit(data []byte, changes map[string]string) ([]byte, error) {
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
 	}
+	return encodeDoc(doc)
+}
+
+func parseDoc(data []byte) (*yaml.Node, error) {
+	var doc yaml.Node
+	if len(bytes.TrimSpace(data)) > 0 {
+		if err := yaml.Unmarshal(data, &doc); err != nil {
+			return nil, err
+		}
+	}
+	if doc.Kind == 0 {
+		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
+	}
+	if doc.Kind != yaml.DocumentNode || len(doc.Content) != 1 || doc.Content[0].Kind != yaml.MappingNode {
+		return nil, errors.New("the configuration must be a YAML mapping")
+	}
+	return &doc, nil
+}
+
+func encodeDoc(doc *yaml.Node) ([]byte, error) {
 	var b bytes.Buffer
 	enc := yaml.NewEncoder(&b)
 	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
+	if err := enc.Encode(doc); err != nil {
 		return nil, err
 	}
 	if err := enc.Close(); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+// SetAlertRules replaces alerts.rules in a YAML configuration document,
+// keeping the comments and the order of every other key. The result is not
+// validated: parse it and call Validate.
+func SetAlertRules(data []byte, rules []AlertRule) ([]byte, error) {
+	doc, err := parseDoc(data)
+	if err != nil {
+		return nil, err
+	}
+	str := func(v string) *yaml.Node {
+		// Operators such as ">" would start a block scalar unquoted.
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: v, Style: yaml.DoubleQuotedStyle}
+	}
+	seq := &yaml.Node{Kind: yaml.SequenceNode}
+	for _, r := range rules {
+		m := &yaml.Node{Kind: yaml.MappingNode}
+		add := func(k string, v *yaml.Node) { m.Content = append(m.Content, scalar("!!str", k), v) }
+		add("name", str(r.Name))
+		add("expr", str(r.Expr))
+		add("op", str(r.Op))
+		// Without a tag the number is written plainly and read back as one.
+		add("threshold", &yaml.Node{Kind: yaml.ScalarNode, Value: strconv.FormatFloat(r.Threshold, 'g', -1, 64)})
+		add("for", str(ShortDuration(r.For.D())))
+		if len(r.Match) > 0 {
+			mm := &yaml.Node{Kind: yaml.MappingNode}
+			for _, k := range slices.Sorted(maps.Keys(r.Match)) {
+				mm.Content = append(mm.Content, scalar("!!str", k), str(r.Match[k]))
+			}
+			add("match", mm)
+		}
+		seq.Content = append(seq.Content, m)
+	}
+	if len(rules) == 0 {
+		seq.Style = yaml.FlowStyle
+	}
+	setNode(doc.Content[0], []string{"alerts", "rules"}, seq)
+	return encodeDoc(doc)
 }
 
 func scalar(tag, value string) *yaml.Node {
@@ -188,30 +239,46 @@ func valueNode(typ, s string) (*yaml.Node, error) {
 // setNode puts value at the path of keys inside a mapping, creating the
 // mappings on the way.
 func setNode(m *yaml.Node, path []string, value *yaml.Node) {
-	for i := 0; i+1 < len(m.Content); i += 2 {
-		if m.Content[i].Value != path[0] {
-			continue
+	for n, key := range path {
+		last := n == len(path)-1
+		var next *yaml.Node
+		for i := 0; i+1 < len(m.Content); i += 2 {
+			if m.Content[i].Value != key {
+				continue
+			}
+			if last {
+				// The comments of the old value belong to the line.
+				value.LineComment, value.HeadComment = m.Content[i+1].LineComment, m.Content[i+1].HeadComment
+				m.Content[i+1] = value
+				return
+			}
+			if m.Content[i+1].Kind != yaml.MappingNode {
+				m.Content[i+1] = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
+			}
+			next = m.Content[i+1]
+			break
 		}
-		if len(path) == 1 {
-			// The comments of the old value belong to the line.
-			value.LineComment, value.HeadComment = m.Content[i+1].LineComment, m.Content[i+1].HeadComment
-			m.Content[i+1] = value
-			return
+		if next == nil {
+			if last {
+				m.Content = append(m.Content, scalar("!!str", key), value)
+				return
+			}
+			next = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
+			m.Content = append(m.Content, scalar("!!str", key), next)
 		}
-		child := m.Content[i+1]
-		if child.Kind != yaml.MappingNode {
-			child = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-			m.Content[i+1] = child
-		}
-		setNode(child, path[1:], value)
-		return
+		m = next
 	}
-	key := scalar("!!str", path[0])
-	if len(path) == 1 {
-		m.Content = append(m.Content, key, value)
-		return
+}
+
+// ShortDuration writes a duration without its empty trailing units, as
+// people write it: 5m rather than 5m0s, 1h30m rather than 1h30m0s.
+func ShortDuration(d time.Duration) string {
+	s := d.String()
+	if strings.HasSuffix(s, "m0s") {
+		s = strings.TrimSuffix(s, "0s")
 	}
-	child := &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-	m.Content = append(m.Content, key, child)
-	setNode(child, path[1:], value)
+	if strings.HasSuffix(s, "h0m") {
+		s = strings.TrimSuffix(s, "0m")
+	}
+	return s
 }

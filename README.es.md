@@ -118,6 +118,10 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
   perfil horario de la red y precios por horario, y `greenlens report
   --regressions` encuentra los días en que un modelo se volvió menos
   eficiente;
+- las reglas de alerta vigilan la potencia del nodo y de cada backend, la
+  energía por token, sus regresiones y las fuentes de energía, y avisan al
+  log, a journald, a syslog o a un webhook firmado hacia una dirección
+  interna, con reglas equivalentes para Prometheus y Alertmanager;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
   los reportes, la configuración y esta documentación, todo sin internet;
