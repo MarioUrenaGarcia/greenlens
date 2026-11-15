@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/config"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
+	"github.com/MarioUrenaGarcia/greenlens/internal/pki"
 	"github.com/MarioUrenaGarcia/greenlens/web"
 )
 
@@ -51,7 +53,9 @@ func (a *Agent) startHTTP(ctx context.Context) (net.Listener, error) {
 	if !sv.Enabled {
 		return nil, nil
 	}
-	if !config.IsLoopback(sv.Listen) && a.tokens.Len() == 0 {
+	// A fleet authority is a way in too: its hub reads the agent with a
+	// certificate instead of a token.
+	if !config.IsLoopback(sv.Listen) && a.tokens.Len() == 0 && sv.TLS.ClientCAFile == "" {
 		return nil, help.New(help.GL4011, "listen", sv.Listen)
 	}
 	var lc net.ListenConfig
@@ -60,12 +64,27 @@ func (a *Agent) startHTTP(ctx context.Context) (net.Listener, error) {
 		return nil, help.New(help.GL4012, "listen", sv.Listen, "detail", err.Error()).Wrap(err)
 	}
 	if sv.TLS.CertFile != "" {
-		cert, err := tls.LoadX509KeyPair(sv.TLS.CertFile, sv.TLS.KeyFile)
+		pair, err := pki.NewKeyPair(sv.TLS.CertFile, sv.TLS.KeyFile, func(err error) {
+			a.limited("tls", "the renewed TLS certificate cannot be loaded; the previous one stays in use", "error", err)
+		})
 		if err != nil {
 			_ = l.Close()
 			return nil, help.New(help.GL4014, "detail", err.Error()).Wrap(err)
 		}
-		l = tls.NewListener(l, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12})
+		conf := &tls.Config{GetCertificate: pair.Server, MinVersion: tls.VersionTLS12}
+		if sv.TLS.ClientCAFile != "" {
+			ca, err := pki.LoadCert(sv.TLS.ClientCAFile)
+			if err != nil {
+				_ = l.Close()
+				return nil, help.New(help.GL4014, "detail", err.Error()).Wrap(err)
+			}
+			conf.ClientCAs = x509.NewCertPool()
+			conf.ClientCAs.AddCert(ca)
+			// Browsers and scripts with a token have no certificate, so
+			// one is checked when shown and not asked of everyone.
+			conf.ClientAuth = tls.VerifyClientCertIfGiven
+		}
+		l = tls.NewListener(l, conf)
 	}
 	return l, nil
 }
@@ -191,6 +210,14 @@ func (a *Agent) authenticate(r *http.Request) (auth.Principal, bool, error) {
 			return auth.Principal{}, false, nil
 		}
 		return auth.Principal{Role: tk.Role, Actor: "token:" + tk.Name, Via: auth.ViaToken}, true, nil
+	}
+	// The hub of the fleet reads measurements; it changes nothing, so its
+	// certificate gives the viewer role. The certificate of another agent,
+	// signed by the same authority, gives nothing.
+	if r.TLS != nil && len(r.TLS.VerifiedChains) > 0 {
+		if leaf := r.TLS.PeerCertificates[0]; pki.Role(leaf) == pki.RoleHub {
+			return auth.Principal{Role: auth.Viewer, Actor: "cert:" + leaf.Subject.CommonName, Via: auth.ViaCertificate}, true, nil
+		}
 	}
 	c, err := r.Cookie(api.SessionCookie)
 	if err != nil {

@@ -428,6 +428,74 @@ greenlens gui
 greenlens gui --print --role viewer
 ```
 
+## greenlens hub
+
+Crea la autoridad certificadora de una flota y emite los certificados de sus agentes y de su hub. Con ellos un hub lee a sus agentes con TLS mutuo: el agente prueba qué nodo es, y solo el hub puede leerlo. Los certificados duran poco y se renuevan emitiéndolos de nuevo.
+
+**Uso**
+
+```text
+greenlens hub [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+
+## greenlens hub init-ca
+
+Crea la llave y el certificado de una autoridad nueva en un directorio. Una autoridad existente nunca se reemplaza: los certificados que firmó dejarían de ser de confianza.
+
+**Uso**
+
+```text
+greenlens hub init-ca [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--days` | Días de validez de la autoridad | `1825` |
+| `--dir` | Directorio de la autoridad; se crea si falta |  |
+| `--name` | Nombre de la autoridad, que aparece en sus certificados | `greenlens-fleet` |
+
+**Ejemplos**
+
+```bash
+greenlens hub init-ca --dir /etc/greenlens/fleet-ca
+greenlens hub init-ca --dir ./fleet-ca --name inference-cluster --days 730
+```
+
+## greenlens hub issue-cert
+
+Crea una llave y un certificado firmado por la autoridad de la flota, como <name>.crt y <name>.key. El certificado de un agente es el que sirve su API HTTP, y nombra los hosts y direcciones en los que se alcanza al agente. El certificado del hub es el que este muestra a los agentes. Emitir un nombre otra vez renueva su certificado con una llave nueva.
+
+**Uso**
+
+```text
+greenlens hub issue-cert [opciones]
+```
+
+**Opciones**
+
+| Opción | Descripción | Por defecto |
+|---|---|---|
+| `--ca-dir` | Directorio de la autoridad, con ca.crt y ca.key |  |
+| `--days` | Días de validez del certificado | `30` |
+| `--host` | Dirección o nombre de host en el que se alcanza al agente; repítela para varios | `[]` |
+| `--name` | Nombre del nodo, como node-a o hub |  |
+| `--out` | Directorio donde se escriben el certificado y su llave |  |
+| `--role` | Para qué es el certificado: agent o hub | `agent` |
+
+**Ejemplos**
+
+```bash
+greenlens hub issue-cert --ca-dir ./fleet-ca --name node-a --host 10.0.0.11 --out ./certs
+greenlens hub issue-cert --ca-dir ./fleet-ca --name hub --role hub --days 14 --out ./certs
+```
+
 ## greenlens license
 
 Muestra la licencia de GreenLens, dónde obtener el código fuente de esta versión y los componentes de terceros que incluye. Usa --full para el texto completo de la licencia y --third-party para la licencia de cada componente.

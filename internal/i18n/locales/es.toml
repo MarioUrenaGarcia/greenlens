@@ -629,6 +629,35 @@ name = "Nombre del token, como grafana o ci"
 role = "Rol del token: viewer, operator o admin"
 expires = "Vigencia del token, como 90d, 12w o 36h, o never"
 
+[cli.hub]
+short = "Gestiona los certificados de una flota"
+long = "Crea la autoridad certificadora de una flota y emite los certificados de sus agentes y de su hub. Con ellos un hub lee a sus agentes con TLS mutuo: el agente prueba qué nodo es, y solo el hub puede leerlo. Los certificados duran poco y se renuevan emitiéndolos de nuevo."
+ca_created = "Autoridad {name} creada en {dir}, válida hasta el {date}."
+ca_keep = "Mantén {key} fuera de los nodos: quien la tenga puede emitir certificados en los que confía toda la flota. Copia solo {cert} a los agentes y al hub."
+issued = "Certificado de {name} ({role}) escrito en {cert}, con su llave en {key}. Es válido hasta el {date}."
+renewed = "Esto reemplaza el certificado anterior de {name}; el agente sirve el nuevo en segundos, sin reiniciar."
+next_agent = "En el agente, pon en server.tls.cert_file, server.tls.key_file y server.tls.client_ca_file el certificado, su llave y el certificado de la autoridad."
+next_hub = "El hub muestra este certificado a los agentes que lee."
+
+[cli.hub.init_ca]
+short = "Crea la autoridad certificadora de una flota"
+long = "Crea la llave y el certificado de una autoridad nueva en un directorio. Una autoridad existente nunca se reemplaza: los certificados que firmó dejarían de ser de confianza."
+
+[cli.hub.issue_cert]
+short = "Emite o renueva el certificado de un agente o del hub"
+long = "Crea una llave y un certificado firmado por la autoridad de la flota, como <name>.crt y <name>.key. El certificado de un agente es el que sirve su API HTTP, y nombra los hosts y direcciones en los que se alcanza al agente. El certificado del hub es el que este muestra a los agentes. Emitir un nombre otra vez renueva su certificado con una llave nueva."
+
+[cli.hub.flag]
+dir = "Directorio de la autoridad; se crea si falta"
+ca_name = "Nombre de la autoridad, que aparece en sus certificados"
+ca_days = "Días de validez de la autoridad"
+ca_dir = "Directorio de la autoridad, con ca.crt y ca.key"
+out = "Directorio donde se escriben el certificado y su llave"
+name = "Nombre del nodo, como node-a o hub"
+role = "Para qué es el certificado: agent o hub"
+host = "Dirección o nombre de host en el que se alcanza al agente; repítela para varios"
+days = "Días de validez del certificado"
+
 [cli.gui]
 short = "Abre la interfaz gráfica en el navegador"
 long = "Pide al agente en ejecución un enlace de inicio de sesión de un solo uso y lo abre en el navegador predeterminado con xdg-open. El enlace funciona una vez, dentro de {minutes} minutos, e inicia la sesión del navegador con el rol elegido.\n\nPor SSH, o sin sesión gráfica, imprime el enlace en su lugar, con el comando que reenvía el puerto del agente a tu computadora."
@@ -854,6 +883,7 @@ server_metrics_auth = "Pide un token de acceso también en /metrics."
 server_tls = "Certificado de la API HTTP. Sin él, la API habla HTTP sin cifrar."
 server_tls_cert_file = "Cadena de certificados en PEM."
 server_tls_key_file = "Llave privada en PEM, legible solo por el agente."
+server_tls_client_ca_file = "Certificado PEM de la autoridad de una flota. Un cliente que muestra un certificado de hub firmado por ella lee la API como lector sin token; los demás clientes siguen necesitando uno."
 proxy = "Proxy inverso que cuenta tokens, ejecutado por el agente."
 proxy_enabled = "Ejecuta el proxy."
 proxy_listen = "Dirección y puerto en que escucha el proxy."
@@ -1132,6 +1162,11 @@ fix = "revisa server.tls.cert_file y server.tls.key_file: ambos deben ser archiv
 message = "la interfaz gráfica está apagada"
 cause = "el agente no sirve su API HTTP: server.enabled es false"
 fix = "pon server.enabled en true en la configuración del agente y reinícialo, por ejemplo con 'sudo systemctl restart greenlens'"
+
+[errors.GL4016]
+message = "no se puede crear el certificado"
+cause = "{detail}"
+fix = "revisa los directorios y los valores de las opciones; ejecuta '{command} --help' para verlas"
 
 [errors.GL0019]
 message = "no se puede escribir el reporte"

@@ -629,6 +629,35 @@ name = "Name of the token, such as grafana or ci"
 role = "Role of the token: viewer, operator or admin"
 expires = "Lifetime of the token, such as 90d, 12w or 36h, or never"
 
+[cli.hub]
+short = "Manage the certificates of a fleet"
+long = "Create the certificate authority of a fleet and issue the certificates of its agents and its hub. With them a hub reads its agents over mutual TLS: the agent proves which node it is, and only the hub may read it. Certificates are short-lived and are renewed by issuing them again."
+ca_created = "Authority {name} created in {dir}, valid until {date}."
+ca_keep = "Keep {key} off the nodes: whoever has it can issue certificates the whole fleet trusts. Copy only {cert} to the agents and the hub."
+issued = "Certificate of {name} ({role}) written to {cert}, with its key in {key}. It is valid until {date}."
+renewed = "This replaces the previous certificate of {name}; the agent serves the new one within seconds, without a restart."
+next_agent = "On the agent, set server.tls.cert_file, server.tls.key_file and server.tls.client_ca_file to the certificate, its key and the certificate of the authority."
+next_hub = "The hub shows this certificate to the agents it reads."
+
+[cli.hub.init_ca]
+short = "Create the certificate authority of a fleet"
+long = "Create the key and the certificate of a new authority in a directory. An existing authority is never replaced: the certificates it signed would stop being trusted."
+
+[cli.hub.issue_cert]
+short = "Issue or renew the certificate of an agent or of the hub"
+long = "Create a key and a certificate signed by the authority of the fleet, as <name>.crt and <name>.key. A certificate of an agent is the one its HTTP API serves, and names the hosts and addresses the agent is reached at. A certificate of the hub is the one it shows to the agents. Issuing a name again renews its certificate with a new key."
+
+[cli.hub.flag]
+dir = "Directory of the authority, created if missing"
+ca_name = "Name of the authority, shown in its certificates"
+ca_days = "Days the authority is valid"
+ca_dir = "Directory of the authority, with ca.crt and ca.key"
+out = "Directory where the certificate and its key are written"
+name = "Name of the node, such as node-a or hub"
+role = "What the certificate is for: agent or hub"
+host = "Address or host name the agent is reached at; repeat it for several"
+days = "Days the certificate is valid"
+
 [cli.gui]
 short = "Open the graphical interface in the browser"
 long = "Ask the running agent for a one-time sign-in link and open it in the default browser with xdg-open. The link works once, within {minutes} minutes, and signs the browser in with the chosen role.\n\nOver SSH, or without a graphical session, the link is printed instead, with the command that forwards the port of the agent to your computer."
@@ -854,6 +883,7 @@ server_metrics_auth = "Ask for an access token on /metrics too."
 server_tls = "Certificate of the HTTP API. Without one the API speaks plain HTTP."
 server_tls_cert_file = "Certificate chain in PEM."
 server_tls_key_file = "Private key in PEM, readable only by the agent."
+server_tls_client_ca_file = "PEM certificate of the authority of a fleet. A client that shows a hub certificate it signed reads the API as a viewer without a token; other clients still need one."
 proxy = "Token-counting reverse proxy run by the agent."
 proxy_enabled = "Run the proxy."
 proxy_listen = "Address and port the proxy listens on."
@@ -1132,6 +1162,11 @@ fix = "check server.tls.cert_file and server.tls.key_file: both must be PEM file
 message = "the graphical interface is off"
 cause = "the agent does not serve its HTTP API: server.enabled is false"
 fix = "set server.enabled to true in the configuration of the agent and restart it, for example with 'sudo systemctl restart greenlens'"
+
+[errors.GL4016]
+message = "cannot create the certificate"
+cause = "{detail}"
+fix = "check the directories and the values of the flags; run '{command} --help' to see them"
 
 [errors.GL0019]
 message = "cannot write the report"

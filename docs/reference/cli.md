@@ -428,6 +428,74 @@ greenlens gui
 greenlens gui --print --role viewer
 ```
 
+## greenlens hub
+
+Create the certificate authority of a fleet and issue the certificates of its agents and its hub. With them a hub reads its agents over mutual TLS: the agent proves which node it is, and only the hub may read it. Certificates are short-lived and are renewed by issuing them again.
+
+**Usage**
+
+```text
+greenlens hub [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+
+## greenlens hub init-ca
+
+Create the key and the certificate of a new authority in a directory. An existing authority is never replaced: the certificates it signed would stop being trusted.
+
+**Usage**
+
+```text
+greenlens hub init-ca [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--days` | Days the authority is valid | `1825` |
+| `--dir` | Directory of the authority, created if missing |  |
+| `--name` | Name of the authority, shown in its certificates | `greenlens-fleet` |
+
+**Examples**
+
+```bash
+greenlens hub init-ca --dir /etc/greenlens/fleet-ca
+greenlens hub init-ca --dir ./fleet-ca --name inference-cluster --days 730
+```
+
+## greenlens hub issue-cert
+
+Create a key and a certificate signed by the authority of the fleet, as <name>.crt and <name>.key. A certificate of an agent is the one its HTTP API serves, and names the hosts and addresses the agent is reached at. A certificate of the hub is the one it shows to the agents. Issuing a name again renews its certificate with a new key.
+
+**Usage**
+
+```text
+greenlens hub issue-cert [flags]
+```
+
+**Options**
+
+| Option | Description | Default |
+|---|---|---|
+| `--ca-dir` | Directory of the authority, with ca.crt and ca.key |  |
+| `--days` | Days the certificate is valid | `30` |
+| `--host` | Address or host name the agent is reached at; repeat it for several | `[]` |
+| `--name` | Name of the node, such as node-a or hub |  |
+| `--out` | Directory where the certificate and its key are written |  |
+| `--role` | What the certificate is for: agent or hub | `agent` |
+
+**Examples**
+
+```bash
+greenlens hub issue-cert --ca-dir ./fleet-ca --name node-a --host 10.0.0.11 --out ./certs
+greenlens hub issue-cert --ca-dir ./fleet-ca --name hub --role hub --days 14 --out ./certs
+```
+
 ## greenlens license
 
 Show the license of GreenLens, where to get the source code of this version and the third-party components it includes. Use --full for the complete license text and --third-party for the license of every component.

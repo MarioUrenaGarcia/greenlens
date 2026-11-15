@@ -133,6 +133,9 @@ server:
   tls:
     cert_file: ""
     key_file: ""
+    # Authority of a fleet, from "greenlens hub init-ca". Its hub then
+    # reads this agent with its certificate, without a token.
+    client_ca_file: ""
 
 indicators:
   # Grid emission factor in gCO2e/kWh. Empty: FESEN 2024, 444 gCO2e/kWh.

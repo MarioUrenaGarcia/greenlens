@@ -87,6 +87,7 @@ Every key of the configuration file, the environment variable that overrides it 
 | `server.metrics_auth` | `GREENLENS_SERVER_METRICS_AUTH` | bool | `false` | Ask for an access token on /metrics too. |
 | `server.tls.cert_file` | `GREENLENS_SERVER_TLS_CERT_FILE` | string | empty | Certificate chain in PEM. |
 | `server.tls.key_file` | `GREENLENS_SERVER_TLS_KEY_FILE` | string | empty | Private key in PEM, readable only by the agent. |
+| `server.tls.client_ca_file` | `GREENLENS_SERVER_TLS_CLIENT_CA_FILE` | string | empty | PEM certificate of the authority of a fleet. A client that shows a hub certificate it signed reads the API as a viewer without a token; other clients still need one. |
 
 ## indicators
 

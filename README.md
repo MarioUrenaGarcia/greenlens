@@ -126,6 +126,9 @@ backends, models and the commands, processes and systemd units you choose:
 - the power of the whole machine can be read from the Redfish service of
   its management controller or from a Shelly or Tasmota smart plug, to see
   what the rest of the system draws and to validate the counters;
+- `greenlens hub init-ca` and `issue-cert` create the certificate authority
+  of a fleet and short-lived certificates, so one Prometheus reads every
+  agent over mutual TLS without tokens;
 - `greenlens gui` opens the graphical interface the agent serves, with the
   live power, the backends, models and consumers, benchmarks, reports,
   alerts, the configuration and this documentation, all without internet;

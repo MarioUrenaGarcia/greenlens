@@ -128,6 +128,9 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 - la potencia de la máquina completa se puede leer del servicio Redfish de
   su controlador de gestión o de un enchufe inteligente Shelly o Tasmota,
   para ver cuánto consume el resto del sistema y validar los contadores;
+- `greenlens hub init-ca` e `issue-cert` crean la autoridad certificadora
+  de una flota y certificados de vida corta, para que un Prometheus lea a
+  todos los agentes con TLS mutuo y sin tokens;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
   los reportes, las alertas, la configuración y esta documentación, todo

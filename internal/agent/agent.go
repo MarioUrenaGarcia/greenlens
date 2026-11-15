@@ -364,7 +364,8 @@ func (a *Agent) confine() {
 	root := a.cfg.Agent.HostRoot
 	ro := []string{filepath.Join(root, "sys"), filepath.Join(root, "proc")}
 	// Files named by the configuration are read again on every reload.
-	for _, f := range []string{a.cfg.Proxy.ConsumerAliasesFile, a.cfg.Indicators.HourlyProfileFile} {
+	// The certificate of the HTTP API is read again when it is renewed.
+	for _, f := range []string{a.cfg.Proxy.ConsumerAliasesFile, a.cfg.Indicators.HourlyProfileFile, a.cfg.Server.TLS.CertFile, a.cfg.Server.TLS.KeyFile} {
 		if f != "" {
 			ro = append(ro, filepath.Dir(f))
 		}

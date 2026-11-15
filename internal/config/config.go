@@ -224,6 +224,9 @@ type Server struct {
 type TLS struct {
 	CertFile string `yaml:"cert_file"`
 	KeyFile  string `yaml:"key_file"`
+	// ClientCAFile holds the authority of a fleet. A client that shows a
+	// hub certificate it signed may read the API without a token.
+	ClientCAFile string `yaml:"client_ca_file"`
 }
 
 // DefaultListen is the address of the HTTP API. Port 10060 follows the
@@ -787,10 +790,13 @@ func (c Config) Validate() error {
 	if t := c.Server.TLS; (t.CertFile == "") != (t.KeyFile == "") {
 		bad("server.tls", "set both cert_file and key_file, or neither")
 	} else {
-		for _, p := range []struct{ key, v string }{{"server.tls.cert_file", t.CertFile}, {"server.tls.key_file", t.KeyFile}} {
+		for _, p := range []struct{ key, v string }{{"server.tls.cert_file", t.CertFile}, {"server.tls.key_file", t.KeyFile}, {"server.tls.client_ca_file", t.ClientCAFile}} {
 			if p.v != "" && !filepath.IsAbs(p.v) {
 				bad(p.key, "must be an absolute path")
 			}
+		}
+		if t.ClientCAFile != "" && t.CertFile == "" {
+			bad("server.tls.client_ca_file", "client certificates need TLS: set cert_file and key_file too")
 		}
 	}
 	for i, r := range c.Alerts.Rules {

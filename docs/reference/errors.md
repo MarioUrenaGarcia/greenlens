@@ -66,6 +66,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL4013](#gl4013) | the token file cannot be used | 1 |
 | [GL4014](#gl4014) | the TLS certificate cannot be loaded | 6 |
 | [GL4015](#gl4015) | the graphical interface is off | 6 |
+| [GL4016](#gl4016) | cannot create the certificate | 1 |
 
 ## GL0001
 
@@ -472,3 +473,10 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** the agent does not serve its HTTP API: server.enabled is false
 - **Fix:** set server.enabled to true in the configuration of the agent and restart it, for example with 'sudo systemctl restart greenlens'
 - **Exit code:** 6
+
+## GL4016
+
+- **Message:** cannot create the certificate
+- **Cause:** `{detail}`
+- **Fix:** check the directories and the values of the flags; run '`{command}` --help' to see them
+- **Exit code:** 1

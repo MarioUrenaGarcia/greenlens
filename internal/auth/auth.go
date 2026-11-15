@@ -59,7 +59,8 @@ type Principal struct {
 	// Actor names the principal in the audit log, such as uid:1000 or
 	// token:grafana. It never contains a secret.
 	Actor string
-	// Via is how the principal was recognized: socket, session or token.
+	// Via is how the principal was recognized: socket, session, token or
+	// certificate.
 	Via string
 	// CSRF is the token a session must echo on requests that change
 	// something.
@@ -71,6 +72,9 @@ const (
 	ViaSocket  = "socket"
 	ViaSession = "session"
 	ViaToken   = "token"
+	// ViaCertificate is a client certificate signed by the authority of
+	// the fleet.
+	ViaCertificate = "certificate"
 )
 
 type principalKey struct{}

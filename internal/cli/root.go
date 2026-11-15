@@ -57,6 +57,7 @@ func newRoot(a *app) *cobra.Command {
 		newExplainCmd(a),
 		newExportCmd(a),
 		newGUICmd(a),
+		newHubCmd(a),
 		newLicenseCmd(a),
 		newMeasureCmd(a),
 		newProxyCmd(a),
