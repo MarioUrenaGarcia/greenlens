@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+#
+# Development environment for the integrations: Prometheus scrapes the agent
+# of this machine, an OpenTelemetry collector receives its OTLP export, and
+# Grafana shows the dashboard of deploy/grafana with both.
+#
+#   docker compose -f deploy/compose/compose.yaml up
+#
+# The services share the network of the host, because the agent listens on
+# loopback only, and each one listens on loopback too: Prometheus on 9090,
+# Grafana on 3000 and the collector on 4317 (gRPC), 4318 (HTTP) and 8889
+# (the metrics it received, for Prometheus). Grafana has no accounts: anyone
+# on this machine can look, and nobody can change it.
+services:
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    network_mode: host
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.listen-address=127.0.0.1:9090
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../prometheus/rules.yml:/etc/prometheus/rules/greenlens.yml:ro
+      - prometheus:/prometheus
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    network_mode: host
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./collector.yaml:/etc/otelcol/config.yaml:ro
+
+  grafana:
+    image: grafana/grafana:13.2.6
+    network_mode: host
+    environment:
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/greenlens.json
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../grafana/greenlens.json:/var/lib/grafana/dashboards/greenlens.json:ro
+      - grafana:/var/lib/grafana
+
+volumes:
+  prometheus:
+  grafana:

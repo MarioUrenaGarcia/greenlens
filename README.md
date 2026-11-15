@@ -121,7 +121,8 @@ backends, models and the commands, processes and systemd units you choose:
   journald, syslog or a signed webhook to an internal address, with
   equivalent rules for Prometheus and Alertmanager;
 - the metrics of `/metrics` can also be pushed to an OpenTelemetry collector
-  on the internal network with OTLP, over gRPC or HTTP;
+  on the internal network with OTLP, over gRPC or HTTP, and
+  `deploy/grafana` holds a dashboard for Grafana;
 - `greenlens gui` opens the graphical interface the agent serves, with the
   live power, the backends, models and consumers, benchmarks, reports,
   alerts, the configuration and this documentation, all without internet;

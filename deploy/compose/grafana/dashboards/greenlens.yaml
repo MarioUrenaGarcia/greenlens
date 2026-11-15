@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+apiVersion: 1
+providers:
+  - name: greenlens
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Mario Ureña García
+#
+# Receives the OTLP export of the agent on loopback and exposes what it
+# received in the Prometheus format, so the round trip can be compared with
+# a direct scrape. Turn the export of the agent on with:
+#
+#   export:
+#     otlp:
+#       enabled: true
+#       endpoint: http://127.0.0.1:4317
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+
+exporters:
+  prometheus:
+    endpoint: 127.0.0.1:8889
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus, debug]
