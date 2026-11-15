@@ -199,6 +199,22 @@ alerts:
       url: ""
       token_file: ""
 
+# Sends the same metrics as /metrics to an OpenTelemetry collector on the
+# internal network, every interval. protocol is grpc (port 4317 by
+# convention) or http (port 4318, protobuf bodies). An http endpoint is
+# sent without TLS, which suits a collector on this machine.
+export:
+  otlp:
+    enabled: false
+    endpoint: ""
+    protocol: grpc
+    interval: 15s
+    # Secret sent in the Authorization header, for collectors that ask
+    # for one.
+    token_file: ""
+    # Authority of an https collector; empty uses those of the system.
+    ca_file: ""
+
 retention:
   raw: 168h
   rollup_1m: 2160h

@@ -114,8 +114,10 @@ type Agent struct {
 	// alerting holds the alert engine; dispatch delivers notifications.
 	alerting *alerting
 	dispatch *alerts.Dispatcher
-	bjob     *benchJob
-	cjob     *calJob
+	// exporting holds the OTLP export.
+	exporting *exporting
+	bjob      *benchJob
+	cjob      *calJob
 	// selfReload asks the loop to reload the configuration, after the
 	// interface changed it.
 	selfReload     chan struct{}
@@ -259,6 +261,7 @@ func start(ctx context.Context, o Options) (*Agent, error) {
 	}
 	a.startContext(ctx)
 	a.setupAlerts(ctx)
+	a.setupExport()
 	return a, nil
 }
 
@@ -369,6 +372,7 @@ func (a *Agent) confine() {
 	}
 	alertRO, sockets := alertPaths(a.cfg)
 	ro = append(ro, alertRO...)
+	ro = append(ro, exportPaths(a.cfg)...)
 	rw := []string{a.dataDir, filepath.Dir(a.sockPath)}
 	// A configuration the agent may change from the interface needs its
 	// directory writable, for the new file it renames over the old one.
@@ -424,6 +428,12 @@ func (a *Agent) serve(ctx context.Context) error {
 	go func() {
 		a.dispatch.Run(dispatchCtx)
 		close(dispatched)
+	}()
+	exportCtx, stopExport := context.WithCancel(context.WithoutCancel(ctx))
+	exported := make(chan struct{})
+	go func() {
+		a.exportLoop(exportCtx)
+		close(exported)
 	}()
 	srv := &http.Server{
 		Handler:           a.handler(),
@@ -493,6 +503,8 @@ func (a *Agent) serve(ctx context.Context) error {
 	}
 	stopDispatch()
 	<-dispatched
+	stopExport()
+	<-exported
 	_ = os.Remove(a.sockPath)
 	if cerr := a.close(); cerr != nil {
 		a.log.Warn("closing", "error", cerr)
@@ -743,6 +755,7 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 		}
 	}
 	a.reloadAlerts(ctx, old, &cfg)
+	a.reloadExport(old, &cfg)
 	a.mu.Lock()
 	a.cfg = cfg
 	a.mu.Unlock()

@@ -126,6 +126,17 @@ Every key of the configuration file, the environment variable that overrides it 
 | `alerts.sinks.webhook.url` | `GREENLENS_ALERTS_SINKS_WEBHOOK_URL` | string | empty | URL that receives the notifications; it must resolve to a loopback, private or link-local address. |
 | `alerts.sinks.webhook.token_file` | `GREENLENS_ALERTS_SINKS_WEBHOOK_TOKEN_FILE` | string | empty | File with the token, sent as a bearer credential and used as the key of the HMAC-SHA256 signature; a new path takes effect after a restart. |
 
+## export
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `export.otlp.enabled` | `GREENLENS_EXPORT_OTLP_ENABLED` | bool | `false` | Turn the OTLP export on. |
+| `export.otlp.endpoint` | `GREENLENS_EXPORT_OTLP_ENDPOINT` | string | empty | URL of the collector, such as http://127.0.0.1:4317; it must resolve to a loopback, private or link-local address. With the http protocol an endpoint without a path gets /v1/metrics. |
+| `export.otlp.protocol` | `GREENLENS_EXPORT_OTLP_PROTOCOL` | string | `grpc` | Transport of OTLP: grpc, or http with protobuf bodies. |
+| `export.otlp.interval` | `GREENLENS_EXPORT_OTLP_INTERVAL` | duration | `15s` | Time between two exports. |
+| `export.otlp.token_file` | `GREENLENS_EXPORT_OTLP_TOKEN_FILE` | string | empty | File with a secret sent in the Authorization header, for collectors that ask for one; a new path takes effect after a restart. |
+| `export.otlp.ca_file` | `GREENLENS_EXPORT_OTLP_CA_FILE` | string | empty | PEM file with the authority that signs the certificate of an https collector; empty uses the authorities of the system. It is read when the agent starts. |
+
 ## retention
 
 | Key | Environment variable | Type | Default | Description |

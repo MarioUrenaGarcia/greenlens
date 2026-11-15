@@ -252,6 +252,47 @@
       },
       "type": "object"
     },
+    "export": {
+      "additionalProperties": false,
+      "properties": {
+        "otlp": {
+          "additionalProperties": false,
+          "properties": {
+            "ca_file": {
+              "description": "PEM file with the authority that signs the certificate of an https collector; empty uses the authorities of the system. It is read when the agent starts.",
+              "type": "string"
+            },
+            "enabled": {
+              "description": "Turn the OTLP export on.",
+              "type": "boolean"
+            },
+            "endpoint": {
+              "description": "URL of the collector, such as http://127.0.0.1:4317; it must resolve to a loopback, private or link-local address. With the http protocol an endpoint without a path gets /v1/metrics.",
+              "type": "string"
+            },
+            "interval": {
+              "description": "Time between two exports.",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+              "type": "string"
+            },
+            "protocol": {
+              "description": "Transport of OTLP: grpc, or http with protobuf bodies.",
+              "enum": [
+                "grpc",
+                "http"
+              ],
+              "type": "string"
+            },
+            "token_file": {
+              "description": "File with a secret sent in the Authorization header, for collectors that ask for one; a new path takes effect after a restart.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "indicators": {
       "additionalProperties": false,
       "properties": {

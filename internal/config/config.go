@@ -32,6 +32,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
+	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/otlp"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
@@ -73,6 +74,7 @@ type Config struct {
 	Indicators  Indicators  `yaml:"indicators"`
 	Analysis    Analysis    `yaml:"analysis"`
 	Alerts      Alerts      `yaml:"alerts"`
+	Export      Export      `yaml:"export"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
 }
@@ -300,6 +302,32 @@ func (c Config) AlertRules() []alerts.Rule {
 	return out
 }
 
+// Export configures where the agent sends its metrics besides answering
+// the scrapes of /metrics.
+type Export struct {
+	OTLP OTLP `yaml:"otlp"`
+}
+
+// OTLP sends the metrics to an OpenTelemetry collector on the internal
+// network.
+type OTLP struct {
+	Enabled  bool     `yaml:"enabled"`
+	Endpoint string   `yaml:"endpoint"`
+	Protocol string   `yaml:"protocol"`
+	Interval Duration `yaml:"interval"`
+	// TokenFile holds a bearer token for collectors that ask for one.
+	TokenFile string `yaml:"token_file"`
+	// CAFile holds the authority that signs the certificate of an https
+	// collector; empty uses the authorities of the system.
+	CAFile string `yaml:"ca_file"`
+}
+
+// Limits of the interval between two exports.
+const (
+	MinExportInterval = time.Second
+	MaxExportInterval = time.Hour
+)
+
 // Retention sets how long data is kept at each resolution.
 type Retention struct {
 	Raw      Duration `yaml:"raw"`
@@ -325,6 +353,7 @@ func Defaults() Config {
 		Indicators:  Indicators{PUE: 1, Tariff: Tariff{Currency: "MXN"}, SCI: SCI{FunctionalUnit: indicators.UnitGeneratedTokens}},
 		Analysis:    Analysis{Regression: Regression{BaselineDays: 14, MinBaselineDays: 7, ZThreshold: 3, MinGeneratedTokens: 1000}},
 		Alerts:      Alerts{Sinks: AlertSinks{Log: true}},
+		Export:      Export{OTLP: OTLP{Protocol: otlp.ProtocolGRPC, Interval: Duration(15 * time.Second)}},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
 			Rollup1m: Duration(2160 * time.Hour),
@@ -673,6 +702,25 @@ func (c Config) Validate() error {
 		}
 		if w.TokenFile == "" || !filepath.IsAbs(w.TokenFile) {
 			bad("alerts.sinks.webhook.token_file", "set the absolute path of the file that holds the token")
+		}
+	}
+	o := c.Export.OTLP
+	if !slices.Contains(otlp.Protocols, o.Protocol) {
+		bad("export.otlp.protocol", "must be one of "+strings.Join(otlp.Protocols, " or "))
+	}
+	if d := o.Interval.D(); d < MinExportInterval || d > MaxExportInterval {
+		bad("export.otlp.interval", fmt.Sprintf("%s is outside %s to %s", d, MinExportInterval, MaxExportInterval))
+	}
+	for _, f := range []struct{ key, v string }{{"export.otlp.token_file", o.TokenFile}, {"export.otlp.ca_file", o.CAFile}} {
+		if f.v != "" && !filepath.IsAbs(f.v) {
+			bad(f.key, "must be an absolute path")
+		}
+	}
+	if o.Enabled {
+		if err := otlp.CheckEndpoint(o.Endpoint); err != nil {
+			bad("export.otlp.endpoint", err.Error())
+		} else if u, _ := url.Parse(o.Endpoint); o.Protocol == otlp.ProtocolGRPC && u.Path != "" && u.Path != "/" {
+			bad("export.otlp.endpoint", "a gRPC endpoint has no path")
 		}
 	}
 	if h := c.Proxy.ConsumerHeader; h != "" && !headerName.MatchString(h) {

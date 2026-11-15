@@ -429,3 +429,46 @@ func TestEmbodiedCarbon(t *testing.T) {
 		t.Fatalf("%v %+v", err, cfg.EmbodiedCarbon())
 	}
 }
+
+func TestExportOTLP(t *testing.T) {
+	problems := func(change func(*OTLP)) string {
+		cfg := Defaults()
+		change(&cfg.Export.OTLP)
+		var out []string
+		for _, e := range help.Flatten(cfg.Validate()) {
+			out = append(out, e.Error())
+		}
+		return strings.Join(out, "\n")
+	}
+	for name, ok := range map[string]func(*OTLP){
+		"off without an endpoint": func(*OTLP) {},
+		"grpc on loopback":        func(o *OTLP) { o.Enabled, o.Endpoint = true, "http://127.0.0.1:4317" },
+		"http with a path": func(o *OTLP) {
+			o.Enabled, o.Endpoint, o.Protocol = true, "https://collector.example.org:4318/otlp/v1/metrics", "http"
+		},
+		"files": func(o *OTLP) {
+			o.TokenFile, o.CAFile, o.Interval = "/etc/greenlens/otlp-token", "/etc/greenlens/ca.pem", Duration(time.Minute)
+		},
+	} {
+		if got := problems(ok); got != "" {
+			t.Errorf("%s: %s", name, got)
+		}
+	}
+	for name, tc := range map[string]struct {
+		change func(*OTLP)
+		key    string
+	}{
+		"on without an endpoint": {func(o *OTLP) { o.Enabled = true }, "export.otlp.endpoint"},
+		"an outside address":     {func(o *OTLP) { o.Enabled, o.Endpoint = true, "http://203.0.113.9:4317" }, "export.otlp.endpoint"},
+		"grpc with a path":       {func(o *OTLP) { o.Enabled, o.Endpoint = true, "http://127.0.0.1:4317/v1/metrics" }, "export.otlp.endpoint"},
+		"credentials in the URL": {func(o *OTLP) { o.Enabled, o.Endpoint = true, "http://user:pass@127.0.0.1:4317" }, "export.otlp.endpoint"},
+		"an unknown protocol":    {func(o *OTLP) { o.Protocol = "thrift" }, "export.otlp.protocol"},
+		"a short interval":       {func(o *OTLP) { o.Interval = Duration(10 * time.Millisecond) }, "export.otlp.interval"},
+		"a relative token file":  {func(o *OTLP) { o.TokenFile = "token" }, "export.otlp.token_file"},
+		"a relative authority":   {func(o *OTLP) { o.CAFile = "ca.pem" }, "export.otlp.ca_file"},
+	} {
+		if got := problems(tc.change); !strings.Contains(got, tc.key) {
+			t.Errorf("%s: %q does not name %s", name, got, tc.key)
+		}
+	}
+}

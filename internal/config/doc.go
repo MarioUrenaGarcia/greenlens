@@ -13,6 +13,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/alerts"
 	"github.com/MarioUrenaGarcia/greenlens/internal/attribution"
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
+	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/otlp"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 )
 
@@ -51,6 +52,7 @@ func enums() map[string][]string {
 		"indicators.sci.functional_unit":   indicators.FunctionalUnits,
 		"alerts.rules[].expr":              alerts.Signals,
 		"alerts.rules[].op":                alerts.Operators,
+		"export.otlp.protocol":             otlp.Protocols,
 	}
 }
 

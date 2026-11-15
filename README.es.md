@@ -122,6 +122,8 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
   energía por token, sus regresiones y las fuentes de energía, y avisan al
   log, a journald, a syslog o a un webhook firmado hacia una dirección
   interna, con reglas equivalentes para Prometheus y Alertmanager;
+- las métricas de `/metrics` también se pueden enviar a un collector de
+  OpenTelemetry de la red interna con OTLP, por gRPC o HTTP;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
   los reportes, las alertas, la configuración y esta documentación, todo

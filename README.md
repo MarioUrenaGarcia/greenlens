@@ -120,6 +120,8 @@ backends, models and the commands, processes and systemd units you choose:
   per token, its regressions and the energy sources, and notify the log,
   journald, syslog or a signed webhook to an internal address, with
   equivalent rules for Prometheus and Alertmanager;
+- the metrics of `/metrics` can also be pushed to an OpenTelemetry collector
+  on the internal network with OTLP, over gRPC or HTTP;
 - `greenlens gui` opens the graphical interface the agent serves, with the
   live power, the backends, models and consumers, benchmarks, reports,
   alerts, the configuration and this documentation, all without internet;
