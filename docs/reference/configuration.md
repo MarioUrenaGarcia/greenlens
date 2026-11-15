@@ -149,6 +149,19 @@ Every key of the configuration file, the environment variable that overrides it 
 | `export.otlp.token_file` | `GREENLENS_EXPORT_OTLP_TOKEN_FILE` | string | empty | File with a secret sent in the Authorization header, for collectors that ask for one; a new path takes effect after a restart. |
 | `export.otlp.ca_file` | `GREENLENS_EXPORT_OTLP_CA_FILE` | string | empty | PEM file with the authority that signs the certificate of an https collector; empty uses the authorities of the system. It is read when the agent starts. |
 
+## hub
+
+| Key | Environment variable | Type | Default | Description |
+|---|---|---|---|---|
+| `hub.listen` | `GREENLENS_HUB_LISTEN` | string | `127.0.0.1:10061` | Loopback address of the API and the metrics of the hub. |
+| `hub.interval` | `GREENLENS_HUB_INTERVAL` | duration | `15s` | Time between two readings of the agents. |
+| `hub.tls.cert_file` | `GREENLENS_HUB_TLS_CERT_FILE` | string | empty | Certificate of the hub, issued with --role hub. |
+| `hub.tls.key_file` | `GREENLENS_HUB_TLS_KEY_FILE` | string | empty | Private key of the certificate of the hub, readable only by its user. |
+| `hub.tls.ca_file` | `GREENLENS_HUB_TLS_CA_FILE` | string | empty | Certificate of the authority of the fleet. |
+| `hub.nodes` | - | list of objects | empty | Agents the hub reads. |
+| `hub.nodes[].name` | - | string | empty | Name of the node, the value of the node label of its series. |
+| `hub.nodes[].endpoint` | - | string | empty | Address of the HTTP API of the agent, such as https://10.0.0.11:10060; it must resolve to a loopback, private or link-local address that its certificate names. |
+
 ## retention
 
 | Key | Environment variable | Type | Default | Description |

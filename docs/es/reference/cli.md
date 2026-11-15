@@ -430,7 +430,7 @@ greenlens gui --print --role viewer
 
 ## greenlens hub
 
-Crea la autoridad certificadora de una flota y emite los certificados de sus agentes y de su hub. Con ellos un hub lee a sus agentes con TLS mutuo: el agente prueba qué nodo es, y solo el hub puede leerlo. Los certificados duran poco y se renuevan emitiéndolos de nuevo.
+Lee a los agentes listados en hub.nodes con TLS mutuo, cada hub.interval, y los muestra juntos: sus series con una etiqueta node en /metrics, el estado de cada nodo en /api/v1/fleet y la energía de cada uno hora por hora en /api/v1/fleet/energy, en la dirección de loopback de hub.listen. Las dos rutas de la API piden un token de acceso de greenlens token create. Los subcomandos crean la autoridad certificadora de la flota y emiten los certificados de vida corta de sus agentes y del hub.
 
 **Uso**
 
@@ -442,6 +442,13 @@ greenlens hub [opciones]
 
 | Opción | Descripción | Por defecto |
 |---|---|---|
+
+**Ejemplos**
+
+```bash
+greenlens hub
+greenlens hub --config /etc/greenlens/hub.yaml
+```
 
 ## greenlens hub init-ca
 

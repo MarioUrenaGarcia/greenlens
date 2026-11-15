@@ -91,3 +91,14 @@ func TestHubCertificates(t *testing.T) {
 		t.Error("a refused request left a certificate")
 	}
 }
+
+func TestHubNeedsNodes(t *testing.T) {
+	cfgPath, _ := offlineConfig(t)
+	code, _, errOut := runWith(t, hooks{}, nil, "hub", "--config", cfgPath)
+	if code != 6 || !strings.Contains(errOut, "GL3003") || !strings.Contains(errOut, "hub.nodes") {
+		t.Fatalf("a hub without nodes: %d %s", code, errOut)
+	}
+	if code, _, errOut := runWith(t, hooks{}, nil, "hub", "status"); code != 2 || !strings.Contains(errOut, "status") {
+		t.Fatalf("an unknown subcommand: %d %s", code, errOut)
+	}
+}

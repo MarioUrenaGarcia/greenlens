@@ -36,6 +36,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
 	"github.com/MarioUrenaGarcia/greenlens/internal/intranet"
+	"github.com/MarioUrenaGarcia/greenlens/internal/pki"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/redfish"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
@@ -78,6 +79,7 @@ type Config struct {
 	Analysis    Analysis    `yaml:"analysis"`
 	Alerts      Alerts      `yaml:"alerts"`
 	Export      Export      `yaml:"export"`
+	Hub         Hub         `yaml:"hub"`
 	Retention   Retention   `yaml:"retention"`
 	Logging     Logging     `yaml:"logging"`
 }
@@ -401,6 +403,43 @@ const (
 	MaxExportInterval = time.Hour
 )
 
+// Hub configures greenlens hub, which reads the agents of a fleet over
+// mutual TLS and shows them together.
+type Hub struct {
+	// Listen is the address of the API and the metrics of the hub, on
+	// loopback.
+	Listen   string    `yaml:"listen"`
+	Interval Duration  `yaml:"interval"`
+	TLS      HubTLS    `yaml:"tls"`
+	Nodes    []HubNode `yaml:"nodes"`
+}
+
+// HubTLS names the certificate the hub shows to the agents and the
+// authority that signs theirs.
+type HubTLS struct {
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
+	CAFile   string `yaml:"ca_file"`
+}
+
+// HubNode is an agent the hub reads. Its name is the node label of its
+// series.
+type HubNode struct {
+	Name     string `yaml:"name"`
+	Endpoint string `yaml:"endpoint"`
+}
+
+// DefaultHubListen is the address of the hub, next to the one of the
+// agent.
+const DefaultHubListen = "127.0.0.1:10061"
+
+// Limits of the hub.
+const (
+	MinHubInterval = 5 * time.Second
+	MaxHubInterval = 10 * time.Minute
+	MaxHubNodes    = 1000
+)
+
 // Retention sets how long data is kept at each resolution.
 type Retention struct {
 	Raw      Duration `yaml:"raw"`
@@ -429,6 +468,7 @@ func Defaults() Config {
 		Analysis:    Analysis{Regression: Regression{BaselineDays: 14, MinBaselineDays: 7, ZThreshold: 3, MinGeneratedTokens: 1000}},
 		Alerts:      Alerts{Sinks: AlertSinks{Log: true}},
 		Export:      Export{OTLP: OTLP{Protocol: otlp.ProtocolGRPC, Interval: Duration(15 * time.Second)}},
+		Hub:         Hub{Listen: DefaultHubListen, Interval: Duration(15 * time.Second)},
 		Retention: Retention{
 			Raw:      Duration(168 * time.Hour),
 			Rollup1m: Duration(2160 * time.Hour),
@@ -815,6 +855,39 @@ func (c Config) Validate() error {
 		}
 		if w.TokenFile == "" || !filepath.IsAbs(w.TokenFile) {
 			bad("alerts.sinks.webhook.token_file", "set the absolute path of the file that holds the token")
+		}
+	}
+	hub := c.Hub
+	if _, port, err := net.SplitHostPort(hub.Listen); err != nil || port == "" || port == "0" || !IsLoopback(hub.Listen) {
+		bad("hub.listen", "must be a loopback address and port, such as "+DefaultHubListen)
+	}
+	if d := hub.Interval.D(); d < MinHubInterval || d > MaxHubInterval {
+		bad("hub.interval", fmt.Sprintf("%s is outside %s to %s", d, MinHubInterval, MaxHubInterval))
+	}
+	for _, f := range []struct{ key, v string }{{"hub.tls.cert_file", hub.TLS.CertFile}, {"hub.tls.key_file", hub.TLS.KeyFile}, {"hub.tls.ca_file", hub.TLS.CAFile}} {
+		if f.v != "" && !filepath.IsAbs(f.v) {
+			bad(f.key, "must be an absolute path")
+		}
+	}
+	if len(hub.Nodes) > MaxHubNodes {
+		bad("hub.nodes", fmt.Sprintf("at most %d nodes", MaxHubNodes))
+	}
+	if len(hub.Nodes) > 0 && (hub.TLS.CertFile == "" || hub.TLS.KeyFile == "" || hub.TLS.CAFile == "") {
+		bad("hub.tls", "set cert_file, key_file and ca_file: the hub reads its nodes over mutual TLS")
+	}
+	for i, n := range hub.Nodes {
+		if !pki.ValidName(n.Name) {
+			bad(fmt.Sprintf("hub.nodes[%d].name", i), "must be lowercase letters, digits, dots and hyphens, as a host name")
+		}
+		for j := range i {
+			if hub.Nodes[j].Name == n.Name {
+				bad(fmt.Sprintf("hub.nodes[%d].name", i), fmt.Sprintf("%q is used twice", n.Name))
+			}
+		}
+		if u, err := intranet.CheckURL(n.Endpoint, "https"); err != nil {
+			bad(fmt.Sprintf("hub.nodes[%d].endpoint", i), err.Error())
+		} else if u.Path != "" && u.Path != "/" {
+			bad(fmt.Sprintf("hub.nodes[%d].endpoint", i), "the URL is the address of the agent, without a path")
 		}
 	}
 	o := c.Export.OTLP

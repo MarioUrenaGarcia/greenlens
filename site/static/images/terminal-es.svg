@@ -91,7 +91,7 @@ text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mon
 <text x="22.0" y="428.0" class="o s18" textLength="436.8" lengthAdjust="spacingAndGlyphs">  export            Exporta mediciones en CSV o JSON</text>
 <text x="22.0" y="448.0" class="o s19" textLength="504.0" lengthAdjust="spacingAndGlyphs">  gui               Abre la interfaz gráfica en el navegador</text>
 <text x="22.0" y="468.0" class="o s20" textLength="420.0" lengthAdjust="spacingAndGlyphs">  help              Muestra la ayuda de un comando</text>
-<text x="22.0" y="488.0" class="o s21" textLength="487.2" lengthAdjust="spacingAndGlyphs">  hub               Gestiona los certificados de una flota</text>
+<text x="22.0" y="488.0" class="o s21" textLength="655.2" lengthAdjust="spacingAndGlyphs">  hub               Lee a los agentes de una flota y gestiona sus certificados</text>
 <text x="22.0" y="508.0" class="o s22" textLength="537.6" lengthAdjust="spacingAndGlyphs">  license           Muestra la licencia y los avisos de terceros</text>
 <text x="22.0" y="528.0" class="o s23" textLength="655.2" lengthAdjust="spacingAndGlyphs">  measure           Mide la energía de un comando, proceso o unidad de systemd</text>
 <text x="22.0" y="548.0" class="o s24" textLength="546.0" lengthAdjust="spacingAndGlyphs">  proxy             Muestra el estado del proxy que cuenta tokens</text>

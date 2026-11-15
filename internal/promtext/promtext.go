@@ -33,27 +33,81 @@ const (
 
 // Parse reads every sample from r.
 func Parse(r io.Reader) ([]Sample, error) {
+	out, _, err := ParseFamilies(r)
+	return out, err
+}
+
+// Meta is what the comments of the format say about a metric.
+type Meta struct {
+	Type string
+	Help string
+}
+
+// ParseFamilies reads every sample from r, and the type and help text of
+// the metrics that state them in "# TYPE" and "# HELP" comments.
+func ParseFamilies(r io.Reader) ([]Sample, map[string]Meta, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 4096), MaxLineBytes)
 	var out []Sample
+	meta := map[string]Meta{}
 	for n := 1; sc.Scan(); n++ {
 		line := strings.TrimSpace(sc.Text())
-		if line == "" || line[0] == '#' {
+		if line == "" {
+			continue
+		}
+		if line[0] == '#' {
+			if kind, name, text, ok := comment(line); ok {
+				m := meta[name]
+				if kind == "TYPE" {
+					m.Type = text
+				} else {
+					m.Help = unescapeHelp(text)
+				}
+				meta[name] = m
+			}
 			continue
 		}
 		s, err := parseLine(line)
 		if err != nil {
-			return nil, fmt.Errorf("line %d: %w", n, err)
+			return nil, nil, fmt.Errorf("line %d: %w", n, err)
 		}
 		out = append(out, s)
 		if len(out) > MaxSamples {
-			return nil, errors.New("too many samples")
+			return nil, nil, errors.New("too many samples")
 		}
 	}
 	if err := sc.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return out, nil
+	return out, meta, nil
+}
+
+// comment splits "# TYPE name text" and "# HELP name text"; any other
+// comment is not one of the two.
+func comment(line string) (kind, name, text string, ok bool) {
+	fields := strings.SplitN(strings.TrimSpace(strings.TrimPrefix(line, "#")), " ", 3)
+	if len(fields) < 2 || (fields[0] != "TYPE" && fields[0] != "HELP") || !validName(fields[1]) {
+		return "", "", "", false
+	}
+	if len(fields) == 3 {
+		text = strings.TrimSpace(fields[2])
+	}
+	return fields[0], fields[1], text, true
+}
+
+// validName reports whether every character of name may be part of a
+// metric name.
+func validName(name string) bool {
+	for i := 0; i < len(name); i++ {
+		if !isNameChar(name[i], i == 0) {
+			return false
+		}
+	}
+	return name != ""
+}
+
+func unescapeHelp(s string) string {
+	return strings.NewReplacer(`\\`, `\`, `\n`, "\n").Replace(s)
 }
 
 func parseLine(line string) (Sample, error) {

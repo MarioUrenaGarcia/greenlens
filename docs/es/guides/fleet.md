@@ -66,11 +66,88 @@ identifica a un servidor y el del hub solo identifica a un cliente, así que
 un nodo comprometido no puede usar su propio certificado para leer a los
 demás.
 
+## Correr el hub
+
+`greenlens hub` lee a los agentes listados en su configuración cada
+`interval` y los muestra juntos en una dirección de loopback:
+
+```yaml
+hub:
+  listen: 127.0.0.1:10061
+  interval: 15s
+  tls:
+    cert_file: /etc/greenlens/hub.crt
+    key_file: /etc/greenlens/hub.key
+    ca_file: /etc/greenlens/ca.crt
+  nodes:
+    - name: node-a
+      endpoint: https://10.0.0.11:10060
+    - name: node-b
+      endpoint: https://10.0.0.12:10060
+```
+
+```bash
+greenlens hub --config /etc/greenlens/hub.yaml
+```
+
+El nombre de un nodo debe ser el nombre de su certificado. El hub rechaza a
+un agente cuyo certificado no firmó la autoridad, a uno que responde con el
+certificado de otro nodo y a uno cuyo certificado no nombra la dirección de
+`endpoint`.
+
+| Ruta | Responde | Acceso |
+|---|---|---|
+| `/metrics` | todas las series de cada nodo que responde, con una etiqueta `node`, y el estado de cada nodo como `greenlens_hub_node_up` | abierto en loopback |
+| `/api/v1/fleet` | cada nodo con su estado, versión, potencia y número de modelos, y la potencia de la flota | token de acceso |
+| `/api/v1/fleet/energy` | la energía de cada nodo en un periodo, hora por hora y dominio por dominio; `from` y `to` en RFC 3339, las últimas 24 horas sin ellos | token de acceso |
+| `/healthz` | si el hub está en ejecución | abierto |
+
+El hub usa los tokens de acceso de la máquina en la que corre, con
+cualquier rol: solo lee.
+
+```bash
+greenlens token create --config /etc/greenlens/hub.yaml --name fleet-panel --role viewer
+curl -H "Authorization: Bearer $GREENLENS_TOKEN" http://127.0.0.1:10061/api/v1/fleet
+```
+
+```json
+{
+  "schema_version": 1,
+  "time": "2026-11-15T21:50:00Z",
+  "nodes_up": 1,
+  "power_w": 70.8,
+  "nodes": [
+    {"name": "node-a", "endpoint": "https://10.0.0.11:10060", "up": true,
+     "last_seen": "2026-11-15T21:49:55Z", "version": "v1.0.0", "power_w": 70.8,
+     "power_by_domain": {"core": 9.2, "gpu": 15.8, "package": 55.0}, "models": 2},
+    {"name": "node-b", "endpoint": "https://10.0.0.12:10060", "up": false,
+     "error": "dial tcp 10.0.0.12:10060: connect: connection refused", "power_w": 0, "models": 0}
+  ]
+}
+```
+
+La potencia y la energía de un nodo suman sus procesadores, memoria y GPU.
+Los núcleos son parte del procesador, y una lectura de plataforma o de
+pared ya los incluye a todos, así que esos dominios se muestran y nunca se
+suman.
+
+El hub guarda la energía de cada nodo en `hub.db`, en su directorio de
+datos, tanto tiempo como `retention.rollup_1h`. Mide la energía entre dos
+lecturas de los contadores de un agente, así que el tiempo en que un nodo o
+el hub estuvieron caídos no se cuenta para ese nodo, y un agente que se
+reinicia empieza una cuenta nueva. Un nodo que deja de responder desaparece
+de `/metrics`, salvo `greenlens_hub_node_up`, que entonces vale 0.
+
+El hub solo escucha en loopback. Alcánzalo desde otra máquina con un túnel
+SSH, o deja que el Prometheus de esa máquina lo consulte.
+
 ## Leer la flota con Prometheus
 
-Un Prometheus que tiene el certificado del hub consulta a todos los
-agentes, y el [tablero de Grafana](../prometheus-grafana/) los muestra
-juntos: su variable Node elige un nodo o los suma.
+Prometheus puede consultar al hub, cuyas series ya llevan la etiqueta
+`node`, o a los agentes directamente. Un Prometheus que tiene el
+certificado del hub consulta a todos los agentes, y el [tablero de
+Grafana](../prometheus-grafana/) los muestra juntos: su variable Node elige
+un nodo o los suma.
 
 ```yaml
 scrape_configs:

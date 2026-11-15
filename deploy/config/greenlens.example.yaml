@@ -245,6 +245,26 @@ export:
     # Authority of an https collector; empty uses those of the system.
     ca_file: ""
 
+# greenlens hub reads the agents of a fleet over mutual TLS and shows them
+# together: their series with a node label at /metrics, and their state and
+# energy at /api/v1/fleet. The agent ignores this section.
+hub:
+  # Loopback address of the hub.
+  listen: 127.0.0.1:10061
+  interval: 15s
+  # Certificate of the hub and authority of the fleet, from
+  # "greenlens hub issue-cert --role hub" and "greenlens hub init-ca".
+  tls:
+    cert_file: ""
+    key_file: ""
+    ca_file: ""
+  nodes: []
+  # nodes:
+  #   - name: node-a
+  #     endpoint: https://10.0.0.11:10060
+  #   - name: node-b
+  #     endpoint: https://10.0.0.12:10060
+
 retention:
   raw: 168h
   rollup_1m: 2160h

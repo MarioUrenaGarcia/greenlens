@@ -563,3 +563,45 @@ func TestRedfishOptionsReadTheFiles(t *testing.T) {
 		t.Fatalf("%+v", w)
 	}
 }
+
+func TestHub(t *testing.T) {
+	problems := func(change func(*Hub)) string {
+		cfg := Defaults()
+		change(&cfg.Hub)
+		var out []string
+		for _, e := range help.Flatten(cfg.Validate()) {
+			out = append(out, e.Error())
+		}
+		return strings.Join(out, "\n")
+	}
+	files := HubTLS{CertFile: "/etc/greenlens/hub.crt", KeyFile: "/etc/greenlens/hub.key", CAFile: "/etc/greenlens/ca.crt"}
+	fleet := func(h *Hub) {
+		h.TLS = files
+		h.Nodes = []HubNode{{Name: "node-a", Endpoint: "https://10.0.0.11:10060"}, {Name: "node-b.example.org", Endpoint: "https://node-b.example.org:10060/"}}
+	}
+	if got := problems(func(*Hub) {}); got != "" {
+		t.Errorf("no hub: %s", got)
+	}
+	if got := problems(fleet); got != "" {
+		t.Errorf("a fleet: %s", got)
+	}
+	for name, tc := range map[string]struct {
+		change func(*Hub)
+		key    string
+	}{
+		"a network address":    {func(h *Hub) { h.Listen = "0.0.0.0:10061" }, "hub.listen"},
+		"no port":              {func(h *Hub) { h.Listen = "127.0.0.1" }, "hub.listen"},
+		"a short interval":     {func(h *Hub) { h.Interval = Duration(time.Second) }, "hub.interval"},
+		"a relative authority": {func(h *Hub) { h.TLS.CAFile = "ca.crt" }, "hub.tls.ca_file"},
+		"nodes without files":  {func(h *Hub) { fleet(h); h.TLS = HubTLS{} }, "hub.tls"},
+		"a node over http":     {func(h *Hub) { fleet(h); h.Nodes[0].Endpoint = "http://10.0.0.11:10060" }, "hub.nodes[0].endpoint"},
+		"a node outside":       {func(h *Hub) { fleet(h); h.Nodes[1].Endpoint = "https://203.0.113.9:10060" }, "hub.nodes[1].endpoint"},
+		"a node with a path":   {func(h *Hub) { fleet(h); h.Nodes[0].Endpoint = "https://10.0.0.11:10060/metrics" }, "hub.nodes[0].endpoint"},
+		"a bad name":           {func(h *Hub) { fleet(h); h.Nodes[0].Name = "Node A" }, "hub.nodes[0].name"},
+		"a repeated name":      {func(h *Hub) { fleet(h); h.Nodes[1].Name = "node-a" }, "hub.nodes[1].name"},
+	} {
+		if got := problems(tc.change); !strings.Contains(got, tc.key) {
+			t.Errorf("%s: %q does not name %s", name, got, tc.key)
+		}
+	}
+}

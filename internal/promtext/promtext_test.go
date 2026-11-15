@@ -74,3 +74,32 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+func TestParseFamilies(t *testing.T) {
+	text := "# HELP greenlens_node_power_watts Power of each domain,\\nmeasured.\n" +
+		"# TYPE greenlens_node_power_watts gauge\n" +
+		"greenlens_node_power_watts{domain=\"package\"} 41.5\n" +
+		"# A comment that says nothing about a metric.\n" +
+		"# TYPE 9bad counter\n" +
+		"# TYPE greenlens_node_energy_joules_total counter\n" +
+		"greenlens_node_energy_joules_total{domain=\"package\"} 1200\n" +
+		"untyped_metric 3\n"
+	samples, meta, err := ParseFamilies(strings.NewReader(text))
+	if err != nil || len(samples) != 3 {
+		t.Fatalf("%d samples, %v", len(samples), err)
+	}
+	if len(meta) != 2 {
+		t.Fatalf("metadata %v", meta)
+	}
+	if m := meta["greenlens_node_power_watts"]; m.Type != "gauge" || m.Help != "Power of each domain,\nmeasured." {
+		t.Fatalf("power %+v", m)
+	}
+	if m := meta["greenlens_node_energy_joules_total"]; m.Type != "counter" || m.Help != "" {
+		t.Fatalf("energy %+v", m)
+	}
+	// Parse returns the same samples.
+	plain, err := Parse(strings.NewReader(text))
+	if err != nil || len(plain) != 3 || plain[2].Name != "untyped_metric" {
+		t.Fatalf("%v %v", plain, err)
+	}
+}

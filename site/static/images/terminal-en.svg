@@ -90,7 +90,7 @@ text{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mon
 <text x="22.0" y="428.0" class="o s18" textLength="453.6" lengthAdjust="spacingAndGlyphs">  export            Export measurements as CSV or JSON</text>
 <text x="22.0" y="448.0" class="o s19" textLength="529.2" lengthAdjust="spacingAndGlyphs">  gui               Open the graphical interface in the browser</text>
 <text x="22.0" y="468.0" class="o s20" textLength="361.2" lengthAdjust="spacingAndGlyphs">  help              Show help for a command</text>
-<text x="22.0" y="488.0" class="o s21" textLength="453.6" lengthAdjust="spacingAndGlyphs">  hub               Manage the certificates of a fleet</text>
+<text x="22.0" y="488.0" class="o s21" textLength="621.6" lengthAdjust="spacingAndGlyphs">  hub               Read the agents of a fleet and manage its certificates</text>
 <text x="22.0" y="508.0" class="o s22" textLength="537.6" lengthAdjust="spacingAndGlyphs">  license           Show the license and the third-party notices</text>
 <text x="22.0" y="528.0" class="o s23" textLength="672.0" lengthAdjust="spacingAndGlyphs">  measure           Measure the energy of a command, a process or a systemd unit</text>
 <text x="22.0" y="548.0" class="o s24" textLength="520.8" lengthAdjust="spacingAndGlyphs">  proxy             Show the state of the token-counting proxy</text>

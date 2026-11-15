@@ -85,6 +85,7 @@ const (
 	GL4014 Code = "GL4014" // TLS certificate cannot be loaded
 	GL4015 Code = "GL4015" // HTTP API of the agent is off
 	GL4016 Code = "GL4016" // fleet authority or certificate cannot be written
+	GL4017 Code = "GL4017" // the hub cannot start
 )
 
 // Process exit codes of the command line.
@@ -158,6 +159,7 @@ var exitCodes = map[Code]int{
 	GL4014: ExitConfig,
 	GL4015: ExitConfig,
 	GL4016: ExitError,
+	GL4017: ExitConfig,
 }
 
 // IsCode reports whether s looks like an error code, such as GL1002.

@@ -4,7 +4,12 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -12,9 +17,15 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/MarioUrenaGarcia/greenlens/internal/agent"
+	"github.com/MarioUrenaGarcia/greenlens/internal/auth"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
+	"github.com/MarioUrenaGarcia/greenlens/internal/hub"
 	"github.com/MarioUrenaGarcia/greenlens/internal/output"
+	"github.com/MarioUrenaGarcia/greenlens/internal/paths"
 	"github.com/MarioUrenaGarcia/greenlens/internal/pki"
+	"github.com/MarioUrenaGarcia/greenlens/internal/store"
+	"github.com/MarioUrenaGarcia/greenlens/internal/version"
 )
 
 func newHubCmd(a *app) *cobra.Command {
@@ -29,10 +40,65 @@ func newHubCmd(a *app) *cobra.Command {
 			}
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
+		Example: "  greenlens hub\n  greenlens hub --config /etc/greenlens/hub.yaml",
+		RunE:    func(cmd *cobra.Command, _ []string) error { return a.runHub(cmd) },
 	}
 	cmd.AddCommand(newHubInitCACmd(a), newHubIssueCertCmd(a))
 	return cmd
+}
+
+// hubDatabaseName is the database of the hub in the data directory. It is
+// not the one of the agent, so both can run on the same machine.
+const hubDatabaseName = "hub.db"
+
+// runHub reads the agents listed in hub.nodes until it is interrupted.
+func (a *app) runHub(cmd *cobra.Command) error {
+	cfg, _, err := a.config()
+	if err != nil {
+		return err
+	}
+	if len(cfg.Hub.Nodes) == 0 {
+		return help.New(help.GL3003, "key", "hub.nodes", "detail", "list the agents to read, and set hub.tls; 'greenlens hub --help' shows the commands that create the certificates")
+	}
+	dir, err := paths.DataDir(cfg, a.getenv)
+	if err != nil {
+		return help.New(help.GL4002, "path", "agent.data_dir", "detail", err.Error()).Wrap(err)
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return help.New(help.GL4002, "path", dir, "detail", err.Error()).Wrap(err)
+	}
+	dbPath := filepath.Join(dir, hubDatabaseName)
+	st, err := store.Open(cmd.Context(), dbPath)
+	if err != nil {
+		return help.New(help.GL4002, "path", dbPath, "detail", err.Error()).Wrap(err)
+	}
+	defer func() { _ = st.Close() }()
+	tokensPath := cfg.Server.TokensFile
+	if tokensPath == "" {
+		tokensPath = filepath.Join(dir, agent.TokensName)
+	}
+	tokens, err := auth.OpenTokens(tokensPath)
+	if err != nil {
+		return help.New(help.GL4013, "path", tokensPath, "detail", err.Error()).Wrap(err)
+	}
+	level := new(slog.LevelVar)
+	var lv slog.Level
+	if err := lv.UnmarshalText([]byte(cfg.Logging.Level)); err == nil {
+		level.Set(lv)
+	}
+	opts := &slog.HandlerOptions{Level: level}
+	var h slog.Handler = slog.NewJSONHandler(a.stderr, opts)
+	if cfg.Logging.Format == "text" {
+		h = slog.NewTextHandler(a.stderr, opts)
+	}
+	err = hub.Run(cmd.Context(), hub.Options{
+		Config: cfg.Hub, Store: st, Tokens: tokens, Logger: slog.New(h),
+		Version: version.Get().Version, Retention: cfg.Retention.Rollup1h.D(),
+	})
+	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
+		return help.New(help.GL4017, "detail", err.Error()).Wrap(err)
+	}
+	return nil
 }
 
 // certDoc is the machine-readable result of the certificate commands.

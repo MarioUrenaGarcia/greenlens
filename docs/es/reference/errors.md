@@ -67,6 +67,7 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL4014](#gl4014) | no se puede cargar el certificado TLS | 6 |
 | [GL4015](#gl4015) | la interfaz gráfica está apagada | 6 |
 | [GL4016](#gl4016) | no se puede crear el certificado | 1 |
+| [GL4017](#gl4017) | el hub no puede arrancar | 6 |
 
 ## GL0001
 
@@ -480,3 +481,10 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Causa:** `{detail}`
 - **Solución:** revisa los directorios y los valores de las opciones; ejecuta '`{command}` --help' para verlas
 - **Código de salida:** 1
+
+## GL4017
+
+- **Mensaje:** el hub no puede arrancar
+- **Causa:** `{detail}`
+- **Solución:** revisa hub.listen, los archivos de hub.tls y los nodos de hub.nodes; 'greenlens config validate' revisa la configuración
+- **Código de salida:** 6

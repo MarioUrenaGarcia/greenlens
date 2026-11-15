@@ -67,6 +67,7 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL4014](#gl4014) | the TLS certificate cannot be loaded | 6 |
 | [GL4015](#gl4015) | the graphical interface is off | 6 |
 | [GL4016](#gl4016) | cannot create the certificate | 1 |
+| [GL4017](#gl4017) | the hub cannot start | 6 |
 
 ## GL0001
 
@@ -480,3 +481,10 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Cause:** `{detail}`
 - **Fix:** check the directories and the values of the flags; run '`{command}` --help' to see them
 - **Exit code:** 1
+
+## GL4017
+
+- **Message:** the hub cannot start
+- **Cause:** `{detail}`
+- **Fix:** check hub.listen, the files of hub.tls and the nodes of hub.nodes; 'greenlens config validate' checks the configuration
+- **Exit code:** 6

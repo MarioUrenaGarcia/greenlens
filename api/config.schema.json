@@ -295,6 +295,58 @@
       },
       "type": "object"
     },
+    "hub": {
+      "additionalProperties": false,
+      "properties": {
+        "interval": {
+          "description": "Time between two readings of the agents.",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+          "type": "string"
+        },
+        "listen": {
+          "description": "Loopback address of the API and the metrics of the hub.",
+          "type": "string"
+        },
+        "nodes": {
+          "description": "Agents the hub reads.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "endpoint": {
+                "description": "Address of the HTTP API of the agent, such as https://10.0.0.11:10060; it must resolve to a loopback, private or link-local address that its certificate names.",
+                "type": "string"
+              },
+              "name": {
+                "description": "Name of the node, the value of the node label of its series.",
+                "type": "string"
+              }
+            },
+            "required": null,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "tls": {
+          "additionalProperties": false,
+          "properties": {
+            "ca_file": {
+              "description": "Certificate of the authority of the fleet.",
+              "type": "string"
+            },
+            "cert_file": {
+              "description": "Certificate of the hub, issued with --role hub.",
+              "type": "string"
+            },
+            "key_file": {
+              "description": "Private key of the certificate of the hub, readable only by its user.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "indicators": {
       "additionalProperties": false,
       "properties": {

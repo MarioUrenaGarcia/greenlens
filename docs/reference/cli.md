@@ -430,7 +430,7 @@ greenlens gui --print --role viewer
 
 ## greenlens hub
 
-Create the certificate authority of a fleet and issue the certificates of its agents and its hub. With them a hub reads its agents over mutual TLS: the agent proves which node it is, and only the hub may read it. Certificates are short-lived and are renewed by issuing them again.
+Read the agents listed in hub.nodes over mutual TLS, every hub.interval, and show them together: their series with a node label at /metrics, the state of each node at /api/v1/fleet and the energy of each one hour by hour at /api/v1/fleet/energy, on the loopback address of hub.listen. The two API paths ask for an access token of greenlens token create. The subcommands create the certificate authority of the fleet and issue the short-lived certificates of its agents and of the hub.
 
 **Usage**
 
@@ -442,6 +442,13 @@ greenlens hub [flags]
 
 | Option | Description | Default |
 |---|---|---|
+
+**Examples**
+
+```bash
+greenlens hub
+greenlens hub --config /etc/greenlens/hub.yaml
+```
 
 ## greenlens hub init-ca
 
