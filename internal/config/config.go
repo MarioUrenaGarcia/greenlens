@@ -35,8 +35,11 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/otlp"
 	"github.com/MarioUrenaGarcia/greenlens/internal/help"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
+	"github.com/MarioUrenaGarcia/greenlens/internal/intranet"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/redfish"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/wallmeter"
 )
 
 // Duration is a time.Duration written as "1s", "10m" or "168h".
@@ -89,12 +92,79 @@ type Agent struct {
 
 // Sources configures the energy sources.
 type Sources struct {
-	Auto     bool              `yaml:"auto"`
-	Disable  []string          `yaml:"disable"`
-	Force    map[string]string `yaml:"force"`
-	RAPL     RAPL              `yaml:"rapl"`
-	NVML     NVML              `yaml:"nvml"`
-	Estimate Estimate          `yaml:"estimate"`
+	Auto      bool              `yaml:"auto"`
+	Disable   []string          `yaml:"disable"`
+	Force     map[string]string `yaml:"force"`
+	RAPL      RAPL              `yaml:"rapl"`
+	NVML      NVML              `yaml:"nvml"`
+	Estimate  Estimate          `yaml:"estimate"`
+	Redfish   Redfish           `yaml:"redfish"`
+	WallMeter WallMeter         `yaml:"wall_meter"`
+}
+
+// Redfish reads the power of the server from the Redfish service of its
+// management controller. It is off by default: it connects to the
+// management network.
+type Redfish struct {
+	Enabled  bool   `yaml:"enabled"`
+	Endpoint string `yaml:"endpoint"`
+	// TokenFile holds the token of a Redfish session.
+	TokenFile string `yaml:"token_file"`
+	// CAFile holds the authority that signs the certificate of the
+	// controller; empty uses the authorities of the system.
+	CAFile string `yaml:"ca_file"`
+	// Chassis picks one chassis; empty uses the first that reports power.
+	Chassis  string   `yaml:"chassis"`
+	Interval Duration `yaml:"interval"`
+}
+
+// WallMeter reads the power at the wall from a smart plug on the local
+// network. It is off by default: it connects to the plug.
+type WallMeter struct {
+	Enabled  bool   `yaml:"enabled"`
+	Kind     string `yaml:"kind"`
+	Endpoint string `yaml:"endpoint"`
+	// Channel is the output of a meter with several, counted from zero.
+	Channel  int      `yaml:"channel"`
+	Interval Duration `yaml:"interval"`
+}
+
+// Limits of the interval between two readings of a networked meter.
+const (
+	MinMeterInterval = time.Second
+	MaxMeterInterval = time.Minute
+)
+
+var chassisID = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
+
+// RedfishOptions returns the options of the Redfish source. It reads the
+// token and the authorities now, so a caller that later confines its file
+// access keeps them; a file that cannot be read is reported by the probe.
+func (c Config) RedfishOptions() redfish.Options {
+	r := c.Sources.Redfish
+	o := redfish.Options{Enabled: r.Enabled, Endpoint: r.Endpoint, Chassis: r.Chassis, Interval: r.Interval.D()}
+	if !r.Enabled {
+		return o
+	}
+	token, err := os.ReadFile(r.TokenFile)
+	if err != nil {
+		o.Err = fmt.Errorf("the token of sources.redfish.token_file cannot be read: %w", err)
+		return o
+	}
+	if o.Token = bytes.TrimSpace(token); len(o.Token) == 0 {
+		o.Err = fmt.Errorf("%s is empty", r.TokenFile)
+		return o
+	}
+	if o.Roots, err = intranet.Roots(r.CAFile); err != nil {
+		o.Err = fmt.Errorf("the authorities of sources.redfish.ca_file cannot be read: %w", err)
+	}
+	return o
+}
+
+// WallMeterOptions returns the options of the wall meter source.
+func (c Config) WallMeterOptions() wallmeter.Options {
+	w := c.Sources.WallMeter
+	return wallmeter.Options{Enabled: w.Enabled, Kind: w.Kind, Endpoint: w.Endpoint, Channel: w.Channel, Interval: w.Interval.D()}
 }
 
 // RAPL configures the RAPL counters.
@@ -344,8 +414,10 @@ type Logging struct {
 // Defaults returns the configuration used when nothing is set.
 func Defaults() Config {
 	return Config{
-		Agent:       Agent{SampleInterval: Duration(time.Second), HostRoot: "/"},
-		Sources:     Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1}},
+		Agent: Agent{SampleInterval: Duration(time.Second), HostRoot: "/"},
+		Sources: Sources{Auto: true, RAPL: RAPL{MinInterval: Duration(50 * time.Millisecond)}, Estimate: Estimate{Exponent: 1},
+			Redfish:   Redfish{Interval: Duration(5 * time.Second)},
+			WallMeter: WallMeter{Kind: wallmeter.KindShelly, Interval: Duration(2 * time.Second)}},
 		Attribution: Attribution{IdlePolicy: string(attribution.Dynamic), MaxModelsPerBackend: 50, MaxConsumers: 200, RegressionMinR2: 0.7},
 		Proxy:       Proxy{Listen: "127.0.0.1:11435", Upstream: "http://127.0.0.1:11434"},
 		Server:      Server{Enabled: true, Listen: DefaultListen},
@@ -598,7 +670,7 @@ func (c Config) SelectorOptions() selector.Options {
 
 // SourceIDs lists the source names accepted in sources.disable and
 // sources.force.
-var SourceIDs = []string{"rapl", "perf_event", "hwmon", "hwmon_gpu", "nvml", "nvidia_smi", "acpi_power_meter", "ipmi", "battery", "estimate"}
+var SourceIDs = []string{"rapl", "perf_event", "hwmon", "hwmon_gpu", "nvml", "nvidia_smi", "acpi_power_meter", "ipmi", "redfish", "battery", "wall_meter", "estimate"}
 
 // ForcibleDomains lists the domains accepted as keys of sources.force.
 var ForcibleDomains = []source.Domain{source.DomainPackage, source.DomainDRAM, source.DomainGPU, source.DomainPSys, source.DomainPlatform}
@@ -641,6 +713,41 @@ func (c Config) Validate() error {
 	}
 	if h := c.Sources.NVML.Helper; h != "" && !filepath.IsAbs(h) {
 		bad("sources.nvml.helper", "must be an absolute path")
+	}
+	rf := c.Sources.Redfish
+	if d := rf.Interval.D(); d < MinMeterInterval || d > MaxMeterInterval {
+		bad("sources.redfish.interval", fmt.Sprintf("%s is outside %s to %s", d, MinMeterInterval, MaxMeterInterval))
+	}
+	for _, f := range []struct{ key, v string }{{"sources.redfish.token_file", rf.TokenFile}, {"sources.redfish.ca_file", rf.CAFile}} {
+		if f.v != "" && !filepath.IsAbs(f.v) {
+			bad(f.key, "must be an absolute path")
+		}
+	}
+	if rf.Chassis != "" && !chassisID.MatchString(rf.Chassis) {
+		bad("sources.redfish.chassis", "must be the last part of the path of a chassis, such as 1 or System.Embedded.1")
+	}
+	if rf.Enabled {
+		if err := redfish.CheckEndpoint(rf.Endpoint); err != nil {
+			bad("sources.redfish.endpoint", err.Error())
+		}
+		if rf.TokenFile == "" {
+			bad("sources.redfish.token_file", "set the absolute path of the file that holds the session token")
+		}
+	}
+	wm := c.Sources.WallMeter
+	if !slices.Contains(wallmeter.Kinds, wm.Kind) {
+		bad("sources.wall_meter.kind", "must be one of "+strings.Join(wallmeter.Kinds, " or "))
+	}
+	if d := wm.Interval.D(); d < MinMeterInterval || d > MaxMeterInterval {
+		bad("sources.wall_meter.interval", fmt.Sprintf("%s is outside %s to %s", d, MinMeterInterval, MaxMeterInterval))
+	}
+	if wm.Channel < 0 || wm.Channel > wallmeter.MaxChannel {
+		bad("sources.wall_meter.channel", fmt.Sprintf("must be between 0 and %d", wallmeter.MaxChannel))
+	}
+	if wm.Enabled {
+		if err := wallmeter.CheckEndpoint(wm.Endpoint); err != nil {
+			bad("sources.wall_meter.endpoint", err.Error())
+		}
 	}
 	e := c.Sources.Estimate
 	if e.IdleWatts < 0 || e.FullWatts < 0 || (e.FullWatts > 0 && e.FullWatts < e.IdleWatts) {

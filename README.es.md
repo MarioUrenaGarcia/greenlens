@@ -125,6 +125,9 @@ modelos y los comandos, procesos y unidades de systemd que elijas:
 - las métricas de `/metrics` también se pueden enviar a un collector de
   OpenTelemetry de la red interna con OTLP, por gRPC o HTTP, y
   `deploy/grafana` trae un tablero para Grafana;
+- la potencia de la máquina completa se puede leer del servicio Redfish de
+  su controlador de gestión o de un enchufe inteligente Shelly o Tasmota,
+  para ver cuánto consume el resto del sistema y validar los contadores;
 - `greenlens gui` abre la interfaz gráfica que atiende el agente, con la
   potencia en vivo, los backends, modelos y consumidores, los benchmarks,
   los reportes, las alertas, la configuración y esta documentación, todo

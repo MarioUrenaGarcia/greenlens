@@ -42,6 +42,8 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 | [GL1013](#gl1013) | an NVIDIA GPU is present but greenlens-nvml is not installed | 3 |
 | [GL1014](#gl1014) | the NVIDIA Management Library cannot be used | 3 |
 | [GL1015](#gl1015) | nvidia-smi cannot read the NVIDIA GPUs | 3 |
+| [GL1016](#gl1016) | the Redfish service of the BMC cannot be used | 3 |
+| [GL1017](#gl1017) | the wall meter cannot be used | 3 |
 | [GL2001](#gl2001) | cannot read the backend `{name}` | 4 |
 | [GL2002](#gl2002) | the backend `{name}` does not expose metrics | 4 |
 | [GL2003](#gl2003) | the backend refused the benchmark | 4 |
@@ -301,6 +303,20 @@ Every error that GreenLens reports has a stable code, a one-line message, the ca
 - **Message:** nvidia-smi cannot read the NVIDIA GPUs
 - **Cause:** `{detail}`
 - **Fix:** check that the NVIDIA driver is loaded and that 'nvidia-smi' works for the user of the agent
+- **Exit code:** 3
+
+## GL1016
+
+- **Message:** the Redfish service of the BMC cannot be used
+- **Cause:** `{detail}`
+- **Fix:** check sources.redfish.endpoint, the session token of sources.redfish.token_file and the authority of sources.redfish.ca_file; 'greenlens doctor' shows this again
+- **Exit code:** 3
+
+## GL1017
+
+- **Message:** the wall meter cannot be used
+- **Cause:** `{detail}`
+- **Fix:** check sources.wall_meter.endpoint and sources.wall_meter.kind, and that the meter answers from this machine without a password
 - **Exit code:** 3
 
 ## GL2001

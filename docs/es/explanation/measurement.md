@@ -32,7 +32,8 @@ sistema.
 | 1 | NVML, mediante `greenlens-nvml` | GPU NVIDIA | medido |
 | 2 | `nvidia-smi` | GPU NVIDIA | medido |
 | 3 | drivers de GPU de hwmon: amdgpu, xe, i915 | GPU, o el paquete de una APU de AMD | medido |
-| 4 | medidor ACPI, IPMI DCMI, batería | plataforma | plataforma |
+| 4 | medidor ACPI, IPMI DCMI, Redfish, batería | plataforma | plataforma |
+| 5 | medidor de pared en la red local: Shelly, Tasmota | pared | plataforma |
 | 6 | Modelo estimado | paquete | estimado |
 
 powercap y perf_event leen los mismos contadores de hardware; GreenLens usa

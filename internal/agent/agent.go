@@ -274,6 +274,8 @@ func (a *Agent) setupSources(ctx context.Context) error {
 			HostRoot:   a.cfg.Agent.HostRoot,
 			Estimate:   estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
 			NVMLHelper: a.cfg.Sources.NVML.Helper,
+			Redfish:    a.cfg.RedfishOptions(),
+			WallMeter:  a.cfg.WallMeterOptions(),
 		})
 	}
 	cands, err := registry.Probe(ctx, a.srcs)
@@ -753,6 +755,10 @@ func (a *Agent) reload(ctx context.Context) time.Duration {
 		if err := lv.UnmarshalText([]byte(cfg.Logging.Level)); err == nil {
 			a.o.Level.Set(lv)
 		}
+	}
+	if cfg.Sources.Redfish != old.Sources.Redfish || cfg.Sources.WallMeter != old.Sources.WallMeter {
+		a.log.Warn("sources.redfish and sources.wall_meter change only after a restart")
+		cfg.Sources.Redfish, cfg.Sources.WallMeter = old.Sources.Redfish, old.Sources.WallMeter
 	}
 	a.reloadAlerts(ctx, old, &cfg)
 	a.reloadExport(old, &cfg)

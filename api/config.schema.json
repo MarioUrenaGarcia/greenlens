@@ -61,7 +61,9 @@
                     "nvidia_smi",
                     "acpi_power_meter",
                     "ipmi",
+                    "redfish",
                     "battery",
+                    "wall_meter",
                     "estimate"
                   ],
                   "type": "string"
@@ -562,7 +564,9 @@
               "nvidia_smi",
               "acpi_power_meter",
               "ipmi",
+              "redfish",
               "battery",
+              "wall_meter",
               "estimate"
             ],
             "type": "string"
@@ -598,7 +602,9 @@
               "nvidia_smi",
               "acpi_power_meter",
               "ipmi",
+              "redfish",
               "battery",
+              "wall_meter",
               "estimate"
             ],
             "type": "string"
@@ -631,6 +637,68 @@
             "min_interval": {
               "description": "Shortest sampling interval accepted; raising it lowers the time resolution of the RAPL counters.",
               "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "redfish": {
+          "additionalProperties": false,
+          "properties": {
+            "ca_file": {
+              "description": "PEM file with the authority that signs the certificate of the controller; empty uses the authorities of the system.",
+              "type": "string"
+            },
+            "chassis": {
+              "description": "Last part of the path of the chassis to read, such as 1 or System.Embedded.1. Empty: the first chassis that reports its power.",
+              "type": "string"
+            },
+            "enabled": {
+              "description": "Turn the Redfish source on. It connects to the management network; a change takes effect after a restart.",
+              "type": "boolean"
+            },
+            "endpoint": {
+              "description": "Address of the controller, such as https://10.0.0.5, without a path; it must resolve to a loopback, private or link-local address.",
+              "type": "string"
+            },
+            "interval": {
+              "description": "Time between two readings of the controller.",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+              "type": "string"
+            },
+            "token_file": {
+              "description": "File with the token of a Redfish session, sent as X-Auth-Token.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "wall_meter": {
+          "additionalProperties": false,
+          "properties": {
+            "channel": {
+              "description": "Output of a meter with several, counted from zero.",
+              "type": "integer"
+            },
+            "enabled": {
+              "description": "Turn the wall meter on. It connects to the plug; a change takes effect after a restart.",
+              "type": "boolean"
+            },
+            "endpoint": {
+              "description": "Address of the meter, such as http://192.168.1.50, without a path; it must be a loopback, private or link-local address.",
+              "type": "string"
+            },
+            "interval": {
+              "description": "Time between two readings of the meter.",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$",
+              "type": "string"
+            },
+            "kind": {
+              "description": "Family of the meter: shelly, of any generation, or tasmota.",
+              "enum": [
+                "shelly",
+                "tasmota"
+              ],
               "type": "string"
             }
           },

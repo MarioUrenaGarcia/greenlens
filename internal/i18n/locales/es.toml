@@ -830,6 +830,19 @@ sources_nvml_helper = "Ruta de greenlens-nvml, el auxiliar que lee las GPU NVIDI
 sources_estimate_idle_watts = "Potencia de toda la CPU al 0% de uso para el modelo estimado; 0 usa la tabla incluida."
 sources_estimate_full_watts = "Potencia de toda la CPU al 100% de uso para el modelo estimado; 0 usa la tabla incluida."
 sources_estimate_exponent = "Exponente del uso en el modelo estimado; 1 es lineal."
+sources_redfish = "Lee la potencia del servidor completo desde el servicio Redfish de su controlador de gestión."
+sources_redfish_enabled = "Activa la fuente Redfish. Se conecta a la red de gestión; un cambio aplica tras reiniciar."
+sources_redfish_endpoint = "Dirección del controlador, como https://10.0.0.5, sin ruta; debe resolver a una dirección de loopback, privada o link-local."
+sources_redfish_token_file = "Archivo con el token de una sesión de Redfish, que se envía como X-Auth-Token."
+sources_redfish_ca_file = "Archivo PEM con la autoridad que firma el certificado del controlador; vacío usa las autoridades del sistema."
+sources_redfish_chassis = "Última parte de la ruta del chasis a leer, como 1 o System.Embedded.1. Vacío: el primer chasis que reporta su potencia."
+sources_redfish_interval = "Tiempo entre dos lecturas del controlador."
+sources_wall_meter = "Lee la potencia en la pared desde un enchufe inteligente de la red local."
+sources_wall_meter_enabled = "Activa el medidor de pared. Se conecta al enchufe; un cambio aplica tras reiniciar."
+sources_wall_meter_kind = "Familia del medidor: shelly, de cualquier generación, o tasmota."
+sources_wall_meter_endpoint = "Dirección del medidor, como http://192.168.1.50, sin ruta; debe ser una dirección de loopback, privada o link-local."
+sources_wall_meter_channel = "Salida de un medidor con varias, contada desde cero."
+sources_wall_meter_interval = "Tiempo entre dos lecturas del medidor."
 attribution_idle_policy = "Cómo se atribuye la energía de reposo: dynamic, proportional, full o wall."
 attribution_max_models_per_backend = "Máximo de modelos por backend; la energía de los demás se reporta junta como 'other'."
 attribution_max_consumers = "Máximo de consumidores que sigue el proxy; los demás se reportan juntos como 'other'."
@@ -1179,6 +1192,16 @@ fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcion
 message = "nvidia-smi no puede leer las GPU NVIDIA"
 cause = "{detail}"
 fix = "verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente"
+
+[errors.GL1016]
+message = "no se puede usar el servicio Redfish del BMC"
+cause = "{detail}"
+fix = "revisa sources.redfish.endpoint, el token de sesión de sources.redfish.token_file y la autoridad de sources.redfish.ca_file; 'greenlens doctor' lo muestra de nuevo"
+
+[errors.GL1017]
+message = "no se puede usar el medidor de pared"
+cause = "{detail}"
+fix = "revisa sources.wall_meter.endpoint y sources.wall_meter.kind, y que el medidor responda desde esta máquina sin contraseña"
 
 [errors.GL2001]
 message = "no se puede leer el backend {name}"

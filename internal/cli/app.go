@@ -110,6 +110,8 @@ func (a *app) sources(cfg config.Config) []source.Source {
 		HostRoot:   cfg.Agent.HostRoot,
 		Estimate:   estimate.Override{IdleW: e.IdleWatts, FullW: e.FullWatts, Exponent: e.Exponent},
 		NVMLHelper: cfg.Sources.NVML.Helper,
+		Redfish:    cfg.RedfishOptions(),
+		WallMeter:  cfg.WallMeterOptions(),
 	})
 }
 

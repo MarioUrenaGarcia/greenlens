@@ -472,3 +472,94 @@ func TestExportOTLP(t *testing.T) {
 		}
 	}
 }
+
+func TestNetworkedSources(t *testing.T) {
+	problems := func(change func(*Sources)) string {
+		cfg := Defaults()
+		change(&cfg.Sources)
+		var out []string
+		for _, e := range help.Flatten(cfg.Validate()) {
+			out = append(out, e.Error())
+		}
+		return strings.Join(out, "\n")
+	}
+	for name, ok := range map[string]func(*Sources){
+		"both off": func(*Sources) {},
+		"redfish": func(s *Sources) {
+			s.Redfish = Redfish{Enabled: true, Endpoint: "https://10.0.0.5", CAFile: "/etc/greenlens/bmc-ca.pem",
+				Chassis: "System.Embedded.1", Interval: Duration(10 * time.Second)}
+			s.Redfish.TokenFile = "/etc/greenlens/redfish-session"
+		},
+		"a tasmota plug": func(s *Sources) {
+			s.WallMeter = WallMeter{Enabled: true, Kind: "tasmota", Endpoint: "http://192.168.1.50", Channel: 1, Interval: Duration(time.Second)}
+		},
+	} {
+		if got := problems(ok); got != "" {
+			t.Errorf("%s: %s", name, got)
+		}
+	}
+	for name, tc := range map[string]struct {
+		change func(*Sources)
+		key    string
+	}{
+		"redfish over http": {func(s *Sources) {
+			s.Redfish.Enabled, s.Redfish.Endpoint, s.Redfish.TokenFile = true, "http://10.0.0.5", "/t"
+		}, "sources.redfish.endpoint"},
+		"redfish with a path": {func(s *Sources) {
+			s.Redfish.Enabled, s.Redfish.Endpoint, s.Redfish.TokenFile = true, "https://10.0.0.5/redfish/v1", "/t"
+		}, "sources.redfish.endpoint"},
+		"redfish outside": {func(s *Sources) {
+			s.Redfish.Enabled, s.Redfish.Endpoint, s.Redfish.TokenFile = true, "https://203.0.113.9", "/t"
+		}, "sources.redfish.endpoint"},
+		"redfish without a token":  {func(s *Sources) { s.Redfish.Enabled, s.Redfish.Endpoint = true, "https://10.0.0.5" }, "sources.redfish.token_file"},
+		"a relative authority":     {func(s *Sources) { s.Redfish.CAFile = "ca.pem" }, "sources.redfish.ca_file"},
+		"a chassis path":           {func(s *Sources) { s.Redfish.Chassis = "../Managers/1" }, "sources.redfish.chassis"},
+		"a short redfish interval": {func(s *Sources) { s.Redfish.Interval = Duration(100 * time.Millisecond) }, "sources.redfish.interval"},
+		"an unknown meter":         {func(s *Sources) { s.WallMeter.Kind = "kasa" }, "sources.wall_meter.kind"},
+		"a meter over https":       {func(s *Sources) { s.WallMeter.Enabled, s.WallMeter.Endpoint = true, "https://192.168.1.50" }, "sources.wall_meter.endpoint"},
+		"a meter without address":  {func(s *Sources) { s.WallMeter.Enabled = true }, "sources.wall_meter.endpoint"},
+		"a missing output":         {func(s *Sources) { s.WallMeter.Channel = 16 }, "sources.wall_meter.channel"},
+		"a long meter interval":    {func(s *Sources) { s.WallMeter.Interval = Duration(time.Hour) }, "sources.wall_meter.interval"},
+	} {
+		if got := problems(tc.change); !strings.Contains(got, tc.key) {
+			t.Errorf("%s: %q does not name %s", name, got, tc.key)
+		}
+	}
+}
+
+func TestRedfishOptionsReadTheFiles(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "session")
+	if err := os.WriteFile(file, []byte("  session-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Defaults()
+	if o := cfg.RedfishOptions(); o.Enabled || o.Err != nil || o.Token != nil {
+		t.Fatalf("off: %+v", o)
+	}
+	cfg.Sources.Redfish = Redfish{Enabled: true, Endpoint: "https://10.0.0.5", TokenFile: file, Chassis: "1", Interval: Duration(5 * time.Second)}
+	o := cfg.RedfishOptions()
+	if o.Err != nil || string(o.Token) != "session-token" || o.Roots == nil || o.Chassis != "1" || o.Interval != 5*time.Second {
+		t.Fatalf("%+v", o)
+	}
+	cfg.Sources.Redfish.CAFile = filepath.Join(dir, "missing.pem")
+	if o := cfg.RedfishOptions(); o.Err == nil || !strings.Contains(o.Err.Error(), "sources.redfish.ca_file") {
+		t.Fatalf("a missing authority: %v", o.Err)
+	}
+	cfg.Sources.Redfish.TokenFile = filepath.Join(dir, "missing")
+	if o := cfg.RedfishOptions(); o.Err == nil || !strings.Contains(o.Err.Error(), "sources.redfish.token_file") {
+		t.Fatalf("a missing token: %v", o.Err)
+	}
+	empty := filepath.Join(dir, "empty")
+	if err := os.WriteFile(empty, []byte("\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg.Sources.Redfish.TokenFile = empty
+	if o := cfg.RedfishOptions(); o.Err == nil {
+		t.Fatal("an empty token was accepted")
+	}
+	w := cfg.WallMeterOptions()
+	if w.Enabled || w.Kind != "shelly" || w.Interval != 2*time.Second {
+		t.Fatalf("%+v", w)
+	}
+}

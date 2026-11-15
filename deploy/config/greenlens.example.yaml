@@ -20,7 +20,8 @@ sources:
   # force are used.
   auto: true
   # Sources never used: rapl, perf_event, hwmon, hwmon_gpu, nvml,
-  # nvidia_smi, acpi_power_meter, ipmi, battery, estimate.
+  # nvidia_smi, acpi_power_meter, ipmi, redfish, battery, wall_meter,
+  # estimate.
   disable: []
   # Source preferred for a domain (package, dram, gpu, psys, platform), for
   # example {package: perf_event}.
@@ -40,6 +41,32 @@ sources:
     full_watts: 0
     # Exponent of the utilization in the model; 1 is linear.
     exponent: 1
+  # Power of the whole server from the Redfish service of its management
+  # controller, as the platform domain. The agent connects to the
+  # management network, so this is off by default.
+  redfish:
+    enabled: false
+    # Address of the controller, such as https://10.0.0.5.
+    endpoint: ""
+    # File with the token of a Redfish session, sent as X-Auth-Token.
+    token_file: ""
+    # Authority of the certificate of the controller; empty uses those of
+    # the system.
+    ca_file: ""
+    # Chassis to read, such as 1; empty uses the first that reports power.
+    chassis: ""
+    interval: 5s
+  # Power at the wall from a smart plug on the local network, as the wall
+  # domain: a Shelly of any generation or a device with Tasmota, without a
+  # password. Off by default.
+  wall_meter:
+    enabled: false
+    kind: shelly
+    # Address of the meter, such as http://192.168.1.50.
+    endpoint: ""
+    # Output of a meter with several, counted from zero.
+    channel: 0
+    interval: 2s
 
 attribution:
   # How idle energy is attributed: dynamic, proportional, full or wall.

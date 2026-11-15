@@ -15,6 +15,7 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/discovery"
 	"github.com/MarioUrenaGarcia/greenlens/internal/exporter/otlp"
 	"github.com/MarioUrenaGarcia/greenlens/internal/indicators"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/wallmeter"
 )
 
 // Field describes one configuration key for the reference documentation
@@ -53,6 +54,7 @@ func enums() map[string][]string {
 		"alerts.rules[].expr":              alerts.Signals,
 		"alerts.rules[].op":                alerts.Operators,
 		"export.otlp.protocol":             otlp.Protocols,
+		"sources.wall_meter.kind":          wallmeter.Kinds,
 	}
 }
 

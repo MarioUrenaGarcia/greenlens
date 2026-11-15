@@ -42,6 +42,8 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 | [GL1013](#gl1013) | hay una GPU NVIDIA pero greenlens-nvml no está instalado | 3 |
 | [GL1014](#gl1014) | no se puede usar la biblioteca de gestión de NVIDIA (NVML) | 3 |
 | [GL1015](#gl1015) | nvidia-smi no puede leer las GPU NVIDIA | 3 |
+| [GL1016](#gl1016) | no se puede usar el servicio Redfish del BMC | 3 |
+| [GL1017](#gl1017) | no se puede usar el medidor de pared | 3 |
 | [GL2001](#gl2001) | no se puede leer el backend `{name}` | 4 |
 | [GL2002](#gl2002) | el backend `{name}` no expone métricas | 4 |
 | [GL2003](#gl2003) | el backend rechazó el benchmark | 4 |
@@ -301,6 +303,20 @@ Cada error que reporta GreenLens tiene un código estable, un mensaje de una lí
 - **Mensaje:** nvidia-smi no puede leer las GPU NVIDIA
 - **Causa:** `{detail}`
 - **Solución:** verifica que el driver de NVIDIA esté cargado y que 'nvidia-smi' funcione para el usuario del agente
+- **Código de salida:** 3
+
+## GL1016
+
+- **Mensaje:** no se puede usar el servicio Redfish del BMC
+- **Causa:** `{detail}`
+- **Solución:** revisa sources.redfish.endpoint, el token de sesión de sources.redfish.token_file y la autoridad de sources.redfish.ca_file; 'greenlens doctor' lo muestra de nuevo
+- **Código de salida:** 3
+
+## GL1017
+
+- **Mensaje:** no se puede usar el medidor de pared
+- **Causa:** `{detail}`
+- **Solución:** revisa sources.wall_meter.endpoint y sources.wall_meter.kind, y que el medidor responda desde esta máquina sin contraseña
 - **Código de salida:** 3
 
 ## GL2001

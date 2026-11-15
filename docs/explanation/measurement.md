@@ -31,7 +31,8 @@ Platform and wall measurements serve to see what the rest of the system uses.
 | 1 | NVML, through `greenlens-nvml` | NVIDIA GPU | measured |
 | 2 | `nvidia-smi` | NVIDIA GPU | measured |
 | 3 | hwmon GPU drivers: amdgpu, xe, i915 | GPU, or the package of an AMD APU | measured |
-| 4 | ACPI power meter, IPMI DCMI, battery | platform | platform |
+| 4 | ACPI power meter, IPMI DCMI, Redfish, battery | platform | platform |
+| 5 | Wall meter on the local network: Shelly, Tasmota | wall | platform |
 | 6 | Estimate model | package | estimated |
 
 powercap and perf_event read the same hardware counters; GreenLens uses one.

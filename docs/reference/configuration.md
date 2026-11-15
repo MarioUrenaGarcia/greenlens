@@ -28,6 +28,17 @@ Every key of the configuration file, the environment variable that overrides it 
 | `sources.estimate.idle_watts` | `GREENLENS_SOURCES_ESTIMATE_IDLE_WATTS` | number | `0` | Power of the whole CPU at 0% utilization for the estimate model; 0 uses the embedded table. |
 | `sources.estimate.full_watts` | `GREENLENS_SOURCES_ESTIMATE_FULL_WATTS` | number | `0` | Power of the whole CPU at 100% utilization for the estimate model; 0 uses the embedded table. |
 | `sources.estimate.exponent` | `GREENLENS_SOURCES_ESTIMATE_EXPONENT` | number | `1` | Exponent of the utilization in the estimate model; 1 is linear. |
+| `sources.redfish.enabled` | `GREENLENS_SOURCES_REDFISH_ENABLED` | bool | `false` | Turn the Redfish source on. It connects to the management network; a change takes effect after a restart. |
+| `sources.redfish.endpoint` | `GREENLENS_SOURCES_REDFISH_ENDPOINT` | string | empty | Address of the controller, such as https://10.0.0.5, without a path; it must resolve to a loopback, private or link-local address. |
+| `sources.redfish.token_file` | `GREENLENS_SOURCES_REDFISH_TOKEN_FILE` | string | empty | File with the token of a Redfish session, sent as X-Auth-Token. |
+| `sources.redfish.ca_file` | `GREENLENS_SOURCES_REDFISH_CA_FILE` | string | empty | PEM file with the authority that signs the certificate of the controller; empty uses the authorities of the system. |
+| `sources.redfish.chassis` | `GREENLENS_SOURCES_REDFISH_CHASSIS` | string | empty | Last part of the path of the chassis to read, such as 1 or System.Embedded.1. Empty: the first chassis that reports its power. |
+| `sources.redfish.interval` | `GREENLENS_SOURCES_REDFISH_INTERVAL` | duration | `5s` | Time between two readings of the controller. |
+| `sources.wall_meter.enabled` | `GREENLENS_SOURCES_WALL_METER_ENABLED` | bool | `false` | Turn the wall meter on. It connects to the plug; a change takes effect after a restart. |
+| `sources.wall_meter.kind` | `GREENLENS_SOURCES_WALL_METER_KIND` | string | `shelly` | Family of the meter: shelly, of any generation, or tasmota. |
+| `sources.wall_meter.endpoint` | `GREENLENS_SOURCES_WALL_METER_ENDPOINT` | string | empty | Address of the meter, such as http://192.168.1.50, without a path; it must be a loopback, private or link-local address. |
+| `sources.wall_meter.channel` | `GREENLENS_SOURCES_WALL_METER_CHANNEL` | integer | `0` | Output of a meter with several, counted from zero. |
+| `sources.wall_meter.interval` | `GREENLENS_SOURCES_WALL_METER_INTERVAL` | duration | `2s` | Time between two readings of the meter. |
 
 ## attribution
 

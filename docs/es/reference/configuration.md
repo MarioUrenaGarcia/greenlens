@@ -28,6 +28,17 @@ Cada clave del archivo de configuración, la variable de entorno que la reemplaz
 | `sources.estimate.idle_watts` | `GREENLENS_SOURCES_ESTIMATE_IDLE_WATTS` | number | `0` | Potencia de toda la CPU al 0% de uso para el modelo estimado; 0 usa la tabla incluida. |
 | `sources.estimate.full_watts` | `GREENLENS_SOURCES_ESTIMATE_FULL_WATTS` | number | `0` | Potencia de toda la CPU al 100% de uso para el modelo estimado; 0 usa la tabla incluida. |
 | `sources.estimate.exponent` | `GREENLENS_SOURCES_ESTIMATE_EXPONENT` | number | `1` | Exponente del uso en el modelo estimado; 1 es lineal. |
+| `sources.redfish.enabled` | `GREENLENS_SOURCES_REDFISH_ENABLED` | bool | `false` | Activa la fuente Redfish. Se conecta a la red de gestión; un cambio aplica tras reiniciar. |
+| `sources.redfish.endpoint` | `GREENLENS_SOURCES_REDFISH_ENDPOINT` | string | empty | Dirección del controlador, como https://10.0.0.5, sin ruta; debe resolver a una dirección de loopback, privada o link-local. |
+| `sources.redfish.token_file` | `GREENLENS_SOURCES_REDFISH_TOKEN_FILE` | string | empty | Archivo con el token de una sesión de Redfish, que se envía como X-Auth-Token. |
+| `sources.redfish.ca_file` | `GREENLENS_SOURCES_REDFISH_CA_FILE` | string | empty | Archivo PEM con la autoridad que firma el certificado del controlador; vacío usa las autoridades del sistema. |
+| `sources.redfish.chassis` | `GREENLENS_SOURCES_REDFISH_CHASSIS` | string | empty | Última parte de la ruta del chasis a leer, como 1 o System.Embedded.1. Vacío: el primer chasis que reporta su potencia. |
+| `sources.redfish.interval` | `GREENLENS_SOURCES_REDFISH_INTERVAL` | duration | `5s` | Tiempo entre dos lecturas del controlador. |
+| `sources.wall_meter.enabled` | `GREENLENS_SOURCES_WALL_METER_ENABLED` | bool | `false` | Activa el medidor de pared. Se conecta al enchufe; un cambio aplica tras reiniciar. |
+| `sources.wall_meter.kind` | `GREENLENS_SOURCES_WALL_METER_KIND` | string | `shelly` | Familia del medidor: shelly, de cualquier generación, o tasmota. |
+| `sources.wall_meter.endpoint` | `GREENLENS_SOURCES_WALL_METER_ENDPOINT` | string | empty | Dirección del medidor, como http://192.168.1.50, sin ruta; debe ser una dirección de loopback, privada o link-local. |
+| `sources.wall_meter.channel` | `GREENLENS_SOURCES_WALL_METER_CHANNEL` | integer | `0` | Salida de un medidor con varias, contada desde cero. |
+| `sources.wall_meter.interval` | `GREENLENS_SOURCES_WALL_METER_INTERVAL` | duration | `2s` | Tiempo entre dos lecturas del medidor. |
 
 ## attribution
 

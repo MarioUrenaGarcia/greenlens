@@ -57,6 +57,8 @@ const (
 	GL1013 Code = "GL1013" // NVIDIA GPU without the NVML helper
 	GL1014 Code = "GL1014" // NVML cannot be used
 	GL1015 Code = "GL1015" // nvidia-smi cannot be used
+	GL1016 Code = "GL1016" // Redfish service cannot be used
+	GL1017 Code = "GL1017" // wall meter cannot be used
 
 	GL2001 Code = "GL2001" // backend not reachable
 	GL2002 Code = "GL2002" // backend without metrics
@@ -130,6 +132,8 @@ var exitCodes = map[Code]int{
 	GL1013: ExitNoSource,
 	GL1014: ExitNoSource,
 	GL1015: ExitNoSource,
+	GL1016: ExitNoSource,
+	GL1017: ExitNoSource,
 	GL2001: ExitBackend,
 	GL2002: ExitBackend,
 	GL2003: ExitBackend,

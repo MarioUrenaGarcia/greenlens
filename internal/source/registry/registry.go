@@ -20,7 +20,9 @@ import (
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/nvml"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/perfevent"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/rapl"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/redfish"
 	"github.com/MarioUrenaGarcia/greenlens/internal/source/selector"
+	"github.com/MarioUrenaGarcia/greenlens/internal/source/wallmeter"
 )
 
 // Options describes the host and the hooks used to reach it.
@@ -38,6 +40,10 @@ type Options struct {
 	// NVMLHelper is the path of greenlens-nvml; empty searches the default
 	// places.
 	NVMLHelper string
+	// Redfish and WallMeter configure the sources that read over the
+	// network; both are off unless enabled.
+	Redfish   redfish.Options
+	WallMeter wallmeter.Options
 }
 
 // Sources returns every source, in the order of the source table: platform
@@ -61,7 +67,9 @@ func Sources(o Options) []source.Source {
 		nvidiasmi.New(o.FS, ""),
 		hwmon.NewACPI(o.FS),
 		ipmi.New(o.HostRoot, o.IPMI),
+		redfish.New(o.Redfish),
 		battery.New(o.FS),
+		wallmeter.New(o.WallMeter),
 		estimate.New(o.FS, o.Estimate),
 	}
 }
