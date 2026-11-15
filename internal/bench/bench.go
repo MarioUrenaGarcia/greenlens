@@ -273,12 +273,28 @@ func Bench(ctx context.Context, c *http.Client, t Target, p Params, prompts []st
 	// needs to last MinRunS.
 	start := time.Now()
 	var pass1 time.Duration
-	for first := true; first || time.Since(start).Seconds() < p.WarmupS; first = false {
+	warm := 0
+	timed := func() error {
 		t0 := time.Now()
 		if err := pass(nil); err != nil {
-			return res, err
+			return err
 		}
 		pass1 = time.Since(t0)
+		warm++
+		return nil
+	}
+	for first := true; first || time.Since(start).Seconds() < p.WarmupS; first = false {
+		if err := timed(); err != nil {
+			return res, err
+		}
+	}
+	// A first pass that outlasts the warmup had to load the model, so its
+	// time says nothing about a warm pass: time another one, or the runs
+	// would be far shorter than MinRunS.
+	if warm == 1 && p.WarmupS > 0 {
+		if err := timed(); err != nil {
+			return res, err
+		}
 	}
 	res.Params.Passes = max(1, int(math.Ceil(p.MinRunS/max(pass1.Seconds(), 1e-3))))
 	run := func(r *Run) error {

@@ -226,3 +226,29 @@ func TestRunsLastTheMinimum(t *testing.T) {
 		}
 	}
 }
+
+func TestColdFirstPassDoesNotSizeTheRuns(t *testing.T) {
+	srv, calls := server(t, discovery.Ollama)
+	var seen atomic.Int64
+	cold := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The first request loads the model and outlasts the warmup.
+		if seen.Add(1) == 1 {
+			time.Sleep(80 * time.Millisecond)
+		} else {
+			time.Sleep(5 * time.Millisecond)
+		}
+		srv.Config.Handler.ServeHTTP(w, r)
+	}))
+	defer cold.Close()
+	p := quick()
+	p.WarmupS, p.MinRunS = 0.05, 0.05
+	r, err := Bench(context.Background(), cold.Client(), Target{Kind: discovery.Ollama, Endpoint: cold.URL, Model: "m"}, p, []string{"a"}, meter([]float64{0}), BasisTotal, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Sized by the cold pass a run would be a single pass; the warm one
+	// takes a little over 5 ms, so several make 50 ms.
+	if r.Params.Passes < 3 || calls.Load() != int64(2+5*r.Params.Passes) {
+		t.Fatalf("%d passes, %d calls", r.Params.Passes, calls.Load())
+	}
+}
